@@ -4,13 +4,13 @@ import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBUt0FAjGWFP1Lr8l4SNNt5rOUFyAeiPcs",
-  authDomain: "jmseller.firebaseapp.com",
-  projectId: "jmseller",
-  storageBucket: "jmseller.firebasestorage.app",
-  messagingSenderId: "87948039014",
-  appId: "1:87948039014:web:e028f9158ce48d86766ea7",
-  measurementId: "G-VX398KHQ20"
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_APP_ID,
+  measurementId: process.env.REACT_APP_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);

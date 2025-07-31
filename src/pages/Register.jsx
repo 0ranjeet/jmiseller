@@ -63,7 +63,7 @@ const Register = () => {
       alert("OTP verification failed");
       console.error(err);
     }
-    nav("/login")
+    nav("/sellerregistration")
   };
 
   return (

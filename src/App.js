@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Upload from './pages/Upload';
 import Register from './pages/Register';
+import SellerRegistration from './pages/SellerRegistartion';
 
 // 🔒 Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -27,7 +28,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+          <Route
+            path="/sellerregistration"
+            element={
+              <ProtectedRoute>
+                <SellerRegistration />
+              </ProtectedRoute>
+            }
+          />
           {/* Default redirect to upload */}
           <Route path="*" element={<Navigate to="/upload" replace />} />
         </Routes>

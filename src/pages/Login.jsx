@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import './Login.css';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-
+  const nav=useNavigate();
   const handleLogin = async () => {
     if (mobile.length !== 10 || password.length === 0) {
       alert("Please enter both fields correctly");
@@ -30,7 +31,7 @@ const Login = () => {
 
       localStorage.setItem("sellerMobile", mobile); // session
       alert("Login successful");
-      window.location.href = '/dashboard'; // or wherever your home is
+      nav("/sellerregistration"); // or wherever your home is
     } catch (err) {
       console.error(err);
       alert("Login failed");
