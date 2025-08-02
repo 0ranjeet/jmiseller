@@ -36,8 +36,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Default redirect to upload */}
-          <Route path="*" element={<Navigate to="/upload" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

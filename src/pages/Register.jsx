@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '../services/firebase';
 import './Login.css'; // Reuse styles
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc,collection } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
 const Register = () => {
@@ -12,13 +12,13 @@ const Register = () => {
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
-  const nav=useNavigate();
+  const nav = useNavigate();
 
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
-        callback: () => {},
+        callback: () => { },
       });
     }
   };
@@ -54,10 +54,11 @@ const Register = () => {
     try {
       await confirmationResult.confirm(otp);
       await setDoc(doc(db, "sellers", mobile), {
-  mobile,
-  createdAt: new Date(),
-  passwordHash: btoa(password) // or hash better
-});
+        mobile,
+        createdAt: new Date(),
+        passwordHash: btoa(password) // or hash better
+      });
+      await setDoc(doc(db, 'seller-registrations', mobile), {});
       alert("Seller registered!");
     } catch (err) {
       alert("OTP verification failed");

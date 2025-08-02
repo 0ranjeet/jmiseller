@@ -1,175 +1,935 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { db } from '../services/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import imagekit from '../services/imgkit'; // Import ImageKit client
-import './SellerRegistration.css';
+import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import "./SellerRegistration.css";
+
+// Memoize step components to prevent unnecessary re-renders
+const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNumber, businessDocuments, setBusinessDocuments, organizationPhotos, setOrganizationPhotos, organizationName, setOrganizationName, address, setAddress, city, setCity, district, setDistrict, state, setState, pinCode, setPinCode, organizationContact, setOrganizationContact, organizationEmail, setOrganizationEmail, businessTypes, setBusinessTypes, storeLogo, setStoreLogo, removeBusinessType, removeBusinessDocument, removeOrganizationPhoto, handleBusinessTypeKeyPress }) => (
+  <div className="step-content">
+    <h2>Organisation Information</h2>
+
+    <div className="form-group">
+      <label>GSTR Status</label>
+      <div className="radio-group">
+        <label className={`radio-option ${gstrStatus === 'registered' ? 'active' : ''}`}>
+          <input
+            type="radio"
+            value="registered"
+            checked={gstrStatus === 'registered'}
+            onChange={(e) => setGstrStatus(e.target.value)}
+          />
+          Registered
+        </label>
+        <label className={`radio-option ${gstrStatus === 'non-registered' ? 'active' : ''}`}>
+          <input
+            type="radio"
+            value="non-registered"
+            checked={gstrStatus === 'non-registered'}
+            onChange={(e) => setGstrStatus(e.target.value)}
+          />
+          Non-Registered
+        </label>
+      </div>
+    </div>
+
+    <div className="form-group">
+      <label>GSTIN Number</label>
+      <input
+        type="text"
+        placeholder="e.g. 22AAAAA0000A1Z5"
+        value={gstinNumber}
+        onChange={(e) => setGstinNumber(e.target.value)}
+        autoComplete="off"
+      />
+      <small>Format: 22AAAAA0000A1Z5</small>
+    </div>
+
+    <div className="form-group">
+      <label>Business Documents</label>
+      <div className="upload-area">
+        <div className="upload-icon">📄</div>
+        <p>Upload PDF, JPG or PNG files</p>
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={(e) => setBusinessDocuments(Array.from(e.target.files))}
+          style={{ display: 'none' }}
+          id="business-docs"
+        />
+        <label htmlFor="business-docs" className="btn-secondary">Select Files</label>
+      </div>
+      {businessDocuments.length > 0 && (
+        <div className="uploaded-files">
+          {businessDocuments.map((file, index) => (
+            <div key={file.name + index} className="file-item">
+              <span>📄 {file.name}</span>
+              <button
+                type="button"
+                className="remove-file"
+                onClick={() => removeBusinessDocument(index)}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div className="form-group">
+      <label>Organization Photos</label>
+      <div className="upload-area">
+        <div className="upload-icon">📷</div>
+        <p>Upload store photos</p>
+        <input
+          type="file"
+          multiple
+          accept=".jpg,.jpeg,.png"
+          onChange={(e) => setOrganizationPhotos(Array.from(e.target.files))}
+          style={{ display: 'none' }}
+          id="org-photos"
+        />
+        <label htmlFor="org-photos" className="btn-secondary">Add Photos</label>
+      </div>
+      {organizationPhotos.length > 0 && (
+        <div className="photo-grid">
+          {organizationPhotos.map((file, index) => (
+            <div key={file.name + index} className="photo-item">
+              <img
+                src={URL.createObjectURL(file)}
+                alt={`Store ${index + 1}`}
+                style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+              />
+              <button
+                type="button"
+                className="remove-photo"
+                onClick={() => removeOrganizationPhoto(index)}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div className="form-group">
+      <label>Organization Name</label>
+      <input
+        type="text"
+        placeholder="Enter business name"
+        value={organizationName}
+        onChange={(e) => setOrganizationName(e.target.value)}
+        autoComplete="organization"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Address</label>
+      <input
+        type="text"
+        placeholder="Street/Building"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        autoComplete="street-address"
+      />
+    </div>
+
+    <div className="form-row">
+      <div className="form-group">
+        <label>City/Village</label>
+        <input
+          type="text"
+          placeholder="City/Village"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          autoComplete="address-level2"
+        />
+      </div>
+      <div className="form-group">
+        <label>District</label>
+        <input
+          type="text"
+          placeholder="District"
+          value={district}
+          onChange={(e) => setDistrict(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+    </div>
+
+    <div className="form-row">
+      <div className="form-group">
+        <label>State</label>
+        <select
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+        >
+          <option value="">Select State</option>
+          <option value="andhra-pradesh">Andhra Pradesh</option>
+          <option value="arunachal-pradesh">Arunachal Pradesh</option>
+          <option value="assam">Assam</option>
+          <option value="bihar">Bihar</option>
+          <option value="chhattisgarh">Chhattisgarh</option>
+          <option value="goa">Goa</option>
+          <option value="gujarat">Gujarat</option>
+          <option value="haryana">Haryana</option>
+          <option value="himachal-pradesh">Himachal Pradesh</option>
+          <option value="jharkhand">Jharkhand</option>
+          <option value="karnataka">Karnataka</option>
+          <option value="kerala">Kerala</option>
+          <option value="madhya-pradesh">Madhya Pradesh</option>
+          <option value="maharashtra">Maharashtra</option>
+          <option value="manipur">Manipur</option>
+          <option value="meghalaya">Meghalaya</option>
+          <option value="mizoram">Mizoram</option>
+          <option value="nagaland">Nagaland</option>
+          <option value="odisha">Odisha</option>
+          <option value="punjab">Punjab</option>
+          <option value="rajasthan">Rajasthan</option>
+          <option value="sikkim">Sikkim</option>
+          <option value="tamil-nadu">Tamil Nadu</option>
+          <option value="telangana">Telangana</option>
+          <option value="tripura">Tripura</option>
+          <option value="uttar-pradesh">Uttar Pradesh</option>
+          <option value="uttarakhand">Uttarakhand</option>
+          <option value="west-bengal">West Bengal</option>
+        </select>
+      </div>
+      <div className="form-group">
+        <label>PIN Code</label>
+        <input
+          type="text"
+          placeholder="PIN Code"
+          value={pinCode}
+          onChange={(e) => setPinCode(e.target.value)}
+          autoComplete="postal-code"
+        />
+      </div>
+    </div>
+
+    <div className="form-group">
+      <label>Organization Contact</label>
+      <input
+        type="tel"
+        placeholder="10-digit mobile number"
+        value={organizationContact}
+        onChange={(e) => setOrganizationContact(e.target.value)}
+        autoComplete="tel"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Organization Email</label>
+      <input
+        type="email"
+        placeholder="business@example.com"
+        value={organizationEmail}
+        onChange={(e) => setOrganizationEmail(e.target.value)}
+        autoComplete="email"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Nature of Business</label>
+      <div className="business-types">
+        {businessTypes.map((type, index) => (
+          <span key={type + index} className="business-tag">
+            {type}
+            <span
+              className="remove"
+              onClick={() => removeBusinessType(index)}
+            >
+              ×
+            </span>
+          </span>
+        ))}
+      </div>
+      <input
+        type="text"
+        placeholder="Add more business types"
+        onKeyPress={handleBusinessTypeKeyPress}
+        autoComplete="off"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Store Logo (Optional)</label>
+      <div className="upload-area">
+        <div className="upload-icon">🖼️</div>
+        <p>Upload your store logo</p>
+        <input
+          type="file"
+          accept=".jpg,.jpeg,.png"
+          onChange={(e) => setStoreLogo(e.target.files[0])}
+          style={{ display: 'none' }}
+          id="store-logo"
+        />
+        <label htmlFor="store-logo" className="btn-secondary">Upload Logo</label>
+      </div>
+      {storeLogo && (
+        <div className="logo-preview">
+          <img
+            src={URL.createObjectURL(storeLogo)}
+            alt="Store Logo"
+            style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+          />
+          <button
+            type="button"
+            onClick={() => setStoreLogo(null)}
+            className="remove-logo"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+));
+
+const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, updateDealingPerson, removeDealingPerson }) => (
+  <div className="step-content">
+    <h2>Dealing Person Details</h2>
+    <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+      Add contact details for the person(s) who will be handling business communication or transactions.
+    </p>
+    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
+      You can add more than one contact person for your business.
+    </p>
+
+    {dealingPersons.map((person, index) => (
+      <div key={index} className="person-card">
+        <div className="person-header">
+          <h3>Person {index + 1}</h3>
+          <div className="person-actions">
+            {dealingPersons.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeDealingPerson(index)}
+                className="remove-person"
+              >
+                🗑️
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Full Name</label>
+          <input
+            type="text"
+            placeholder="Enter full name"
+            value={person.fullName}
+            onChange={(e) => updateDealingPerson(index, 'fullName', e.target.value)}
+            autoComplete="name"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Contact Number</label>
+          <input
+            type="tel"
+            placeholder="10-digit mobile number"
+            value={person.contactNumber}
+            onChange={(e) => updateDealingPerson(index, 'contactNumber', e.target.value)}
+            autoComplete="tel"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Email Address</label>
+          <input
+            type="email"
+            placeholder="person@example.com"
+            value={person.email}
+            onChange={(e) => updateDealingPerson(index, 'email', e.target.value)}
+            autoComplete="email"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Department</label>
+          <input
+            type="text"
+            placeholder="Enter department"
+            value={person.department}
+            onChange={(e) => updateDealingPerson(index, 'department', e.target.value)}
+            autoComplete="organization-title"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Designation/Role</label>
+          <select
+            value={person.role}
+            onChange={(e) => updateDealingPerson(index, 'role', e.target.value)}
+          >
+            <option value="">Select role</option>
+            <option value="owner">Owner</option>
+            <option value="manager">Manager</option>
+            <option value="sales-executive">Sales Executive</option>
+            <option value="accountant">Accountant</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Person Photos</label>
+          <div className="upload-area">
+            <div className="upload-icon">📷</div>
+            <p>Upload JPG or PNG files</p>
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png"
+              onChange={(e) => updateDealingPerson(index, 'photo', e.target.files[0])}
+              style={{ display: 'none' }}
+              id={`person-photo-${index}`}
+            />
+            <label htmlFor={`person-photo-${index}`} className="btn-secondary">Take Photo</label>
+          </div>
+          {person.photo && (
+            <div className="photo-preview">
+              <img
+                src={URL.createObjectURL(person.photo)}
+                alt="Person"
+                style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+              />
+              <button
+                type="button"
+                onClick={() => updateDealingPerson(index, 'photo', null)}
+              >
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    ))}
+
+    <button
+      type="button"
+      onClick={addDealingPerson}
+      className="add-person-btn"
+    >
+      + Add Dealing Person
+    </button>
+  </div>
+));
+
+const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transactionalEmail, setTransactionalEmail, shopNumber, setShopNumber, buildingName, setBuildingName, streetAddress, setStreetAddress, contactCity, setContactCity, contactDistrict, setContactDistrict, contactState, setContactState, contactPinCode, setContactPinCode }) => (
+  <div className="step-content">
+    <h2>Transactional Contact</h2>
+
+    <div className="form-group">
+      <label>Mobile</label>
+      <input
+        type="tel"
+        placeholder="10-digit mobile number"
+        value={transactionalMobile}
+        onChange={(e) => setTransactionalMobile(e.target.value)}
+        autoComplete="tel"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Email</label>
+      <input
+        type="email"
+        placeholder="business@example.com"
+        value={transactionalEmail}
+        onChange={(e) => setTransactionalEmail(e.target.value)}
+        autoComplete="email"
+      />
+    </div>
+
+    <h2 style={{ marginTop: '40px' }}>Shipping Address</h2>
+
+    <div className="form-group">
+      <label>Shop Number / Flat Number</label>
+      <input
+        type="text"
+        placeholder="Shop/Flat Number"
+        value={shopNumber}
+        onChange={(e) => setShopNumber(e.target.value)}
+        autoComplete="off"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Building / Complex Name</label>
+      <input
+        type="text"
+        placeholder="Building or Complex"
+        value={buildingName}
+        onChange={(e) => setBuildingName(e.target.value)}
+        autoComplete="off"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Street Address</label>
+      <input
+        type="text"
+        placeholder="Street Address"
+        value={streetAddress}
+        onChange={(e) => setStreetAddress(e.target.value)}
+        autoComplete="street-address"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>City / Village</label>
+      <input
+        type="text"
+        placeholder="City or Village"
+        value={contactCity}
+        onChange={(e) => setContactCity(e.target.value)}
+        autoComplete="address-level2"
+      />
+    </div>
+
+    <div className="form-group">
+      <label>District</label>
+      <input
+        type="text"
+        placeholder="District"
+        value={contactDistrict}
+        onChange={(e) => setContactDistrict(e.target.value)}
+        autoComplete="off"
+      />
+    </div>
+
+    <div className="form-row">
+      <div className="form-group">
+        <label>State</label>
+        <select
+          value={contactState}
+          onChange={(e) => setContactState(e.target.value)}
+        >
+          <option value="">Select State</option>
+          <option value="andhra-pradesh">Andhra Pradesh</option>
+          <option value="arunachal-pradesh">Arunachal Pradesh</option>
+          <option value="assam">Assam</option>
+          <option value="bihar">Bihar</option>
+          <option value="chhattisgarh">Chhattisgarh</option>
+          <option value="goa">Goa</option>
+          <option value="gujarat">Gujarat</option>
+          <option value="haryana">Haryana</option>
+          <option value="himachal-pradesh">Himachal Pradesh</option>
+          <option value="jharkhand">Jharkhand</option>
+          <option value="karnataka">Karnataka</option>
+          <option value="kerala">Kerala</option>
+          <option value="madhya-pradesh">Madhya Pradesh</option>
+          <option value="maharashtra">Maharashtra</option>
+          <option value="manipur">Manipur</option>
+          <option value="meghalaya">Meghalaya</option>
+          <option value="mizoram">Mizoram</option>
+          <option value="nagaland">Nagaland</option>
+          <option value="odisha">Odisha</option>
+          <option value="punjab">Punjab</option>
+          <option value="rajasthan">Rajasthan</option>
+          <option value="sikkim">Sikkim</option>
+          <option value="tamil-nadu">Tamil Nadu</option>
+          <option value="telangana">Telangana</option>
+          <option value="tripura">Tripura</option>
+          <option value="uttar-pradesh">Uttar Pradesh</option>
+          <option value="uttarakhand">Uttarakhand</option>
+          <option value="west-bengal">West Bengal</option>
+        </select>
+      </div>
+      <div className="form-group">
+        <label>PIN Code</label>
+        <input
+          type="text"
+          placeholder="PIN Code"
+          value={contactPinCode}
+          onChange={(e) => setContactPinCode(e.target.value)}
+          autoComplete="postal-code"
+        />
+      </div>
+    </div>
+  </div>
+));
+
+const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountType, setAccountType, accountHolderName, setAccountHolderName, accountNumber, setAccountNumber, confirmAccountNumber, setConfirmAccountNumber }) => (
+  <div className="step-content">
+    <h2>Organization Bank Details</h2>
+
+    <div className="form-group">
+      <label className="required">Bank Name</label>
+      <select
+        value={bankName}
+        onChange={(e) => setBankName(e.target.value)}
+      >
+        <option value="">Enter bank name</option>
+        <option value="sbi">State Bank of India</option>
+        <option value="hdfc">HDFC Bank</option>
+        <option value="icici">ICICI Bank</option>
+        <option value="axis">Axis Bank</option>
+        <option value="kotak">Kotak Mahindra Bank</option>
+        <option value="pnb">Punjab National Bank</option>
+        <option value="canara">Canara Bank</option>
+        <option value="union">Union Bank of India</option>
+        <option value="bob">Bank of Baroda</option>
+        <option value="indian">Indian Bank</option>
+      </select>
+    </div>
+
+    <div className="form-group">
+      <label className="required">IFSC Code</label>
+      <input
+        type="text"
+        placeholder="e.g. SBIN0001234"
+        value={ifscCode}
+        onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+        autoComplete="off"
+      />
+      <small>Format: 4 letters followed by 7 numbers</small>
+    </div>
+
+    <div className="form-group">
+      <label className="required">Account Type</label>
+      <select
+        value={accountType}
+        onChange={(e) => setAccountType(e.target.value)}
+      >
+        <option value="">Select account type</option>
+        <option value="savings">Savings Account</option>
+        <option value="current">Current Account</option>
+        <option value="cc">Cash Credit</option>
+        <option value="od">Overdraft</option>
+      </select>
+    </div>
+
+    <div className="form-group">
+      <label className="required">Account Holder Name</label>
+      <input
+        type="text"
+        placeholder="Account holder name"
+        value={accountHolderName}
+        onChange={(e) => setAccountHolderName(e.target.value)}
+        autoComplete="name"
+      />
+    </div>
+
+    <div className="form-group">
+      <label className="required">Account Number</label>
+      <input
+        type="text"
+        placeholder="Account number"
+        value={accountNumber}
+        onChange={(e) => setAccountNumber(e.target.value)}
+        autoComplete="off"
+      />
+    </div>
+
+    <div className="form-group">
+      <label className="required">Confirm Account Number</label>
+      <input
+        type="text"
+        placeholder="Re-enter account number"
+        value={confirmAccountNumber}
+        onChange={(e) => setConfirmAccountNumber(e.target.value)}
+        autoComplete="off"
+      />
+    </div>
+  </div>
+));
+
+const SecurityStep = memo(({ jmiOfficerID, setJmiOfficerID, privatePasskey, setPrivatePasskey, confirmPasskey, setConfirmPasskey }) => (
+  <div className="step-content">
+    <div className="security-section">
+      <h3>Enter Officer ID</h3>
+      <div className="otp-section">
+        <div className="form-group">
+          <label>JMI Officer ID</label>
+          <input
+            type="text"
+            placeholder="Enter ID"
+            value={jmiOfficerID}
+            onChange={(e) => setJmiOfficerID(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+        <button type="button" className="send-otp-btn">
+          Send OTP
+        </button>
+      </div>
+    </div>
+
+    <div className="security-section">
+      <h3>Set Private Passkey</h3>
+      <div className="form-group">
+        <label>Private Passkey</label>
+        <input
+          type="password"
+          placeholder="Create a Passkey"
+          value={privatePasskey}
+          onChange={(e) => setPrivatePasskey(e.target.value)}
+          autoComplete="new-password"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Re-enter Private Passkey</label>
+        <input
+          type="password"
+          placeholder="Re-enter a Passkey"
+          value={confirmPasskey}
+          onChange={(e) => setConfirmPasskey(e.target.value)}
+          autoComplete="new-password"
+        />
+      </div>
+    </div>
+  </div>
+));
+
+const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
+  <div className="step-indicator">
+    {steps.map((step, index) => (
+      <React.Fragment key={step.number}>
+        <div className={`step ${currentStep === step.number ? 'active' : ''} ${completedSteps.includes(step.number) ? 'completed' : ''}`}>
+          <div className="step-circle">
+            {completedSteps.includes(step.number) ? '✓' : step.number}
+          </div>
+          <span className="step-title">{step.title}</span>
+        </div>
+        {index < steps.length - 1 && <div className="step-connector"></div>}
+      </React.Fragment>
+    ))}
+  </div>
+));
 
 const SellerRegistration = () => {
+  // Step and progress states
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
-  const [formData, setFormData] = useState({
-    gstrStatus: 'registered',
-    gstinNumber: '',
-    businessDocuments: [],
-    organizationPhotos: [],
-    organizationName: '',
-    address: '',
-    city: '',
-    district: '',
-    state: '',
-    pinCode: '',
-    organizationContact: '',
-    organizationEmail: '',
-    businessTypes: ['Gold Jewelry', 'Diamond Jewelry'],
-    storeLogo: null,
-    dealingPersons: [{
-      fullName: '',
-      contactNumber: '',
-      email: '',
-      role: '',
-      photo: null
-    }],
-    transactionalMobile: '',
-    transactionalEmail: '',
-    shopNumber: '',
-    buildingName: '',
-    streetAddress: '',
-    contactCity: '',
-    contactDistrict: '',
-    contactState: '',
-    contactPinCode: '',
-    bankName: '',
-    ifscCode: '',
-    accountType: '',
-    accountHolderName: '',
-    accountNumber: '',
-    confirmAccountNumber: '',
-    jmiOfficerID: '',
-    privatePasskey: '',
-    confirmPasskey: ''
-  });
+
+  // Organization states
+  const [gstrStatus, setGstrStatus] = useState('registered');
+  const [gstinNumber, setGstinNumber] = useState('');
+  const [businessDocuments, setBusinessDocuments] = useState([]);
+  const [organizationPhotos, setOrganizationPhotos] = useState([]);
+  const [organizationName, setOrganizationName] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
+  const [state, setState] = useState('');
+  const [pinCode, setPinCode] = useState('');
+  const [organizationContact, setOrganizationContact] = useState('');
+  const [organizationEmail, setOrganizationEmail] = useState('');
+  const [businessTypes, setBusinessTypes] = useState(['Gold Jewelry', 'Diamond Jewelry']);
+  const [storeLogo, setStoreLogo] = useState(null);
+
+  // Dealing persons state
+  const [dealingPersons, setDealingPersons] = useState([{
+    fullName: '',
+    contactNumber: '',
+    email: '',
+    department: '',
+    role: '',
+    photo: null
+  }]);
+
+  // Transactional contact states
+  const [transactionalMobile, setTransactionalMobile] = useState('');
+  const [transactionalEmail, setTransactionalEmail] = useState('');
+  const [shopNumber, setShopNumber] = useState('');
+  const [buildingName, setBuildingName] = useState('');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [contactCity, setContactCity] = useState('');
+  const [contactDistrict, setContactDistrict] = useState('');
+  const [contactState, setContactState] = useState('');
+  const [contactPinCode, setContactPinCode] = useState('');
+
+  // Bank details states
+  const [bankName, setBankName] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [accountType, setAccountType] = useState('');
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
+
+  // Security states
+  const [jmiOfficerID, setJmiOfficerID] = useState('');
+  const [privatePasskey, setPrivatePasskey] = useState('');
+  const [confirmPasskey, setConfirmPasskey] = useState('');
+
+  // Cloudinary configuration
+  const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+  const CLOUDINARY_UPLOAD_PRESET = "jmiseller";
 
   const steps = [
-    { number: 1, title: 'Business', key: 'business' },
+    { number: 1, title: 'Organization', key: 'business' },
     { number: 2, title: 'Person', key: 'person' },
-    { number: 3, title: 'Contact', key: 'contact' },
+    { number: 3, title: 'Credentials', key: 'contact' },
     { number: 4, title: 'Bank', key: 'bank' },
     { number: 5, title: 'Security', key: 'security' }
   ];
 
-  // Upload single file to ImageKit
-  const uploadFile = async (file, path) => {
+  // Upload single file to Cloudinary
+  const uploadToCloudinary = useCallback(async (file, folder = '') => {
     try {
-      const response = await imagekit.upload({
-        file: file,
-        fileName: `${Date.now()}_${file.name}`,
-        folder: `/seller-registration/${path}`,
-        useUniqueFileName: true,
-      });
-      return response.url;
+      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+        throw new Error('Cloudinary configuration missing.');
+      }
+
+      const formDataCloud = new FormData();
+      formDataCloud.append('file', file);
+      formDataCloud.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      if (folder) {
+        formDataCloud.append('folder', `seller-registration/${folder}`);
+      }
+
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      formDataCloud.append('public_id', fileName);
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formDataCloud,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Upload failed: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      return {
+        url: data.secure_url,
+        publicId: data.public_id
+      };
     } catch (error) {
-      console.error('Error uploading file to ImageKit:', error);
+      console.error('Error uploading to Cloudinary:', error);
       throw error;
     }
-  };
+  }, [CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET]);
 
-  // Upload multiple files
-  const uploadMultipleFiles = async (files, path) => {
-    const uploadPromises = Array.from(files).map(file => uploadFile(file, path));
+  // Upload multiple files to Cloudinary
+  const uploadMultipleFiles = useCallback(async (files, folder = '') => {
+    const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file, folder));
     return Promise.all(uploadPromises);
-  };
+  }, [uploadToCloudinary]);
 
   // Save data to Firestore
-  const saveToFirestore = async (data) => {
+  const saveToFirestore = useCallback(async (data) => {
+    const mobile = localStorage.getItem("sellerMobile");
     try {
-      const docRef = await addDoc(collection(db, 'seller-registrations'), {
+      const docRef = doc(db, 'seller-registrations', mobile);
+
+      await setDoc(docRef, {
         ...data,
-        createdAt: serverTimestamp(),
-        status: 'pending',
+        mobile,
         updatedAt: serverTimestamp()
-      });
-      return docRef.id;
+      }, { merge: true });
+      alert("Seller registered!");
     } catch (error) {
       console.error('Error saving to Firestore:', error);
       throw error;
     }
-  };
+  }, []);
 
-  // Handle file selection
-  const handleFileChange = (field, files) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: Array.from(files)
-    }));
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < 5) {
       setCompletedSteps(prev => [...prev, currentStep]);
       setCurrentStep(prev => prev + 1);
     }
-  };
+  }, [currentStep]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
     }
-  };
+  }, [currentStep]);
 
-  const handleRegister = async () => {
+  const validateForm = useCallback(() => {
+    return true; // Skip validations
+  }, []);
+
+  const handleRegister = useCallback(async () => {
     setLoading(true);
     try {
-      const dataToSave = { ...formData };
+      const dataToSave = {
+        gstrStatus,
+        gstinNumber,
+        organizationName,
+        address,
+        city,
+        district,
+        state,
+        pinCode,
+        organizationContact,
+        organizationEmail,
+        businessTypes,
+        dealingPersons,
+        transactionalMobile,
+        transactionalEmail,
+        shopNumber,
+        buildingName,
+        streetAddress,
+        contactCity,
+        contactDistrict,
+        contactState,
+        contactPinCode,
+        bankName,
+        ifscCode,
+        accountType,
+        accountHolderName,
+        accountNumber,
+        confirmAccountNumber,
+        jmiOfficerID,
+        privatePasskey,
+        confirmPasskey
+      };
 
       // Upload business documents
-      if (formData.businessDocuments.length > 0) {
+      if (businessDocuments.length > 0) {
         setUploadProgress(prev => ({ ...prev, businessDocs: 'Uploading business documents...' }));
-        dataToSave.businessDocumentUrls = await uploadMultipleFiles(
-          formData.businessDocuments,
-          'business-documents'
-        );
+        const businessDocResults = await uploadMultipleFiles(businessDocuments, 'business-documents');
+        dataToSave.businessDocumentUrls = businessDocResults.map(result => result.url);
+        dataToSave.businessDocumentIds = businessDocResults.map(result => result.publicId);
       }
 
       // Upload organization photos
-      if (formData.organizationPhotos.length > 0) {
+      if (organizationPhotos.length > 0) {
         setUploadProgress(prev => ({ ...prev, orgPhotos: 'Uploading organization photos...' }));
-        dataToSave.organizationPhotoUrls = await uploadMultipleFiles(
-          formData.organizationPhotos,
-          'organization-photos'
-        );
+        const orgPhotoResults = await uploadMultipleFiles(organizationPhotos, 'organization-photos');
+        dataToSave.organizationPhotoUrls = orgPhotoResults.map(result => result.url);
+        dataToSave.organizationPhotoIds = orgPhotoResults.map(result => result.publicId);
       }
 
       // Upload dealing person photos
       setUploadProgress(prev => ({ ...prev, personPhotos: 'Uploading person photos...' }));
       dataToSave.dealingPersons = await Promise.all(
-        formData.dealingPersons.map(async (person, index) => {
+        dealingPersons.map(async (person, index) => {
           if (person.photo) {
-            const photoUrl = await uploadFile(person.photo, `person-photos/${index}`);
-            return { ...person, photoUrl, photo: null };
+            const photoResult = await uploadToCloudinary(person.photo, `person-photos`);
+            return {
+              ...person,
+              photoUrl: photoResult.url,
+              photoId: photoResult.publicId,
+              photo: null
+            };
           }
           return person;
         })
       );
 
       // Upload store logo
-      if (formData.storeLogo) {
+      if (storeLogo) {
         setUploadProgress(prev => ({ ...prev, logo: 'Uploading store logo...' }));
-        dataToSave.storeLogoUrl = await uploadFile(formData.storeLogo, 'store-logos');
+        const logoResult = await uploadToCloudinary(storeLogo, 'store-logos');
+        dataToSave.storeLogoUrl = logoResult.url;
+        dataToSave.storeLogoId = logoResult.publicId;
       }
-
-      // Remove file objects before saving to Firestore
-      delete dataToSave.businessDocuments;
-      delete dataToSave.organizationPhotos;
-      delete dataToSave.storeLogo;
 
       setUploadProgress(prev => ({ ...prev, saving: 'Saving registration data...' }));
 
@@ -182,47 +942,46 @@ const SellerRegistration = () => {
       // Reset form
       setCurrentStep(1);
       setCompletedSteps([]);
-      setFormData({
-        gstrStatus: 'registered',
-        gstinNumber: '',
-        businessDocuments: [],
-        organizationPhotos: [],
-        organizationName: '',
-        address: '',
-        city: '',
-        district: '',
-        state: '',
-        pinCode: '',
-        organizationContact: '',
-        organizationEmail: '',
-        businessTypes: ['Gold Jewelry', 'Diamond Jewelry'],
-        storeLogo: null,
-        dealingPersons: [{
-          fullName: '',
-          contactNumber: '',
-          email: '',
-          role: '',
-          photo: null
-        }],
-        transactionalMobile: '',
-        transactionalEmail: '',
-        shopNumber: '',
-        buildingName: '',
-        streetAddress: '',
-        contactCity: '',
-        contactDistrict: '',
-        contactState: '',
-        contactPinCode: '',
-        bankName: '',
-        ifscCode: '',
-        accountType: '',
-        accountHolderName: '',
-        accountNumber: '',
-        confirmAccountNumber: '',
-        jmiOfficerID: '',
-        privatePasskey: '',
-        confirmPasskey: ''
-      });
+      setGstrStatus('registered');
+      setGstinNumber('');
+      setBusinessDocuments([]);
+      setOrganizationPhotos([]);
+      setOrganizationName('');
+      setAddress('');
+      setCity('');
+      setDistrict('');
+      setState('');
+      setPinCode('');
+      setOrganizationContact('');
+      setOrganizationEmail('');
+      setBusinessTypes(['Gold Jewelry', 'Diamond Jewelry']);
+      setStoreLogo(null);
+      setDealingPersons([{
+        fullName: '',
+        contactNumber: '',
+        email: '',
+        department: '',
+        role: '',
+        photo: null
+      }]);
+      setTransactionalMobile('');
+      setTransactionalEmail('');
+      setShopNumber('');
+      setBuildingName('');
+      setStreetAddress('');
+      setContactCity('');
+      setContactDistrict('');
+      setContactState('');
+      setContactPinCode('');
+      setBankName('');
+      setIfscCode('');
+      setAccountType('');
+      setAccountHolderName('');
+      setAccountNumber('');
+      setConfirmAccountNumber('');
+      setJmiOfficerID('');
+      setPrivatePasskey('');
+      setConfirmPasskey('');
     } catch (error) {
       console.error('Registration failed:', error);
       alert('Registration failed. Please try again.');
@@ -230,762 +989,280 @@ const SellerRegistration = () => {
       setLoading(false);
       setUploadProgress({});
     }
-  };
+  }, [gstrStatus, gstinNumber, organizationName, address, city, district, state, pinCode, organizationContact, organizationEmail, businessTypes, storeLogo, dealingPersons, transactionalMobile, transactionalEmail, shopNumber, buildingName, streetAddress, contactCity, contactDistrict, contactState, contactPinCode, bankName, ifscCode, accountType, accountHolderName, accountNumber, confirmAccountNumber, jmiOfficerID, privatePasskey, confirmPasskey, businessDocuments, organizationPhotos, currentStep, uploadToCloudinary, uploadMultipleFiles, saveToFirestore]);
 
-  const addDealingPerson = () => {
-    setFormData(prev => ({
-      ...prev,
-      dealingPersons: [...prev.dealingPersons, {
-        fullName: '',
-        contactNumber: '',
-        email: '',
-        role: '',
-        photo: null
-      }]
-    }));
-  };
+  const addDealingPerson = useCallback(() => {
+    setDealingPersons(prev => [...prev, {
+      fullName: '',
+      contactNumber: '',
+      email: '',
+      department: '',
+      role: '',
+      photo: null
+    }]);
+  }, []);
 
-  const updateDealingPerson = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      dealingPersons: prev.dealingPersons.map((person, i) =>
-        i === index ? { ...person, [field]: value } : person
-      )
-    }));
-  };
+  const updateDealingPerson = useCallback((index, field, value) => {
+    setDealingPersons(prev => prev.map((person, i) =>
+      i === index ? { ...person, [field]: value } : person
+    ));
+  }, []);
 
-  const removeDealingPerson = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      dealingPersons: prev.dealingPersons.filter((_, i) => i !== index)
-    }));
-  };
+  const removeDealingPerson = useCallback((index) => {
+    setDealingPersons(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const StepIndicator = ({ steps, currentStep, completedSteps }) => (
-    <div className="step-indicator">
-      {steps.map((step, index) => (
-        <React.Fragment key={step.number}>
-          <div className={`step ${currentStep === step.number ? 'active' : ''} ${completedSteps.includes(step.number) ? 'completed' : ''}`}>
-            <div className="step-circle">
-              {completedSteps.includes(step.number) ? '✓' : step.number}
-            </div>
-            <span className="step-title">{step.title}</span>
-          </div>
-          {index < steps.length - 1 && <div className="step-connector"></div>}
-        </React.Fragment>
-      ))}
-    </div>
-  );
+  const removeBusinessType = useCallback((indexToRemove) => {
+    setBusinessTypes(prev => prev.filter((_, index) => index !== indexToRemove));
+  }, []);
 
-  const BusinessStep = () => (
-    <div className="step-content">
-      <h2>Organisation Information</h2>
-      
-      <div className="form-group">
-        <label>GSTR Status</label>
-        <div className="radio-group">
-          <label className={`radio-option ${formData.gstrStatus === 'registered' ? 'active' : ''}`}>
-            <input
-              type="radio"
-              value="registered"
-              checked={formData.gstrStatus === 'registered'}
-              onChange={(e) => handleInputChange('gstrStatus', e.target.value)}
-            />
-            Registered
-          </label>
-          <label className={`radio-option ${formData.gstrStatus === 'non-registered' ? 'active' : ''}`}>
-            <input
-              type="radio"
-              value="non-registered"
-              checked={formData.gstrStatus === 'non-registered'}
-              onChange={(e) => handleInputChange('gstrStatus', e.target.value)}
-            />
-            Non-Registered
-          </label>
-        </div>
-      </div>
+  const removeBusinessDocument = useCallback((indexToRemove) => {
+    setBusinessDocuments(prev => prev.filter((_, index) => index !== indexToRemove));
+  }, []);
 
-      <div className="form-group">
-        <label>GSTIN Number</label>
-        <input
-          type="text"
-          placeholder="e.g. 22AAAAA0000A1Z5"
-          value={formData.gstinNumber}
-          onChange={(e) => handleInputChange('gstinNumber', e.target.value)}
-        />
-        <small>Format: 22AAAAA0000A1Z5</small>
-      </div>
+  const removeOrganizationPhoto = useCallback((indexToRemove) => {
+    setOrganizationPhotos(prev => prev.filter((_, index) => index !== indexToRemove));
+  }, []);
 
-      <div className="form-group">
-        <label>Business Documents</label>
-        <div className="upload-area">
-          <div className="upload-icon">📄</div>
-          <p>Upload PDF, JPG or PNG files</p>
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => handleFileChange('businessDocuments', e.target.files)}
-            style={{ display: 'none' }}
-            id="business-docs"
-          />
-          <label htmlFor="business-docs" className="btn-secondary">Select Files</label>
-        </div>
-        {formData.businessDocuments.length > 0 && (
-          <div className="uploaded-files">
-            {formData.businessDocuments.map((file, index) => (
-              <div key={index} className="file-item">
-                <span>📄 {file.name}</span>
-                <button 
-                  type="button"
-                  className="remove-file"
-                  onClick={() => {
-                    const newFiles = [...formData.businessDocuments];
-                    newFiles.splice(index, 1);
-                    handleInputChange('businessDocuments', newFiles);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="form-group">
-        <label>Organization Photos</label>
-        <div className="upload-area">
-          <div className="upload-icon">📷</div>
-          <p>Upload store photos</p>
-          <input
-            type="file"
-            multiple
-            accept=".jpg,.jpeg,.png"
-            onChange={(e) => handleFileChange('organizationPhotos', e.target.files)}
-            style={{ display: 'none' }}
-            id="org-photos"
-          />
-          <label htmlFor="org-photos" className="btn-secondary">Add Photos</label>
-        </div>
-        {formData.organizationPhotos.length > 0 && (
-          <div className="photo-grid">
-            {formData.organizationPhotos.map((file, index) => (
-              <div key={index} className="photo-item">
-                <img 
-                  src={URL.createObjectURL(file)} 
-                  alt={`Store ${index + 1}`} 
-                  style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                />
-                <button 
-                  type="button"
-                  className="remove-photo"
-                  onClick={() => {
-                    const newPhotos = [...formData.organizationPhotos];
-                    newPhotos.splice(index, 1);
-                    handleInputChange('organizationPhotos', newPhotos);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="form-group">
-        <label>Organization Name</label>
-        <input
-          type="text"
-          placeholder="Enter business name"
-          value={formData.organizationName}
-          onChange={(e) => handleInputChange('organizationName', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Address</label>
-        <input
-          type="text"
-          placeholder="Street/Building"
-          value={formData.address}
-          onChange={(e) => handleInputChange('address', e.target.value)}
-        />
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <label>City/Village</label>
-          <input
-            type="text"
-            placeholder="City/Village"
-            value={formData.city}
-            onChange={(e) => handleInputChange('city', e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label>District</label>
-          <input
-            type="text"
-            placeholder="District"
-            value={formData.district}
-            onChange={(e) => handleInputChange('district', e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <label>State</label>
-          <select
-            value={formData.state}
-            onChange={(e) => handleInputChange('state', e.target.value)}
-          >
-            <option value="">Select State</option>
-            <option value="andhra-pradesh">Andhra Pradesh</option>
-            <option value="arunachal-pradesh">Arunachal Pradesh</option>
-            <option value="assam">Assam</option>
-            <option value="bihar">Bihar</option>
-            <option value="chhattisgarh">Chhattisgarh</option>
-            <option value="goa">Goa</option>
-            <option value="gujarat">Gujarat</option>
-            <option value="haryana">Haryana</option>
-            <option value="himachal-pradesh">Himachal Pradesh</option>
-            <option value="jharkhand">Jharkhand</option>
-            <option value="karnataka">Karnataka</option>
-            <option value="kerala">Kerala</option>
-            <option value="madhya-pradesh">Madhya Pradesh</option>
-            <option value="maharashtra">Maharashtra</option>
-            <option value="manipur">Manipur</option>
-            <option value="meghalaya">Meghalaya</option>
-            <option value="mizoram">Mizoram</option>
-            <option value="nagaland">Nagaland</option>
-            <option value="odisha">Odisha</option>
-            <option value="punjab">Punjab</option>
-            <option value="rajasthan">Rajasthan</option>
-            <option value="sikkim">Sikkim</option>
-            <option value="tamil-nadu">Tamil Nadu</option>
-            <option value="telangana">Telangana</option>
-            <option value="tripura">Tripura</option>
-            <option value="uttar-pradesh">Uttar Pradesh</option>
-            <option value="uttarakhand">Uttarakhand</option>
-            <option value="west-bengal">West Bengal</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>PIN Code</label>
-          <input
-            type="text"
-            placeholder="PIN Code"
-            value={formData.pinCode}
-            onChange={(e) => handleInputChange('pinCode', e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="form-group">
-        <label>Organization Contact</label>
-        <input
-          type="tel"
-          placeholder="10-digit mobile number"
-          value={formData.organizationContact}
-          onChange={(e) => handleInputChange('organizationContact', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Organization Email</label>
-        <input
-          type="email"
-          placeholder="business@example.com"
-          value={formData.organizationEmail}
-          onChange={(e) => handleInputChange('organizationEmail', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Nature of Business</label>
-        <div className="business-types">
-          {formData.businessTypes.map((type, index) => (
-            <span key={index} className="business-tag">
-              {type}
-              <span 
-                className="remove"
-                onClick={() => {
-                  const newTypes = formData.businessTypes.filter((_, i) => i !== index);
-                  handleInputChange('businessTypes', newTypes);
-                }}
-              >
-                ×
-              </span>
-            </span>
-          ))}
-        </div>
-        <input
-          type="text"
-          placeholder="Add more business types"
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' && e.target.value.trim()) {
-              handleInputChange('businessTypes', [...formData.businessTypes, e.target.value.trim()]);
-              e.target.value = '';
-            }
-          }}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Store Logo (Optional)</label>
-        <div className="upload-area">
-          <div className="upload-icon">🖼️</div>
-          <p>Upload your store logo</p>
-          <input
-            type="file"
-            accept=".jpg,.jpeg,.png"
-            onChange={(e) => handleInputChange('storeLogo', e.target.files[0])}
-            style={{ display: 'none' }}
-            id="store-logo"
-          />
-          <label htmlFor="store-logo" className="btn-secondary">Upload Logo</label>
-        </div>
-        {formData.storeLogo && (
-          <div className="logo-preview">
-            <img 
-              src={URL.createObjectURL(formData.storeLogo)} 
-              alt="Store Logo" 
-              style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-            />
-            <button 
-              type="button"
-              onClick={() => handleInputChange('storeLogo', null)}
-              className="remove-logo"
-            >
-              Remove
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const PersonStep = () => (
-    <div className="step-content">
-      <h2>Dealing Person Details</h2>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-        Add contact details for the person(s) who will be handling business communication or transactions.
-      </p>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
-        You can add more than one contact person for your business.
-      </p>
-
-      {formData.dealingPersons.map((person, index) => (
-        <div key={index} className="person-card">
-          <div className="person-header">
-            <h3>Person {index + 1}</h3>
-            <div className="person-actions">
-              {formData.dealingPersons.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeDealingPerson(index)}
-                  className="remove-person"
-                >
-                  🗑️
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Full Name</label>
-            <input
-              type="text"
-              placeholder="Enter full name"
-              value={person.fullName}
-              onChange={(e) => updateDealingPerson(index, 'fullName', e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Contact Number</label>
-            <input
-              type="tel"
-              placeholder="10-digit mobile number"
-              value={person.contactNumber}
-              onChange={(e) => updateDealingPerson(index, 'contactNumber', e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              placeholder="person@example.com"
-              value={person.email}
-              onChange={(e) => updateDealingPerson(index, 'email', e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Designation/Role</label>
-            <select
-              value={person.role}
-              onChange={(e) => updateDealingPerson(index, 'role', e.target.value)}
-            >
-              <option value="">Select role</option>
-              <option value="owner">Owner</option>
-              <option value="manager">Manager</option>
-              <option value="sales-executive">Sales Executive</option>
-              <option value="accountant">Accountant</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Person Photos</label>
-            <div className="upload-area">
-              <div className="upload-icon">📷</div>
-              <p>Upload JPG or PNG files</p>
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png"
-                onChange={(e) => updateDealingPerson(index, 'photo', e.target.files[0])}
-                style={{ display: 'none' }}
-                id={`person-photo-${index}`}
-              />
-              <label htmlFor={`person-photo-${index}`} className="btn-secondary">Take Photo</label>
-            </div>
-            {person.photo && (
-              <div className="photo-preview">
-                <img 
-                  src={URL.createObjectURL(person.photo)} 
-                  alt="Person" 
-                  style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                />
-                <button 
-                  type="button"
-                  onClick={() => updateDealingPerson(index, 'photo', null)}
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-
-      <button
-        type="button"
-        onClick={addDealingPerson}
-        className="add-person-btn"
-      >
-        + Add Dealing Person
-      </button>
-    </div>
-  );
-
-  const ContactStep = () => (
-    <div className="step-content">
-      <h2>Transactional Contact</h2>
-
-      <div className="form-group">
-        <label>Mobile</label>
-        <input
-          type="tel"
-          placeholder="10-digit mobile number"
-          value={formData.transactionalMobile}
-          onChange={(e) => handleInputChange('transactionalMobile', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Email</label>
-        <input
-          type="email"
-          placeholder="business@example.com"
-          value={formData.transactionalEmail}
-          onChange={(e) => handleInputChange('transactionalEmail', e.target.value)}
-        />
-      </div>
-
-      <h2 style={{ marginTop: '40px' }}>Shipping Address</h2>
-
-      <div className="form-group">
-        <label>Shop Number / Flat Number</label>
-        <input
-          type="text"
-          placeholder="Shop/Flat Number"
-          value={formData.shopNumber}
-          onChange={(e) => handleInputChange('shopNumber', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Building / Complex Name</label>
-        <input
-          type="text"
-          placeholder="Building or Complex"
-          value={formData.buildingName}
-          onChange={(e) => handleInputChange('buildingName', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Street Address</label>
-        <input
-          type="text"
-          placeholder="Street Address"
-          value={formData.streetAddress}
-          onChange={(e) => handleInputChange('streetAddress', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>City / Village</label>
-        <input
-          type="text"
-          placeholder="City or Village"
-          value={formData.contactCity}
-          onChange={(e) => handleInputChange('contactCity', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label>District</label>
-        <input
-          type="text"
-          placeholder="District"
-          value={formData.contactDistrict}
-          onChange={(e) => handleInputChange('contactDistrict', e.target.value)}
-        />
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <label>State</label>
-          <select
-            value={formData.contactState}
-            onChange={(e) => handleInputChange('contactState', e.target.value)}
-          >
-            <option value="">Select State</option>
-            <option value="andhra-pradesh">Andhra Pradesh</option>
-            <option value="arunachal-pradesh">Arunachal Pradesh</option>
-            <option value="assam">Assam</option>
-            <option value="bihar">Bihar</option>
-            <option value="chhattisgarh">Chhattisgarh</option>
-            <option value="goa">Goa</option>
-            <option value="gujarat">Gujarat</option>
-            <option value="haryana">Haryana</option>
-            <option value="himachal-pradesh">Himachal Pradesh</option>
-            <option value="jharkhand">Jharkhand</option>
-            <option value="karnataka">Karnataka</option>
-            <option value="kerala">Kerala</option>
-            <option value="madhya-pradesh">Madhya Pradesh</option>
-            <option value="maharashtra">Maharashtra</option>
-            <option value="manipur">Manipur</option>
-            <option value="meghalaya">Meghalaya</option>
-            <option value="mizoram">Mizoram</option>
-            <option value="nagaland">Nagaland</option>
-            <option value="odisha">Odisha</option>
-            <option value="punjab">Punjab</option>
-            <option value="rajasthan">Rajasthan</option>
-            <option value="sikkim">Sikkim</option>
-            <option value="tamil-nadu">Tamil Nadu</option>
-            <option value="telangana">Telangana</option>
-            <option value="tripura">Tripura</option>
-            <option value="uttar-pradesh">Uttar Pradesh</option>
-            <option value="uttarakhand">Uttarakhand</option>
-            <option value="west-bengal">West Bengal</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>PIN Code</label>
-          <input
-            type="text"
-            placeholder="PIN Code"
-            value={formData.contactPinCode}
-            onChange={(e) => handleInputChange('contactPinCode', e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-  );
-
-  const BankStep = () => (
-    <div className="step-content">
-      <h2>Organization Bank Details</h2>
-
-      <div className="form-group">
-        <label className="required">Bank Name</label>
-        <select
-          value={formData.bankName}
-          onChange={(e) => handleInputChange('bankName', e.target.value)}
-        >
-          <option value="">Enter bank name</option>
-          <option value="sbi">State Bank of India</option>
-          <option value="hdfc">HDFC Bank</option>
-          <option value="icici">ICICI Bank</option>
-          <option value="axis">Axis Bank</option>
-          <option value="kotak">Kotak Mahindra Bank</option>
-          <option value="pnb">Punjab National Bank</option>
-          <option value="canara">Canara Bank</option>
-          <option value="union">Union Bank of India</option>
-          <option value="bob">Bank of Baroda</option>
-          <option value="indian">Indian Bank</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label className="required">IFSC Code</label>
-        <input
-          type="text"
-          placeholder="e.g. SBIN0001234"
-          value={formData.ifscCode}
-          onChange={(e) => handleInputChange('ifscCode', e.target.value.toUpperCase())}
-        />
-        <small>Format: 4 letters followed by 7 numbers</small>
-      </div>
-
-      <div className="form-group">
-        <label className="required">Account Type</label>
-        <select
-          value={formData.accountType}
-          onChange={(e) => handleInputChange('accountType', e.target.value)}
-        >
-          <option value="">Select account type</option>
-          <option value="savings">Savings Account</option>
-          <option value="current">Current Account</option>
-          <option value="cc">Cash Credit</option>
-          <option value="od">Overdraft</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label className="required">Account Holder Name</label>
-        <input
-          type="text"
-          placeholder="Account holder name"
-          value={formData.accountHolderName}
-          onChange={(e) => handleInputChange('accountHolderName', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="required">Account Number</label>
-        <input
-          type="text"
-          placeholder="Account number"
-          value={formData.accountNumber}
-          onChange={(e) => handleInputChange('accountNumber', e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="required">Confirm Account Number</label>
-        <input
-          type="text"
-          placeholder="Re-enter account number"
-          value={formData.confirmAccountNumber}
-          onChange={(e) => handleInputChange('confirmAccountNumber', e.target.value)}
-        />
-      </div>
-    </div>
-  );
-
-  const SecurityStep = () => (
-    <div className="step-content">
-      <div className="security-section">
-        <h3>Enter Officer ID</h3>
-        <div className="otp-section">
-          <div className="form-group">
-            <label>JMI Officer ID</label>
-            <input
-              type="text"
-              placeholder="Enter ID"
-              value={formData.jmiOfficerID}
-              onChange={(e) => handleInputChange('jmiOfficerID', e.target.value)}
-            />
-          </div>
-          <button type="button" className="send-otp-btn">
-            Send OTP
-          </button>
-        </div>
-      </div>
-
-      <div className="security-section">
-        <h3>Set Private Passkey</h3>
-        <div className="form-group">
-          <label>Private Passkey</label>
-          <input
-            type="password"
-            placeholder="Create a Passkey"
-            value={formData.privatePasskey}
-            onChange={(e) => handleInputChange('privatePasskey', e.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Re-enter Private Passkey</label>
-          <input
-            type="password"
-            placeholder="Re-enter a Passkey"
-            value={formData.confirmPasskey}
-            onChange={(e) => handleInputChange('confirmPasskey', e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  const handleBusinessTypeKeyPress = useCallback((e) => {
+    if (e.key === 'Enter' && e.target.value.trim()) {
+      e.preventDefault();
+      const newType = e.target.value.trim();
+      if (!businessTypes.includes(newType)) {
+        setBusinessTypes(prev => [...prev, newType]);
+      }
+      e.target.value = '';
+    }
+  }, [businessTypes]);
 
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return <BusinessStep />;
+        return (
+          <BusinessStep
+            gstrStatus={gstrStatus}
+            setGstrStatus={setGstrStatus}
+            gstinNumber={gstinNumber}
+            setGstinNumber={setGstinNumber}
+            businessDocuments={businessDocuments}
+            setBusinessDocuments={setBusinessDocuments}
+            organizationPhotos={organizationPhotos}
+            setOrganizationPhotos={setOrganizationPhotos}
+            organizationName={organizationName}
+            setOrganizationName={setOrganizationName}
+            address={address}
+            setAddress={setAddress}
+            city={city}
+            setCity={setCity}
+            district={district}
+            setDistrict={setDistrict}
+            state={state}
+            setState={setState}
+            pinCode={pinCode}
+            setPinCode={setPinCode}
+            organizationContact={organizationContact}
+            setOrganizationContact={setOrganizationContact}
+            organizationEmail={organizationEmail}
+            setOrganizationEmail={setOrganizationEmail}
+            businessTypes={businessTypes}
+            setBusinessTypes={setBusinessTypes}
+            storeLogo={storeLogo}
+            setStoreLogo={setStoreLogo}
+            removeBusinessType={removeBusinessType}
+            removeBusinessDocument={removeBusinessDocument}
+            removeOrganizationPhoto={removeOrganizationPhoto}
+            handleBusinessTypeKeyPress={handleBusinessTypeKeyPress}
+          />
+        );
       case 2:
-        return <PersonStep />;
+        return (
+          <PersonStep
+            dealingPersons={dealingPersons}
+            setDealingPersons={setDealingPersons}
+            addDealingPerson={addDealingPerson}
+            updateDealingPerson={updateDealingPerson}
+            removeDealingPerson={removeDealingPerson}
+          />
+        );
       case 3:
-        return <ContactStep />;
+        return (
+          <ContactStep
+            transactionalMobile={transactionalMobile}
+            setTransactionalMobile={setTransactionalMobile}
+            transactionalEmail={transactionalEmail}
+            setTransactionalEmail={setTransactionalEmail}
+            shopNumber={shopNumber}
+            setShopNumber={setShopNumber}
+            buildingName={buildingName}
+            setBuildingName={setBuildingName}
+            streetAddress={streetAddress}
+            setStreetAddress={setStreetAddress}
+            contactCity={contactCity}
+            setContactCity={setContactCity}
+            contactDistrict={contactDistrict}
+            setContactDistrict={setContactDistrict}
+            contactState={contactState}
+            setContactState={setContactState}
+            contactPinCode={contactPinCode}
+            setContactPinCode={setContactPinCode}
+          />
+        );
       case 4:
-        return <BankStep />;
+        return (
+          <BankStep
+            bankName={bankName}
+            setBankName={setBankName}
+            ifscCode={ifscCode}
+            setIfscCode={setIfscCode}
+            accountType={accountType}
+            setAccountType={setAccountType}
+            accountHolderName={accountHolderName}
+            setAccountHolderName={setAccountHolderName}
+            accountNumber={accountNumber}
+            setAccountNumber={setAccountNumber}
+            confirmAccountNumber={confirmAccountNumber}
+            setConfirmAccountNumber={setConfirmAccountNumber}
+          />
+        );
       case 5:
-        return <SecurityStep />;
+        return (
+          <SecurityStep
+            jmiOfficerID={jmiOfficerID}
+            setJmiOfficerID={setJmiOfficerID}
+            privatePasskey={privatePasskey}
+            setPrivatePasskey={setPrivatePasskey}
+            confirmPasskey={confirmPasskey}
+            setConfirmPasskey={setConfirmPasskey}
+          />
+        );
       default:
-        return <BusinessStep />;
+        return (
+          <BusinessStep
+            gstrStatus={gstrStatus}
+            setGstrStatus={setGstrStatus}
+            gstinNumber={gstinNumber}
+            setGstinNumber={setGstinNumber}
+            businessDocuments={businessDocuments}
+            setBusinessDocuments={setBusinessDocuments}
+            organizationPhotos={organizationPhotos}
+            setOrganizationPhotos={setOrganizationPhotos}
+            organizationName={organizationName}
+            setOrganizationName={setOrganizationName}
+            address={address}
+            setAddress={setAddress}
+            city={city}
+            setCity={setCity}
+            district={district}
+            setDistrict={setDistrict}
+            state={state}
+            setState={setState}
+            pinCode={pinCode}
+            setPinCode={setPinCode}
+            organizationContact={organizationContact}
+            setOrganizationContact={setOrganizationContact}
+            organizationEmail={organizationEmail}
+            setOrganizationEmail={setOrganizationEmail}
+            businessTypes={businessTypes}
+            setBusinessTypes={setBusinessTypes}
+            storeLogo={storeLogo}
+            setStoreLogo={setStoreLogo}
+            removeBusinessType={removeBusinessType}
+            removeBusinessDocument={removeBusinessDocument}
+            removeOrganizationPhoto={removeOrganizationPhoto}
+            handleBusinessTypeKeyPress={handleBusinessTypeKeyPress}
+          />
+        );
     }
   };
 
   return (
-    <div className="seller-registration">
-      <div className="registration-header">
-        <h1>Seller Registration</h1>
+    <div className="seller-registration" style={{
+      maxWidth: '600px',
+      margin: '20px auto',
+      background: '#ffffff',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div className="registration-header" style={{
+        background: '#ffffff',
+        padding: '20px',
+        borderBottom: '1px solid #ddd'
+      }}>
+        <h1 style={{
+          color: '#333',
+          fontSize: '24px',
+          fontWeight: '600',
+          marginBottom: '20px'
+        }}>Seller Registration</h1>
         <StepIndicator steps={steps} currentStep={currentStep} completedSteps={completedSteps} />
       </div>
-      
-      <div className="registration-content">
+
+      <div className="registration-content" style={{ padding: '30px' }}>
         {renderStepContent()}
-        
-        <div className="step-navigation">
-          <button 
-            type="button" 
-            onClick={handlePrevious} 
-            className="btn-outline"
+
+        <div className="step-navigation" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: '40px',
+          paddingTop: '20px',
+          borderTop: '1px solid #ddd'
+        }}>
+          <button
+            type="button"
+            onClick={handlePrevious}
+            style={{
+              background: '#ffffff',
+              color: '#333',
+              border: '1px solid #ddd',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
+              minWidth: '120px',
+              opacity: currentStep === 1 ? 0.5 : 1
+            }}
             disabled={currentStep === 1}
           >
             Previous
           </button>
           {currentStep === 5 ? (
-            <button 
-              type="button" 
-              onClick={handleRegister} 
-              className="btn-primary"
+            <button
+              type="button"
+              onClick={handleRegister}
+              style={{
+                background: loading ? '#e0e0e0' : '#b8860b',
+                color: '#ffffff',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                minWidth: '120px'
+              }}
               disabled={loading}
             >
               {loading ? 'Registering...' : 'Register'}
             </button>
           ) : (
-            <button 
-              type="button" 
-              onClick={handleNext} 
-              className="btn-primary"
+            <button
+              type="button"
+              onClick={handleNext}
+              style={{
+                background: '#b8860b',
+                color: '#ffffff',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                minWidth: '120px'
+              }}
             >
               Next
             </button>
@@ -993,11 +1270,32 @@ const SellerRegistration = () => {
         </div>
 
         {loading && (
-          <div className="upload-progress">
-            <h3>Processing Registration...</h3>
+          <div style={{
+            marginTop: '20px',
+            padding: '20px',
+            background: '#f9f9f9',
+            borderRadius: '8px',
+            border: '1px solid #ddd'
+          }}>
+            <h3 style={{
+              color: '#333',
+              fontSize: '16px',
+              marginBottom: '16px',
+              textAlign: 'center'
+            }}>Processing Registration...</h3>
             {Object.entries(uploadProgress).map(([key, message]) => (
-              <div key={key} className="progress-item">
-                <span className="progress-icon">⏳</span>
+              <div key={key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '8px 0',
+                color: '#666',
+                fontSize: '14px'
+              }}>
+                <span style={{
+                  fontSize: '16px',
+                  animation: 'spin 1s linear infinite'
+                }}>⏳</span>
                 <span>{message}</span>
               </div>
             ))}

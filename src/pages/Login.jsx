@@ -16,6 +16,7 @@ const Login = () => {
 
     try {
       const docRef = doc(db, 'sellers', mobile);
+      
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -30,7 +31,6 @@ const Login = () => {
       }
 
       localStorage.setItem("sellerMobile", mobile); // session
-      alert("Login successful");
       nav("/sellerregistration"); // or wherever your home is
     } catch (err) {
       console.error(err);
