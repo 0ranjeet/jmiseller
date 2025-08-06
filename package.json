@@ -4,9 +4,11 @@
   "private": true,
   "dependencies": {
     "@imagekit/react": "^5.0.1",
+    "axios": "^1.11.0",
     "cra-template-pwa": "2.0.0",
     "firebase": "^12.0.0",
     "imagekit-javascript": "^4.0.1",
+    "lucide-react": "^0.536.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.7.1",

@@ -702,6 +702,7 @@ const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
 ));
 
 const SellerRegistration = () => {
+  const mobile = localStorage.getItem("sellerMobile");
   // Step and progress states
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -821,7 +822,7 @@ const SellerRegistration = () => {
 
   // Save data to Firestore
   const saveToFirestore = useCallback(async (data) => {
-    const mobile = localStorage.getItem("sellerMobile");
+    
     try {
       const docRef = doc(db, 'seller-registrations', mobile);
 

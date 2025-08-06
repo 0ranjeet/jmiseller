@@ -31,7 +31,8 @@ const Login = () => {
       }
 
       localStorage.setItem("sellerMobile", mobile); // session
-      nav("/sellerregistration"); // or wherever your home is
+      nav("/productregistration"); // or wherever your home is
+
     } catch (err) {
       console.error(err);
       alert("Login failed");

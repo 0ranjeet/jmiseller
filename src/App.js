@@ -1,10 +1,16 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Login from './pages/Login';
-import Upload from './pages/Upload';
-import Register from './pages/Register';
-import SellerRegistration from './pages/SellerRegistartion';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Login from "./pages/Login";
+import Upload from "./pages/Upload";
+import Register from "./pages/Register";
+import SellerRegistration from "./pages/SellerRegistartion";
+import ProductRegistration from "./pages/ProductRegistration";
 
 // 🔒 Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -17,9 +23,10 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+
           <Route
             path="/upload"
             element={
@@ -33,6 +40,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SellerRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/productregistration"
+            element={
+              <ProtectedRoute>
+                <ProductRegistration />
               </ProtectedRoute>
             }
           />
