@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Edit, ChevronDown, Upload, Camera } from 'lucide-react';
+import { X, Edit, ChevronDown } from 'lucide-react';
 
 // Firebase imports (using your provided path)
 import { db } from '../services/firebase'; // Assuming this file initializes and exports 'db'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import mangtika from "../category/mangtika.png"
 
 // In a real project, you would import your CSS file like this:
 import './ProductRegistration.css';
@@ -22,9 +23,9 @@ const ProductRegistration = () => {
     setMC: '',
     netGramMC: '',
     specifications: {
-      meenaWork: { wastage: '45', gramRate: '45' },
-      stoneWork: { wastage: '45', gramRate: '45' },
-      otherWork: { wastage: '45', gramRate: '45' }
+      meenaWork: { wastage: '', gramRate: '' },
+      stoneWork: { wastage: '', gramRate: '' },
+      otherWork: { wastage: '', gramRate: '' }
     }
   });
   // const [message, setMessage] = useState('');
@@ -105,9 +106,9 @@ const ProductRegistration = () => {
             setMC: '',
             netGramMC: '',
             specifications: {
-              meenaWork: { wastage: '45', gramRate: '45' },
-              stoneWork: { wastage: '45', gramRate: '45' },
-              otherWork: { wastage: '45', gramRate: '45' }
+              meenaWork: { wastage: '', gramRate: '' },
+              stoneWork: { wastage: '', gramRate: '' },
+              otherWork: { wastage: '', gramRate: '' }
             }
           }
         },
@@ -126,9 +127,9 @@ const ProductRegistration = () => {
               setMC: '',
               netGramMC: '',
               specifications: {
-                meenaWork: { wastage: '45', gramRate: '45' },
-                stoneWork: { wastage: '45', gramRate: '45' },
-                otherWork: { wastage: '45', gramRate: '45' }
+                meenaWork: { wastage: '', gramRate: '' },
+                stoneWork: { wastage: '', gramRate: '' },
+                otherWork: { wastage: '', gramRate: '' }
               }
             }
           };
@@ -383,16 +384,28 @@ const ProductRegistration = () => {
               <label className="form-label" style={{ marginBottom: '10px' }}>
                 Sample Image for {getStyleLabel(currentStyleType)}
               </label>
-              <div className="product-image-upload-area" style={{ margin: '0 auto', width: '100px', height: '100px', backgroundColor: 'var(--primary-color)' }}>
-                {productData[currentProductForDetails][currentStyleType].image ? (
+              <div className="product-image-upload-area">
+                {currentProduct ? (
                   <img
-                    src={productData[currentProductForDetails][currentStyleType].image}
-                    alt="Product Sample"
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/E0E0E0/333333?text=Error'; }}
+                    src={currentProduct.image}
+                    alt={currentProduct.name}
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/60x60/E0E0E0/333333?text=Error'; }}
                   />
                 ) : (
-                  <Upload color="white" size={48} />
+                  <div className="image-container">
+                    <img src={mangtika} alt="Sample demo placeholder" />
+                    <div className="image-overlay">
+                      <p>Upload Sample Demo</p>
+                    </div>
+                  </div>
                 )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, currentProduct.id)}
+
+                  onClick={e => e.stopPropagation()}
+                />
               </div>
             </div>
 
@@ -560,7 +573,7 @@ const ProductRegistration = () => {
 
         <h3 className="section-title">Select Products</h3>
 
-        {selectedCategory ? (
+        {selectedSubcategory ? (
           filteredProducts.length > 0 ? (
             <div style={{ marginBottom: '30px' }}>
               {filteredProducts.map(product => {
@@ -581,7 +594,12 @@ const ProductRegistration = () => {
                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/60x60/E0E0E0/333333?text=Error'; }}
                           />
                         ) : (
-                          <Upload color="#999" size={24} />
+                          <div className="image-container">
+                            <img src={mangtika} alt="Sample demo placeholder" />
+                            <div className="image-overlay">
+                              <p>Upload Sample Demo</p>
+                            </div>
+                          </div>
                         )}
                         <input
                           type="file"
