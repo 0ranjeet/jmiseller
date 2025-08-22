@@ -504,3 +504,139 @@
   font-weight: 500;
   font-size: 14px;
 }
+/* ProductRegistration.css */
+:root {
+  --primary-color: #8A6B32;
+  --primary-light: #a88c5a;
+  --primary-dark: #6b4f20;
+  --secondary-color: #f8f5f0;
+  --text-color: #1a202c;
+  --text-light: #4a5568;
+  --border-color: #e5e7eb;
+  --background-light: #f9fafb;
+  --success-color: #15803d;
+  --danger-color: #dc2626;
+  --warning-color: #d97706;
+}
+
+/* Add these styles to your existing CSS */
+
+/* Category warning styles */
+.category-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  color: #92400e;
+}
+
+.category-warning p {
+  margin: 0;
+}
+
+/* Not configured category button */
+.category-button.not-configured {
+  position: relative;
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.category-button.not-configured:hover {
+  background-color: #fde68a;
+  border-color: #f59e0b;
+}
+
+/* Alert overlay */
+.alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.alert-popup {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.alert-header h3 {
+  margin: 0;
+  color: var(--danger-color);
+}
+
+.alert-content {
+  margin-bottom: 1.5rem;
+}
+
+.alert-content p {
+  margin: 0.5rem 0;
+}
+
+.alert-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.alert-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.alert-button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Limits info in product details */
+.limits-info {
+  background-color: #f0f9ff;
+  border: 1px solid #7dd3fc;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.limits-info h4 {
+  margin: 0 0 0.5rem 0;
+  color: #0369a1;
+}
+
+.limits-info p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+/* Disabled button style */
+.send-to-qc-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.send-to-qc-button:disabled:hover {
+  background-color: #9ca3af;
+}

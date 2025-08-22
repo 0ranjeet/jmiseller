@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Edit, ChevronDown } from 'lucide-react';
+import { X, Edit, ChevronDown, Upload, AlertCircle } from 'lucide-react';
 
-// Firebase imports (using your provided path)
-import { db } from '../services/firebase'; // Assuming this file initializes and exports 'db'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import mangtika from "../category/mangtika.png"
+// Firebase imports
+import { db } from '../services/firebase';
+import { doc, setDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 
-// In a real project, you would import your CSS file like this:
+// Import your CSS file
 import './ProductRegistration.css';
 
 const ProductRegistration = () => {
-  const sellerid = localStorage.getItem("sellerMobile"); // Get seller ID from localStorage
+  const sellerid = localStorage.getItem("sellerMobile");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -23,12 +22,14 @@ const ProductRegistration = () => {
     setMC: '',
     netGramMC: '',
     specifications: {
-      meenaWork: { wastage: '', gramRate: '' },
-      stoneWork: { wastage: '', gramRate: '' },
-      otherWork: { wastage: '', gramRate: '' }
+      meenaWork: { wastage: '45', gramRate: '45' },
+      stoneWork: { wastage: '45', gramRate: '45' },
+      otherWork: { wastage: '45', gramRate: '45' }
     }
   });
-  // const [message, setMessage] = useState('');
+  const [productSpecs, setProductSpecs] = useState([]);
+  const [loadingSpecs, setLoadingSpecs] = useState(true);
+  const [showCategoryAlert, setShowCategoryAlert] = useState(false);
 
   const categories = ['916 HUID', '840 ORNA', '750 HUID', '680', '999 PURE', '875 GOLD', '585 GOLD'];
   const subcategories = ['MACHINE MADE', 'CASTING', 'CNC', 'KANCHIPURAM', 'HANDMADE', 'DESIGNER', 'ANTIQUE'];
@@ -92,11 +93,31 @@ const ProductRegistration = () => {
     },
   ];
 
+  // Fetch product specs from Firebase
+  useEffect(() => {
+    const fetchProductSpecs = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'productSpecs'));
+        const specsData = [];
+        querySnapshot.forEach((doc) => {
+          specsData.push({ id: doc.id, ...doc.data() });
+        });
+        setProductSpecs(specsData);
+        setLoadingSpecs(false);
+      } catch (error) {
+        console.error('Error fetching product specs:', error);
+        setLoadingSpecs(false);
+      }
+    };
+
+    fetchProductSpecs();
+  }, []);
+
   const [productData, setProductData] = useState(() => {
     const initialProductData = {};
     allProducts.forEach(product => {
       initialProductData[product.id] = {
-        selectedStyleType: null, // Track which style type is currently selected for this product
+        selectedStyleType: null,
         regular: {
           selected: false,
           image: null,
@@ -106,15 +127,14 @@ const ProductRegistration = () => {
             setMC: '',
             netGramMC: '',
             specifications: {
-              meenaWork: { wastage: '', gramRate: '' },
-              stoneWork: { wastage: '', gramRate: '' },
-              otherWork: { wastage: '', gramRate: '' }
+              meenaWork: { wastage: '45', gramRate: '45' },
+              stoneWork: { wastage: '45', gramRate: '45' },
+              otherWork: { wastage: '45', gramRate: '45' }
             }
           }
         },
       };
 
-      // Initialize all possible style types
       const allPossibleStyleTypes = ['regular', 'highFancy', 'highFinish', 'lightWeight'];
       allPossibleStyleTypes.forEach(styleType => {
         if (!initialProductData[product.id][styleType]) {
@@ -127,9 +147,9 @@ const ProductRegistration = () => {
               setMC: '',
               netGramMC: '',
               specifications: {
-                meenaWork: { wastage: '', gramRate: '' },
-                stoneWork: { wastage: '', gramRate: '' },
-                otherWork: { wastage: '', gramRate: '' }
+                meenaWork: { wastage: '45', gramRate: '45' },
+                stoneWork: { wastage: '45', gramRate: '45' },
+                otherWork: { wastage: '45', gramRate: '45' }
               }
             }
           };
@@ -139,10 +159,23 @@ const ProductRegistration = () => {
     return initialProductData;
   });
 
-  // This useMemo now filters products based on selected category only
+  // Check if category is configured in product specs
+  const isCategoryConfigured = (category) => {
+    return productSpecs.some(spec => spec.category === category);
+  };
+
+  // Get max values for a category from product specs
+  const getCategoryLimits = (category) => {
+    const categorySpecs = productSpecs.filter(spec => spec.category === category);
+    if (categorySpecs.length === 0) return null;
+    
+    // Return the first spec for this category (you might want to adjust this logic)
+    return categorySpecs[0];
+  };
+
   const filteredProducts = useMemo(() => {
     if (!selectedCategory) {
-      return []; // No products displayed until a category is selected
+      return [];
     }
     return allProducts.filter(
       (product) => product.categoryId === selectedCategory
@@ -160,31 +193,30 @@ const ProductRegistration = () => {
   };
 
   const handleStyleSelect = (productId, styleType) => {
+    // Check if category is configured before allowing selection
+    if (!isCategoryConfigured(selectedCategory)) {
+      setShowCategoryAlert(true);
+      return;
+    }
+
     const newProductData = { ...productData };
     const currentSelectedStyle = newProductData[productId].selectedStyleType;
 
-    // If clicking the same style that's already selected, deselect it
     if (currentSelectedStyle === styleType) {
       newProductData[productId].selectedStyleType = null;
       newProductData[productId][styleType].selected = false;
-
-      // Remove from selected products
       setSelectedProducts(selectedProducts.filter(p => !(p.productId === productId)));
     } else {
-      // Deselect previous style if any
       if (currentSelectedStyle) {
         newProductData[productId][currentSelectedStyle].selected = false;
       }
 
-      // Select new style
       newProductData[productId].selectedStyleType = styleType;
       newProductData[productId][styleType].selected = true;
 
-      // Update selected products list
       const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
       setSelectedProducts([...updatedSelectedProducts, { productId: productId, styleType: styleType }]);
 
-      // Open popup for details if no details exist
       if (!newProductData[productId][styleType].details ||
         !newProductData[productId][styleType].details.purity) {
         setCurrentProductForDetails(productId);
@@ -205,13 +237,17 @@ const ProductRegistration = () => {
     setShowProductDetails(true);
   };
 
-  // Image upload function for the selected style
   const handleImageUpload = async (event, productId) => {
+    // Check if category is configured before allowing upload
+    if (!isCategoryConfigured(selectedCategory)) {
+      setShowCategoryAlert(true);
+      return;
+    }
+
     event.stopPropagation();
     const file = event.target.files[0];
     if (!file) return;
 
-    // Use selected style or default to regular for image upload
     const currentSelectedStyle = productData[productId].selectedStyleType || 'regular';
 
     const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
@@ -233,8 +269,6 @@ const ProductRegistration = () => {
         const newProductData = { ...productData };
         newProductData[productId][currentSelectedStyle].image = data.secure_url;
 
-        // If uploading to regular and no style is selected, don't auto-select regular
-        // If uploading to a selected style, ensure it stays selected
         if (currentSelectedStyle !== 'regular') {
           if (!newProductData[productId][currentSelectedStyle].selected) {
             newProductData[productId].selectedStyleType = currentSelectedStyle;
@@ -268,23 +302,53 @@ const ProductRegistration = () => {
   };
 
   const handleCardClick = (productId) => {
-    // When the main card is clicked, select regular style if no style is selected
+    // Check if category is configured before allowing selection
+    if (!isCategoryConfigured(selectedCategory)) {
+      setShowCategoryAlert(true);
+      return;
+    }
+
     if (!productData[productId].selectedStyleType) {
       handleStyleSelect(productId, 'regular');
     }
   };
 
   const handleSaveProductDetails = () => {
+    const categoryLimits = getCategoryLimits(selectedCategory);
+    
+    // Validate against product specs limits if category is configured
+    if (categoryLimits) {
+      // Validate purity
+      if (parseFloat(productDetails.purity) < parseFloat(categoryLimits.minPurityAllowed) || 
+          parseFloat(productDetails.purity) > parseFloat(categoryLimits.maxPurityAllowed)) {
+        alert(`Purity must be between ${categoryLimits.minPurityAllowed} and ${categoryLimits.maxPurityAllowed}`);
+        return;
+      }
+      
+      // Validate wastage
+      if (parseFloat(productDetails.wastage) > parseFloat(categoryLimits.maxWastageSeller)) {
+        alert(`Wastage cannot exceed ${categoryLimits.maxWastageSeller}%`);
+        return;
+      }
+      
+      // Validate set making charges
+      if (parseFloat(productDetails.setMC) > parseFloat(categoryLimits.maxSetMakingSeller)) {
+        alert(`Set making charges cannot exceed ${categoryLimits.maxSetMakingSeller}%`);
+        return;
+      }
+      
+      // Validate gram making charges
+      if (parseFloat(productDetails.netGramMC) > parseFloat(categoryLimits.maxGramMakingSeller)) {
+        alert(`Gram making charges cannot exceed ${categoryLimits.maxGramMakingSeller}%`);
+        return;
+      }
+    }
+
     const newProductData = { ...productData };
-
-    // Update the details for the current style being edited/saved
     newProductData[currentProductForDetails][currentStyleType].details = { ...productDetails };
-
-    // Ensure the style is marked as selected if details are saved
     newProductData[currentProductForDetails][currentStyleType].selected = true;
     newProductData[currentProductForDetails].selectedStyleType = currentStyleType;
 
-    // Update selected products list
     const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== currentProductForDetails);
     setSelectedProducts([...updatedSelectedProducts, { productId: currentProductForDetails, styleType: currentStyleType }]);
 
@@ -297,8 +361,13 @@ const ProductRegistration = () => {
       return;
     }
 
+    // Check if category is configured before allowing submission
+    if (!isCategoryConfigured(selectedCategory)) {
+      setShowCategoryAlert(true);
+      return;
+    }
+
     try {
-      // Use seller mobile number as document ID
       const docRef = doc(db, 'Prodcutregistrations', sellerid);
 
       const productsToSave = {};
@@ -323,14 +392,16 @@ const ProductRegistration = () => {
         subcategory: selectedSubcategory,
         sellerId: sellerid,
         products: productsToSave,
-        status: 'pending_approval', // Request approval status
+        status: 'pending_approval',
         requestTimestamp: serverTimestamp(),
         approved: false
       }, { merge: true });
 
       console.log('Product data saved to Firestore for approval:', productsToSave);
+      alert('Product registration submitted for approval!');
     } catch (error) {
       console.error('Error sending data for approval:', error);
+      alert('Error submitting product registration. Please try again.');
     }
   };
 
@@ -344,7 +415,6 @@ const ProductRegistration = () => {
 
   const getCurrentImage = (productId) => {
     const selectedStyle = productData[productId].selectedStyleType;
-    // If a style is selected, use that style's image, otherwise use regular's image
     if (selectedStyle) {
       return productData[productId][selectedStyle].image;
     }
@@ -353,7 +423,6 @@ const ProductRegistration = () => {
 
   const getCurrentDetails = (productId) => {
     const selectedStyle = productData[productId].selectedStyleType;
-    // If a style is selected, use that style's details, otherwise use regular's details
     if (selectedStyle) {
       return productData[productId][selectedStyle].details;
     }
@@ -364,6 +433,7 @@ const ProductRegistration = () => {
     if (!showProductDetails) return null;
 
     const currentProduct = allProducts.find(p => p.id === currentProductForDetails);
+    const categoryLimits = getCategoryLimits(selectedCategory);
 
     return (
       <div className="product-details-overlay">
@@ -379,86 +449,91 @@ const ProductRegistration = () => {
           </div>
 
           <div className="popup-content">
-            {/* Display only - no image upload in popup */}
+            {categoryLimits && (
+              <div className="limits-info">
+                <h4>Category Limits:</h4>
+                <p>Purity: {categoryLimits.minPurityAllowed}% - {categoryLimits.maxPurityAllowed}%</p>
+                <p>Max Wastage: {categoryLimits.maxWastageSeller}%</p>
+                <p>Max Set MC: {categoryLimits.maxSetMakingSeller}%</p>
+                <p>Max Gram MC: {categoryLimits.maxGramMakingSeller}%</p>
+              </div>
+            )}
+
             <div className="form-group" style={{ textAlign: 'center', marginBottom: '25px' }}>
               <label className="form-label" style={{ marginBottom: '10px' }}>
                 Sample Image for {getStyleLabel(currentStyleType)}
               </label>
-              <div className="product-image-upload-area">
-                {currentProduct ? (
+              <div className="product-image-upload-area" style={{ margin: '0 auto', width: '100px', height: '100px', backgroundColor: 'var(--primary-color)' }}>
+                {productData[currentProductForDetails][currentStyleType].image ? (
                   <img
-                    src={currentProduct.image}
-                    alt={currentProduct.name}
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/60x60/E0E0E0/333333?text=Error'; }}
+                    src={productData[currentProductForDetails][currentStyleType].image}
+                    alt="Product Sample"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/E0E0E0/333333?text=Error'; }}
                   />
                 ) : (
-                  <div className="image-container">
-                    <img src={mangtika} alt="Sample demo placeholder" />
-                    <div className="image-overlay">
-                      <p>Upload Sample Demo</p>
-                    </div>
-                  </div>
+                  <Upload color="white" size={48} />
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, currentProduct.id)}
-
-                  onClick={e => e.stopPropagation()}
-                />
               </div>
             </div>
 
             <div>
               <div className="form-group">
                 <label className="form-label">
-                  Enter Purity(%)
+                  Enter Purity(%) *
                 </label>
                 <input
-                  type="text"
-                  placeholder="Wet Weight"
+                  type="number"
+                  step="0.1"
+                  placeholder={`Min: ${categoryLimits?.minPurityAllowed || 'N/A'}, Max: ${categoryLimits?.maxPurityAllowed || 'N/A'}`}
                   value={productDetails.purity}
                   onChange={(e) => setProductDetails({ ...productDetails, purity: e.target.value })}
                   className="form-input"
+                  required
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">
-                  Wastage (%)
+                  Wastage (%) *
                 </label>
                 <input
-                  type="text"
-                  placeholder="Wastage"
+                  type="number"
+                  step="0.1"
+                  placeholder={`Max: ${categoryLimits?.maxWastageSeller || 'N/A'}%`}
                   value={productDetails.wastage}
                   onChange={(e) => setProductDetails({ ...productDetails, wastage: e.target.value })}
                   className="form-input"
+                  required
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">
-                  Set MC
+                  Set MC *
                 </label>
                 <input
-                  type="text"
-                  placeholder="Set MC"
+                  type="number"
+                  step="0.1"
+                  placeholder={`Max: ${categoryLimits?.maxSetMakingSeller || 'N/A'}`}
                   value={productDetails.setMC}
                   onChange={(e) => setProductDetails({ ...productDetails, setMC: e.target.value })}
                   className="form-input"
+                  required
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">
-                  Net Gram MC
+                  Net Gram MC *
                 </label>
                 <input
-                  type="text"
-                  placeholder="Net gram MC"
+                  type="number"
+                  step="0.1"
+                  placeholder={`Max: ${categoryLimits?.maxGramMakingSeller || 'N/A'}`}
                   value={productDetails.netGramMC}
                   onChange={(e) => setProductDetails({ ...productDetails, netGramMC: e.target.value })}
                   className="form-input"
+                  required
                 />
               </div>
             </div>
@@ -479,7 +554,8 @@ const ProductRegistration = () => {
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
                   <input
-                    type="text"
+                    type="number"
+                    step="0.1"
                     value={value.wastage}
                     onChange={(e) => setProductDetails({
                       ...productDetails,
@@ -491,7 +567,8 @@ const ProductRegistration = () => {
                     className="spec-input"
                   />
                   <input
-                    type="text"
+                    type="number"
+                    step="0.1"
                     value={value.gramRate}
                     onChange={(e) => setProductDetails({
                       ...productDetails,
@@ -526,6 +603,33 @@ const ProductRegistration = () => {
     );
   };
 
+  const renderCategoryAlert = () => {
+    if (!showCategoryAlert) return null;
+
+    return (
+      <div className="alert-overlay">
+        <div className="alert-popup">
+          <div className="alert-header">
+            <AlertCircle size={24} color="#dc2626" />
+            <h3>Category Not Configured</h3>
+          </div>
+          <div className="alert-content">
+            <p>The selected category "{selectedCategory}" is not configured in the system.</p>
+            <p>Please contact JMI to configure this category before proceeding with product registration.</p>
+          </div>
+          <div className="alert-actions">
+            <button
+              onClick={() => setShowCategoryAlert(false)}
+              className="alert-button"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="app-container">
       <div className="main-content">
@@ -546,9 +650,11 @@ const ProductRegistration = () => {
                   setSelectedCategory(cat);
                   setSelectedSubcategory(null);
                 }}
-                className={`category-button ${selectedCategory === cat ? 'selected' : ''}`}
+                className={`category-button ${selectedCategory === cat ? 'selected' : ''} ${!isCategoryConfigured(cat) ? 'not-configured' : ''}`}
+                title={!isCategoryConfigured(cat) ? 'Category not configured - Contact JMI' : ''}
               >
                 {cat}
+                {!isCategoryConfigured(cat) && <AlertCircle size={14} />}
               </button>
             ))}
           </div>
@@ -573,8 +679,13 @@ const ProductRegistration = () => {
 
         <h3 className="section-title">Select Products</h3>
 
-        {selectedSubcategory ? (
-          filteredProducts.length > 0 ? (
+        {selectedCategory ? (
+          !isCategoryConfigured(selectedCategory) ? (
+            <div className="category-warning">
+              <AlertCircle size={24} />
+              <p>This category is not configured. Please contact JMI to configure "{selectedCategory}" before proceeding.</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div style={{ marginBottom: '30px' }}>
               {filteredProducts.map(product => {
                 const selectedStyle = productData[product.id].selectedStyleType;
@@ -594,12 +705,7 @@ const ProductRegistration = () => {
                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/60x60/E0E0E0/333333?text=Error'; }}
                           />
                         ) : (
-                          <div className="image-container">
-                            <img src={mangtika} alt="Sample demo placeholder" />
-                            <div className="image-overlay">
-                              <p>Upload Sample Demo</p>
-                            </div>
-                          </div>
+                          <Upload color="#999" size={24} />
                         )}
                         <input
                           type="file"
@@ -669,12 +775,17 @@ const ProductRegistration = () => {
 
       <div className="sticky-footer">
         <span className="selected-products-count">Selected: {getTotalSelected()} Products</span>
-        <button className="send-to-qc-button" onClick={handleSendToQC}>
+        <button 
+          className="send-to-qc-button" 
+          onClick={handleSendToQC}
+          disabled={!isCategoryConfigured(selectedCategory)}
+        >
           Request Approval
         </button>
       </div>
 
       {renderProductDetailsPopup()}
+      {renderCategoryAlert()}
     </div>
   );
 };

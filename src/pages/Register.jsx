@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '../services/firebase';
 import './Login.css'; // Reuse styles
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc,collection } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
 const Register = () => {

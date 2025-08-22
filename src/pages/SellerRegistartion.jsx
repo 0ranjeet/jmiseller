@@ -1,6 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
 import { db } from '../services/firebase';
-import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import "./SellerRegistration.css";
 
 // Memoize step components to prevent unnecessary re-renders
