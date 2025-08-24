@@ -14,6 +14,7 @@ import JewelMartProduct from "./pages/AddProduct";
 import Dashboard from "./components/Dashboard";
 import SegmentRegistration from "./pages/SegmentRegistration";
 import MyRegisteredProducts from "./pages/MyregisteredProducts";
+import QCApprovalPage from "./pages/QCApprovalPage";
 
 // 🔒 Protected Route Wrapper - Updated to check localStorage
 function ProtectedRoute({ children }) {
@@ -61,6 +62,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProductRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/QCApprovalPage"
+            element={
+              <ProtectedRoute>
+                <QCApprovalPage />
               </ProtectedRoute>
             }
           />

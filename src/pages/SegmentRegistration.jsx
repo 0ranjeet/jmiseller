@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth } from './firebase-config'; // Adjust path as needed
 import { useNavigate } from 'react-router-dom';
-import { db } from './firebase-config'; // Adjust path as needed
+import { db,auth } from '../services/firebase'; // Adjust path as needed
 import './SegmentRegistration.css';
 // Import JSON files for Terms & Conditions
 import readyServicesTerms from './terms/ready-services.json';

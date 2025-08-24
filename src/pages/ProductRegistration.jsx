@@ -3,8 +3,12 @@ import { X, Edit, ChevronDown, Upload, AlertCircle } from 'lucide-react';
 import { db } from '../services/firebase';
 import { doc, setDoc, serverTimestamp, collection, getDocs,  getDoc } from 'firebase/firestore';
 import './ProductRegistration.css';
+import { useNavigate } from 'react-router-dom';
+
 
 const ProductRegistration = () => {
+  const nav = useNavigate();
+
   const sellerid = localStorage.getItem("sellerMobile");
   const [selectedSegment, setSelectedSegment] = useState('Gold'); // Default to Gold
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -300,7 +304,6 @@ const ProductRegistration = () => {
 
     let maxValue = null;
     let fieldName = '';
-    let limitFieldName = '';
 
     if (field === 'mc') {
         // --- Construct potential field names based on EXACT specType from Firestore ---
@@ -312,15 +315,13 @@ const ProductRegistration = () => {
 
         // First, try the specific field name (e.g., maxMEENAWORKMakingSeller)
         maxValue = categoryLimits[specificFieldName]; // Look for "maxMEENAWORKMakingSeller"
-        limitFieldName = specificFieldName;
         fieldName = 'Specification MC';
 
         // If not found, fallback to the general spec field name (e.g., maxSpecificationMakingSeller)
         // This is the key part: using the correct field name from your example doc
         if (maxValue === undefined || maxValue === null) {
              maxValue = categoryLimits.maxSpecificationMakingSeller; // Look for "maxSpecificationMakingSeller"
-             limitFieldName = 'maxSpecificationMakingSeller'; // Update for error message clarity if needed
-        }
+              }
         // If maxValue is still null/undefined, no limit was found for MC
     } else if (field === 'gramRate') {
         // --- Similar logic for gramRate ---
@@ -328,7 +329,6 @@ const ProductRegistration = () => {
         const specificFieldName = `max${sanitizedSpecType}GramRateSeller`; // "maxMEENAWORKGramRateSeller"
 
         maxValue = categoryLimits[specificFieldName]; // Look for "maxMEENAWORKGramRateSeller"
-        limitFieldName = specificFieldName;
         fieldName = 'Specification Gram Rate';
 
         if (maxValue === undefined || maxValue === null) {
@@ -598,7 +598,7 @@ const ProductRegistration = () => {
 
       console.log('Product registration submitted:', newRegistration);
       alert('Product registration submitted for approval!');
-
+      nav("/QCApprovalPage");
       // Reset form
       setSelectedProducts([]);
       setProductData(() => {
