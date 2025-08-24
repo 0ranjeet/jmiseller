@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from './firebase-config'; // Adjust path as needed
+import { useNavigate } from 'react-router-dom';
+import { db } from './firebase-config'; // Adjust path as needed
 import './SegmentRegistration.css';
 // Import JSON files for Terms & Conditions
 import readyServicesTerms from './terms/ready-services.json';
@@ -14,6 +18,8 @@ const SegmentRegistration = () => {
   const [operatorOtp, setOperatorOtp] = useState(['', '', '', '', '', '']);
   const [showPopup, setShowPopup] = useState(false);
   const [popupContent, setPopupContent] = useState(null);
+  const [segment, setSegment] = useState('gold'); // Added state for segment selection
+  const nav = useNavigate();
 
   // Terms & Conditions mapping to imported JSON files
   const termsAndConditions = {
@@ -45,7 +51,7 @@ const SegmentRegistration = () => {
       setTimeout(() => {
         const fetchedDetails = {
           businessDocuments: ['Document.pdf', 'License.jpg'],
-          organizationPhotos: ['https://placehold.co/80x80/e5e7eb/000000?text=Img1', 'https://placehold.co/80x80/e5e7eb/000000?text=Img2'],
+          organizationPhotos: ['https://placehold.co/80x80/e5e7eb/000000?text=Img1', '  https://placehold.co/80x80/e5e7eb/000000?text=Img2'],
           orgName: 'Golden Jewelry Pvt. Ltd.',
           address: '123, Gold Souk Market',
           city: 'Mumbai',
@@ -102,6 +108,82 @@ const SegmentRegistration = () => {
     }
   };
 
+  // Function to save segment registration data
+  const saveSegmentRegistration = useCallback(async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Create segment registration document
+      const segmentDocRef = doc(db, 'segment-registrations', user.uid);
+      await setDoc(segmentDocRef, {
+        userId: user.uid,
+        segment: segment,
+        operatorId: operatorId,
+        operatorDetails: operatorDetails,
+        services: {
+          readyServices: document.getElementById('ready-services')?.checked || false,
+          orderServices: document.getElementById('order-services')?.checked || false,
+          openMarket: document.getElementById('open-market')?.checked || false
+        },
+        agreedToTerms: document.getElementById('agree')?.checked || false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      // Update user profile
+      const profileRef = doc(db, 'profiles', user.uid);
+      await setDoc(profileRef, {
+        segmentRegistrationCompleted: true,
+        productRegistrationCompleted: false,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      alert("Segment registered successfully!");
+      nav('/productregistration');
+    } catch (error) {
+      console.error('Error saving segment registration:', error);
+      alert("Error registering segment. Please try again.");
+    }
+  }, [segment, operatorId, operatorDetails, nav]);
+
+  const handleSubmit = () => {
+    // Validate required fields
+    if (!operatorId || operatorId.length !== 15) {
+      alert("Please enter a valid Operator ID");
+      return;
+    }
+
+    if (!operatorDetails) {
+      alert("Please fetch operator details first");
+      return;
+    }
+
+    const otpValue = otp.join('');
+    const operatorOtpValue = operatorOtp.join('');
+    
+    if (otpValue.length !== 6) {
+      alert("Please enter a valid OTP");
+      return;
+    }
+
+    if (operatorOtpValue.length !== 6) {
+      alert("Please enter a valid Operator OTP");
+      return;
+    }
+
+    const agreeCheckbox = document.getElementById('agree');
+    if (!agreeCheckbox?.checked) {
+      alert("Please agree to the Terms & Conditions");
+      return;
+    }
+
+    // Save segment registration and navigate
+    saveSegmentRegistration();
+  };
+
   return (
     <div className="segment-registration-container">
       <header className="sticky-header">
@@ -112,7 +194,12 @@ const SegmentRegistration = () => {
           <h2>Segment Information</h2>
           <div className="form-group">
             <label htmlFor="segment">Segment</label>
-            <select id="segment" name="segment">
+            <select 
+              id="segment" 
+              name="segment"
+              value={segment}
+              onChange={(e) => setSegment(e.target.value)}
+            >
               <option value="gold">Gold</option>
               <option value="silver">Silver</option>
               <option value="platinum">Platinum</option>
@@ -303,7 +390,7 @@ const SegmentRegistration = () => {
       </main>
       <footer className="sticky-footer">
         <button className="draft-btn">Save Draft</button>
-        <button className="submit-btn">Submit</button>
+        <button className="submit-btn" onClick={handleSubmit}>Submit</button>
       </footer>
 
       {/* Terms & Conditions Popup */}

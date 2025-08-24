@@ -825,23 +825,35 @@ const SellerRegistration = () => {
   }, [uploadToCloudinary]);
 
   // Save data to Firestore
-  const saveToFirestore = useCallback(async (data) => {
-    
-    try {
-      const docRef = doc(db, 'seller-registrations', mobile);
+const saveToFirestore = useCallback(async (data) => {
+  try {
+    const docRef = doc(db, 'seller-registrations', mobile);
 
-      await setDoc(docRef, {
-        ...data,
-        mobile,
+    // Save seller registration data
+    await setDoc(docRef, {
+      ...data,
+      mobile,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    // Update user profile to indicate completion of seller registration
+    
+    if (mobile) {
+      const profileRef = doc(db, 'profiles', mobile);
+      await setDoc(profileRef, {
+        sellerRegistrationCompleted: true,
+        segmentRegistrationCompleted: false,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      alert("Seller registered!");
-      nav('/segmentregistration')
-    } catch (error) {
-      console.error('Error saving to Firestore:', error);
-      throw error;
     }
-    }, [nav, mobile]);
+
+    alert("Seller registered!");
+    nav('/segmentregistration');
+  } catch (error) {
+    console.error('Error saving to Firestore:', error);
+    throw error;
+  }
+}, [nav, mobile]);
 
 
   const handleNext = useCallback(() => {

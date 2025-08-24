@@ -41,6 +41,7 @@ const Login = () => {
       localStorage.setItem("sellerMobile", mobile);
 
       alert("Login successful");
+      
       nav("/dashboard");
 
 
