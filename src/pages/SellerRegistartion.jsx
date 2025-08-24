@@ -2,6 +2,8 @@ import React, { useState, useCallback, memo } from 'react';
 import { db } from '../services/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import "./SellerRegistration.css";
+import { useNavigate } from 'react-router-dom';
+
 
 // Memoize step components to prevent unnecessary re-renders
 const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNumber, businessDocuments, setBusinessDocuments, organizationPhotos, setOrganizationPhotos, organizationName, setOrganizationName, address, setAddress, city, setCity, district, setDistrict, state, setState, pinCode, setPinCode, organizationContact, setOrganizationContact, organizationEmail, setOrganizationEmail, businessTypes, setBusinessTypes, storeLogo, setStoreLogo, removeBusinessType, removeBusinessDocument, removeOrganizationPhoto, handleBusinessTypeKeyPress }) => (
@@ -702,6 +704,8 @@ const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
 ));
 
 const SellerRegistration = () => {
+  const nav = useNavigate();
+
   const mobile = localStorage.getItem("sellerMobile");
   // Step and progress states
   const [currentStep, setCurrentStep] = useState(1);
@@ -832,11 +836,13 @@ const SellerRegistration = () => {
         updatedAt: serverTimestamp()
       }, { merge: true });
       alert("Seller registered!");
+      nav('/segmentregistration')
     } catch (error) {
       console.error('Error saving to Firestore:', error);
       throw error;
     }
-  }, []);
+    }, [nav, mobile]);
+
 
   const handleNext = useCallback(() => {
     if (currentStep < 5) {
@@ -851,9 +857,7 @@ const SellerRegistration = () => {
     }
   }, [currentStep]);
 
-  const validateForm = useCallback(() => {
-    return true; // Skip validations
-  }, []);
+
 
   const handleRegister = useCallback(async () => {
     setLoading(true);

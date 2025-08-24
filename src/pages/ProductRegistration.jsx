@@ -1,99 +1,131 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Edit, ChevronDown, Upload, AlertCircle } from 'lucide-react';
-
-// Firebase imports
 import { db } from '../services/firebase';
-import { doc, setDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
-
-// Import your CSS file
+import { doc, setDoc, serverTimestamp, collection, getDocs,  getDoc } from 'firebase/firestore';
 import './ProductRegistration.css';
 
 const ProductRegistration = () => {
   const sellerid = localStorage.getItem("sellerMobile");
+  const [selectedSegment, setSelectedSegment] = useState('Gold'); // Default to Gold
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showProductDetails, setShowProductDetails] = useState(false);
   const [currentProductForDetails, setCurrentProductForDetails] = useState(null);
   const [currentStyleType, setCurrentStyleType] = useState('regular');
+
+  // --- Modified productDetails state ---
+  // Added 'specification', 'specificationMC', and 'specificationGramRate' fields
+  // Kept 'setMC' and 'netGramMC' as they are always present per your latest request
   const [productDetails, setProductDetails] = useState({
     purity: '',
     wastage: '',
     setMC: '',
     netGramMC: '',
-    specifications: {
-      meenaWork: { wastage: '45', gramRate: '45' },
-      stoneWork: { wastage: '45', gramRate: '45' },
-      otherWork: { wastage: '45', gramRate: '45' }
-    }
+    specification: 'PLANE', // Default specification
+    specificationMC: '', // For non-PLANE specs
+    specificationGramRate: '', // For non-PLANE specs
+    // image is handled separately in productData
   });
+  // --- End of modification ---
+
   const [productSpecs, setProductSpecs] = useState([]);
   const [loadingSpecs, setLoadingSpecs] = useState(true);
   const [showCategoryAlert, setShowCategoryAlert] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [registeredProducts, setRegisteredProducts] = useState([]);
 
-  const categories = ['916 HUID', '840 ORNA', '750 HUID', '680', '999 PURE', '875 GOLD', '585 GOLD'];
-  const subcategories = ['MACHINE MADE', 'CASTING', 'CNC', 'KANCHIPURAM', 'HANDMADE', 'DESIGNER', 'ANTIQUE'];
+  // Hardcoded double-digit min/max purity values by segment and category
+  const purityLimits = {
+    Gold: {
+      '916 HUID': { min: 91.6, max: 92 },
+      '750 HUID': { min: 72, max: 75 },
+      '840': { min: 80, max: 88 },
+      '650': { min: 60, max: 70 },
+      '480': { min: 45, max: 48 }
+    },
+    Silver: {
+      '925': { min: 90, max: 95 },
+      '999': { min: 95, max: 100 },
+      '800': { min: 75, max: 85 },
+      '900': { min: 85, max: 95 }
+    },
+    Platinum: {
+      '950': { min: 90, max: 98 },
+      '900': { min: 85, max: 95 },
+      '850': { min: 80, max: 90 }
+    },
+    Diamond: {
+      'VS1': { min: 0, max: 100 },
+      'VS2': { min: 0, max: 100 },
+      'VVS1': { min: 0, max: 100 },
+      'VVS2': { min: 0, max: 100 },
+      'SI1': { min: 0, max: 100 },
+      'SI2': { min: 0, max: 100 }
+    },
+    Gems: {
+      'Emerald': { min: 0, max: 100 },
+      'Ruby': { min: 0, max: 100 },
+      'Sapphire': { min: 0, max: 100 },
+      'Topaz': { min: 0, max: 100 }
+    },
+    Pearls: {
+      'Freshwater': { min: 0, max: 100 },
+      'Akoya': { min: 0, max: 100 },
+      'Tahitian': { min: 0, max: 100 },
+      'South Sea': { min: 0, max: 100 }
+    }
+  };
 
-  const allProducts = [
-    {
-      id: 1,
-      name: 'Maang Tika',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=MT',
-      categoryId: '916 HUID',
-      subcategoryId: 'MACHINE MADE',
-      styleTypes: ['highFancy', 'highFinish', 'lightWeight']
-    },
-    {
-      id: 2,
-      name: 'Chhapka',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=CH',
-      categoryId: '916 HUID',
-      subcategoryId: 'MACHINE MADE',
-      styleTypes: ['highFancy', 'highFinish', 'lightWeight']
-    },
-    {
-      id: 3,
-      name: 'Nath',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=NT',
-      categoryId: '916 HUID',
-      subcategoryId: 'MACHINE MADE',
-      styleTypes: ['highFancy', 'highFinish', 'lightWeight']
-    },
-    {
-      id: 4,
-      name: 'Ring',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=RG',
-      categoryId: '840 ORNA',
-      subcategoryId: 'HANDMADE',
-      styleTypes: ['highFancy', 'lightWeight']
-    },
-    {
-      id: 5,
-      name: 'Bracelet',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=BR',
-      categoryId: '840 ORNA',
-      subcategoryId: 'HANDMADE',
-      styleTypes: ['highFinish']
-    },
-    {
-      id: 6,
-      name: 'Necklace',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=NL',
-      categoryId: '750 HUID',
-      subcategoryId: 'DESIGNER',
-      styleTypes: ['highFancy', 'highFinish', 'lightWeight']
-    },
-    {
-      id: 7,
-      name: 'Earrings',
-      image: 'https://placehold.co/60x60/E0E0E0/333333?text=ER',
-      categoryId: '750 HUID',
-      subcategoryId: 'DESIGNER',
-      styleTypes: ['regular', 'highFancy']
-    },
+  const segments = ['Gold', 'Silver', 'Platinum', 'Diamond', 'Gems', 'Pearls'];
+  const categoriesBySegment = {
+    Gold: ['916 HUID', '750 HUID', '840', '650', '480'],
+    Silver: ['925', '999', '800', '900'],
+    Platinum: ['950', '900', '850'],
+    Diamond: ['VS1', 'VS2', 'VVS1', 'VVS2', 'SI1', 'SI2'],
+    Gems: ['Emerald', 'Ruby', 'Sapphire', 'Topaz'],
+    Pearls: ['Freshwater', 'Akoya', 'Tahitian', 'South Sea']
+  };
+  const subcategories = [
+    'KATAKI', 'RAJKOT', 'BOMBAY', 'COIMBATORE', 'KOLKATA', 'CASTING',
+    'MACHINE MADE', 'SOUTH', 'TURKEY', 'CNC', 'ITALIAN', 'SANKHA POLA',
+    'NAKASHI', 'DIECE THUKAI', 'ACCESORIES', 'MARWAD'
   ];
+  const productNames = [
+    'MANGTIKA', 'NATH', 'NOSEPIN', 'MANGAL SUTRA', 'CHAINS', 'DOKIA',
+    'SHORT NECKLACE', 'LONG NECKLACE', 'CHOKKAR', 'CHEEK', 'PENDENTS',
+    'BABY LOCKET', 'GOD LOCKET', 'BAJU BANDH', 'BANGLE', 'SANKHA POLA',
+    'BRASLET & KADA', 'LADIES RING', 'GENTS RING', 'BABY RING',
+    'KAMAR BANDH', 'PAYAL', 'BICHHIYA', 'ACCESORIES'
+  ];
+  const styleTypes = ['regular', 'highFancy', 'highFinish', 'lightWeight'];
+  // --- Modified specifications array to match Firestore exactly, including spaces ---
+  const specifications = ['PLANE', 'MEENA WORK', 'STONE WORK', 'OTHER WORK']; // Specification options
+  // --- End of modification ---
 
-  // Fetch product specs from Firebase
+  const allProducts = useMemo(() => {
+    const products = [];
+    let id = 1;
+    segments.forEach(segment => {
+      categoriesBySegment[segment].forEach(category => {
+        subcategories.forEach(subcategory => {
+          productNames.forEach(name => {
+            products.push({
+              id: id++,
+              name,
+              image: `https://placehold.co/60x60/E0E0E0/333333?text=${name[0]}`,
+              segment,
+              categoryId: category,
+              subcategoryId: subcategory,
+              styleTypes
+            });
+          });
+        });
+      });
+    });
+    return products;
+  }, []);
+
   useEffect(() => {
     const fetchProductSpecs = async () => {
       try {
@@ -109,11 +141,49 @@ const ProductRegistration = () => {
         setLoadingSpecs(false);
       }
     };
-
     fetchProductSpecs();
   }, []);
 
+  useEffect(() => {
+    const fetchRegisteredProducts = async () => {
+      if (!sellerid) return;
+      try {
+        // Fetch the single document for this seller
+        const docRef = doc(db, 'ProductRegistrations', sellerid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          // Extract approved products from the registrations array
+          const approved = data.registrations?.filter(reg => reg.status === 'approved') || [];
+          setRegisteredProducts(approved);
+        }
+      } catch (error) {
+        console.error('Error fetching registered products:', error);
+      }
+    };
+    fetchRegisteredProducts();
+  }, [sellerid]);
+
+  // Effect to handle locking logic for setMC and netGramMC
+  useEffect(() => {
+    // If setMC is filled (and not 0), lock netGramMC to 0
+    if (productDetails.setMC && productDetails.setMC !== '0' && productDetails.setMC !== '') {
+        if (productDetails.netGramMC !== '0') {
+            setProductDetails(prev => ({ ...prev, netGramMC: '0' }));
+        }
+    }
+    // If netGramMC is filled (and not 0), lock setMC to 0
+    else if (productDetails.netGramMC && productDetails.netGramMC !== '0' && productDetails.netGramMC !== '') {
+        if (productDetails.setMC !== '0') {
+            setProductDetails(prev => ({ ...prev, setMC: '0' }));
+        }
+    }
+    // If both are cleared or 0, do nothing (unlocking is handled by onChange)
+  }, [productDetails.setMC, productDetails.netGramMC]); // Dependencies: re-run when these values change
+
   const [productData, setProductData] = useState(() => {
+    // Modified initial structure to match new fields
     const initialProductData = {};
     allProducts.forEach(product => {
       initialProductData[product.id] = {
@@ -126,61 +196,192 @@ const ProductRegistration = () => {
             wastage: '',
             setMC: '',
             netGramMC: '',
-            specifications: {
-              meenaWork: { wastage: '45', gramRate: '45' },
-              stoneWork: { wastage: '45', gramRate: '45' },
-              otherWork: { wastage: '45', gramRate: '45' }
-            }
+            specification: 'PLANE', // Default
+            specificationMC: '',
+            specificationGramRate: ''
+            // Removed old 'specifications' object
           }
         },
-      };
-
-      const allPossibleStyleTypes = ['regular', 'highFancy', 'highFinish', 'lightWeight'];
-      allPossibleStyleTypes.forEach(styleType => {
-        if (!initialProductData[product.id][styleType]) {
-          initialProductData[product.id][styleType] = {
-            selected: false,
-            image: null,
-            details: {
-              purity: '',
-              wastage: '',
-              setMC: '',
-              netGramMC: '',
-              specifications: {
-                meenaWork: { wastage: '45', gramRate: '45' },
-                stoneWork: { wastage: '45', gramRate: '45' },
-                otherWork: { wastage: '45', gramRate: '45' }
-              }
-            }
-          };
+        highFancy: {
+          selected: false,
+          image: null,
+          details: {
+            purity: '',
+            wastage: '',
+            setMC: '',
+            netGramMC: '',
+            specification: 'PLANE', // Default
+            specificationMC: '',
+            specificationGramRate: ''
+          }
+        },
+        highFinish: {
+          selected: false,
+          image: null,
+          details: {
+            purity: '',
+            wastage: '',
+            setMC: '',
+            netGramMC: '',
+            specification: 'PLANE', // Default
+            specificationMC: '',
+            specificationGramRate: ''
+          }
+        },
+        lightWeight: {
+          selected: false,
+          image: null,
+          details: {
+            purity: '',
+            wastage: '',
+            setMC: '',
+            netGramMC: '',
+            specification: 'PLANE', // Default
+            specificationMC: '',
+            specificationGramRate: ''
+          }
         }
-      });
+      };
     });
     return initialProductData;
   });
 
-  // Check if category is configured in product specs
-  const isCategoryConfigured = (category) => {
-    return productSpecs.some(spec => spec.category === category);
+  const isCategoryConfigured = (segment, category, subcategory) => {
+    return productSpecs.some(spec =>
+      spec.segment === segment &&
+      spec.category === category &&
+      spec.productSource === subcategory
+    );
   };
 
-  // Get max values for a category from product specs
-  const getCategoryLimits = (category) => {
-    const categorySpecs = productSpecs.filter(spec => spec.category === category);
-    if (categorySpecs.length === 0) return null;
-    
-    // Return the first spec for this category (you might want to adjust this logic)
-    return categorySpecs[0];
+  // --- Modified getCategoryLimits to potentially consider specification if needed for more granular constraints ---
+  const getCategoryLimits = (segment, category, subcategory, productName, selectedSpecification = null) => {
+    // 1. Try to find limits matching ALL criteria including specification and product name
+    if (selectedSpecification) {
+        const exactSpecMatch = productSpecs.find(spec =>
+            spec.segment === segment &&
+            spec.category === category &&
+            spec.productSource === subcategory &&
+            spec.productName === productName && // Include product name for specificity
+            spec.specification === selectedSpecification // Include selected specification
+        );
+        if (exactSpecMatch) {
+            console.log("Found exact spec match:", exactSpecMatch);
+            return exactSpecMatch;
+        }
+    }
+
+    // 2. Try to find limits matching segment/category/subcategory/productName (ignoring spec for general product rules)
+    const productMatch = productSpecs.find(spec =>
+        spec.segment === segment &&
+        spec.category === category &&
+        spec.productSource === subcategory &&
+        spec.productName === productName
+    );
+    if (productMatch) {
+        console.log("Found product match:", productMatch);
+        return productMatch;
+    }
+
+    // 3. Fallback to general category limits (as before)
+    const categorySpecs = productSpecs.find(spec =>
+      spec.segment === segment &&
+      spec.category === category &&
+      spec.productSource === subcategory
+    );
+    console.log("Found category match or null:", categorySpecs);
+    return categorySpecs || null;
   };
+  // --- End of modification ---
+
+  // --- Modified validateSpecificationConstraint to correctly use the fetched limits ---
+  const validateSpecificationConstraint = (field, value, categoryLimits, specType) => {
+    if (!categoryLimits) return true; // No limits found, assume valid
+
+    let maxValue = null;
+    let fieldName = '';
+    let limitFieldName = '';
+
+    if (field === 'mc') {
+        // --- Construct potential field names based on EXACT specType from Firestore ---
+        // Example: For specType = "MEENA WORK", try:
+        // 1. maxMEENAWORKMakingSeller (if your DB removes spaces and capitalizes)
+        // 2. maxSpecificationMakingSeller (general fallback)
+        const sanitizedSpecType = specType.replace(/\s+/g, '').toUpperCase(); // "MEENAWORK"
+        const specificFieldName = `max${sanitizedSpecType}MakingSeller`; // "maxMEENAWORKMakingSeller"
+
+        // First, try the specific field name (e.g., maxMEENAWORKMakingSeller)
+        maxValue = categoryLimits[specificFieldName]; // Look for "maxMEENAWORKMakingSeller"
+        limitFieldName = specificFieldName;
+        fieldName = 'Specification MC';
+
+        // If not found, fallback to the general spec field name (e.g., maxSpecificationMakingSeller)
+        // This is the key part: using the correct field name from your example doc
+        if (maxValue === undefined || maxValue === null) {
+             maxValue = categoryLimits.maxSpecificationMakingSeller; // Look for "maxSpecificationMakingSeller"
+             limitFieldName = 'maxSpecificationMakingSeller'; // Update for error message clarity if needed
+        }
+        // If maxValue is still null/undefined, no limit was found for MC
+    } else if (field === 'gramRate') {
+        // --- Similar logic for gramRate ---
+        const sanitizedSpecType = specType.replace(/\s+/g, '').toUpperCase(); // "MEENAWORK"
+        const specificFieldName = `max${sanitizedSpecType}GramRateSeller`; // "maxMEENAWORKGramRateSeller"
+
+        maxValue = categoryLimits[specificFieldName]; // Look for "maxMEENAWORKGramRateSeller"
+        limitFieldName = specificFieldName;
+        fieldName = 'Specification Gram Rate';
+
+        if (maxValue === undefined || maxValue === null) {
+             maxValue = categoryLimits.maxSpecificationGramRateSeller; // Look for "maxSpecificationGramRateSeller"
+             
+        }
+        // If maxValue is still null/undefined, no limit was found for Gram Rate
+    }
+
+    // --- Perform validation ---
+    // Ensure maxValue and value are treated as numbers for comparison
+    const numMaxValue = parseFloat(maxValue);
+    const numValue = parseFloat(value);
+
+    if (!isNaN(numMaxValue) && !isNaN(numValue) && numValue > numMaxValue) {
+        return `${fieldName} cannot exceed ${numMaxValue} for ${specType}`;
+    }
+    return true; // Valid or no specific constraint found
+  };
+  // --- End of modification ---
+
+
+  const calculateTotalWastage = (details) => {
+    const baseWastage = parseFloat(details.wastage) || 0;
+    // Specification wastage is not collected separately in this model, assumed to be part of base or implicit
+    return baseWastage;
+  };
+
+  // --- Modified calculateTotalMakingCharges to use the correct MC fields based on specification ---
+  const calculateTotalMakingCharges = (details) => {
+    if (details.specification === 'PLANE') {
+        const setMC = parseFloat(details.setMC) || 0;
+        const netGramMC = parseFloat(details.netGramMC) || 0;
+        return setMC + netGramMC;
+    } else {
+        const specMC = parseFloat(details.specificationMC) || 0;
+        const specGramRate = parseFloat(details.specificationGramRate) || 0;
+        return specMC + specGramRate;
+    }
+  };
+  // --- End of modification ---
 
   const filteredProducts = useMemo(() => {
-    if (!selectedCategory) {
+    if (!selectedSegment || !selectedCategory || !selectedSubcategory) {
       return [];
     }
     return allProducts.filter(
-      (product) => product.categoryId === selectedCategory
+      (product) =>
+        product.segment === selectedSegment &&
+        product.categoryId === selectedCategory &&
+        product.subcategoryId === selectedSubcategory
     );
-  }, [selectedCategory, allProducts]);
+    }, [selectedSegment, selectedCategory, selectedSubcategory, allProducts]);
 
   const getStyleLabel = (style) => {
     const labels = {
@@ -193,15 +394,13 @@ const ProductRegistration = () => {
   };
 
   const handleStyleSelect = (productId, styleType) => {
-    // Check if category is configured before allowing selection
-    if (!isCategoryConfigured(selectedCategory)) {
+    const product = allProducts.find(p => p.id === productId);
+    if (!isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)) {
       setShowCategoryAlert(true);
       return;
     }
-
     const newProductData = { ...productData };
     const currentSelectedStyle = newProductData[productId].selectedStyleType;
-
     if (currentSelectedStyle === styleType) {
       newProductData[productId].selectedStyleType = null;
       newProductData[productId][styleType].selected = false;
@@ -210,22 +409,24 @@ const ProductRegistration = () => {
       if (currentSelectedStyle) {
         newProductData[productId][currentSelectedStyle].selected = false;
       }
-
       newProductData[productId].selectedStyleType = styleType;
       newProductData[productId][styleType].selected = true;
-
       const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
-      setSelectedProducts([...updatedSelectedProducts, { productId: productId, styleType: styleType }]);
-
+      setSelectedProducts([...updatedSelectedProducts, {
+        productId: productId,
+        styleType: styleType,
+        productName: product.name
+      }]);
+      // Set default specification when opening details for the first time
       if (!newProductData[productId][styleType].details ||
         !newProductData[productId][styleType].details.purity) {
         setCurrentProductForDetails(productId);
         setCurrentStyleType(styleType);
-        setProductDetails({ ...newProductData[productId][styleType].details });
+        // Ensure default specification is set
+        setProductDetails({ ...newProductData[productId][styleType].details, specification: 'PLANE' });
         setShowProductDetails(true);
       }
     }
-
     setProductData(newProductData);
   };
 
@@ -235,46 +436,43 @@ const ProductRegistration = () => {
     setCurrentStyleType(styleType);
     setProductDetails(detailsToEdit);
     setShowProductDetails(true);
+    setValidationErrors({});
   };
 
   const handleImageUpload = async (event, productId) => {
-    // Check if category is configured before allowing upload
-    if (!isCategoryConfigured(selectedCategory)) {
+    if (!isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)) {
       setShowCategoryAlert(true);
       return;
     }
-
     event.stopPropagation();
     const file = event.target.files[0];
     if (!file) return;
-
     const currentSelectedStyle = productData[productId].selectedStyleType || 'regular';
-
     const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
     const CLOUDINARY_UPLOAD_PRESET = "jmiseller";
     const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
     try {
       const response = await fetch(CLOUDINARY_API_URL, {
         method: 'POST',
         body: formData
       });
       const data = await response.json();
-
       if (data.secure_url) {
         const newProductData = { ...productData };
         newProductData[productId][currentSelectedStyle].image = data.secure_url;
-
         if (currentSelectedStyle !== 'regular') {
           if (!newProductData[productId][currentSelectedStyle].selected) {
             newProductData[productId].selectedStyleType = currentSelectedStyle;
             newProductData[productId][currentSelectedStyle].selected = true;
             const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
-            setSelectedProducts([...updatedSelectedProducts, { productId: productId, styleType: currentSelectedStyle }]);
+            setSelectedProducts([...updatedSelectedProducts, {
+              productId: productId,
+              styleType: currentSelectedStyle,
+              productName: allProducts.find(p => p.id === productId)?.name
+            }]);
           }
         }
         setProductData(newProductData);
@@ -292,7 +490,11 @@ const ProductRegistration = () => {
             newProductData[productId].selectedStyleType = currentSelectedStyle;
             newProductData[productId][currentSelectedStyle].selected = true;
             const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
-            setSelectedProducts([...updatedSelectedProducts, { productId: productId, styleType: currentSelectedStyle }]);
+            setSelectedProducts([...updatedSelectedProducts, {
+              productId: productId,
+              styleType: currentSelectedStyle,
+              productName: allProducts.find(p => p.id === productId)?.name
+            }]);
           }
         }
         setProductData(newProductData);
@@ -302,108 +504,252 @@ const ProductRegistration = () => {
   };
 
   const handleCardClick = (productId) => {
-    // Check if category is configured before allowing selection
-    if (!isCategoryConfigured(selectedCategory)) {
+    if (!isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)) {
       setShowCategoryAlert(true);
       return;
     }
-
     if (!productData[productId].selectedStyleType) {
       handleStyleSelect(productId, 'regular');
     }
   };
 
-  const handleSaveProductDetails = () => {
-    const categoryLimits = getCategoryLimits(selectedCategory);
-    
-    // Validate against product specs limits if category is configured
-    if (categoryLimits) {
-      // Validate purity
-      if (parseFloat(productDetails.purity) < parseFloat(categoryLimits.minPurityAllowed) || 
-          parseFloat(productDetails.purity) > parseFloat(categoryLimits.maxPurityAllowed)) {
-        alert(`Purity must be between ${categoryLimits.minPurityAllowed} and ${categoryLimits.maxPurityAllowed}`);
-        return;
-      }
-      
-      // Validate wastage
-      if (parseFloat(productDetails.wastage) > parseFloat(categoryLimits.maxWastageSeller)) {
-        alert(`Wastage cannot exceed ${categoryLimits.maxWastageSeller}%`);
-        return;
-      }
-      
-      // Validate set making charges
-      if (parseFloat(productDetails.setMC) > parseFloat(categoryLimits.maxSetMakingSeller)) {
-        alert(`Set making charges cannot exceed ${categoryLimits.maxSetMakingSeller}%`);
-        return;
-      }
-      
-      // Validate gram making charges
-      if (parseFloat(productDetails.netGramMC) > parseFloat(categoryLimits.maxGramMakingSeller)) {
-        alert(`Gram making charges cannot exceed ${categoryLimits.maxGramMakingSeller}%`);
-        return;
-      }
-    }
-
-    const newProductData = { ...productData };
-    newProductData[currentProductForDetails][currentStyleType].details = { ...productDetails };
-    newProductData[currentProductForDetails][currentStyleType].selected = true;
-    newProductData[currentProductForDetails].selectedStyleType = currentStyleType;
-
-    const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== currentProductForDetails);
-    setSelectedProducts([...updatedSelectedProducts, { productId: currentProductForDetails, styleType: currentStyleType }]);
-
-    setProductData(newProductData);
-    setShowProductDetails(false);
-  };
-
   const handleSendToQC = async () => {
     if (!sellerid) {
+      alert('Seller ID not found. Please log in again.');
       return;
     }
 
-    // Check if category is configured before allowing submission
-    if (!isCategoryConfigured(selectedCategory)) {
+    if (!isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)) {
       setShowCategoryAlert(true);
       return;
     }
 
+    if (selectedProducts.length === 0) {
+      alert('Please select at least one product with details before submitting.');
+      return;
+    }
+
     try {
-      const docRef = doc(db, 'Prodcutregistrations', sellerid);
+      const timestamp = Date.now();
+      const docRef = doc(db, 'ProductRegistrations', sellerid);
 
-      const productsToSave = {};
-      for (const productId in productData) {
-        const productInfo = allProducts.find(p => p.id === parseInt(productId));
-        const selectedStyle = productData[productId].selectedStyleType;
-
-        if (productInfo && selectedStyle && productData[productId][selectedStyle].selected) {
-          const styleData = productData[productId][selectedStyle];
-          productsToSave[productInfo.name] = {
-            selectedStyleType: selectedStyle,
-            styleData: {
-              details: styleData.details,
-              image: styleData.image || null
-            }
-          };
-        }
-      }
-
-      await setDoc(docRef, {
+      // Create the new registration entry
+      const newRegistration = {
+        registrationId: `${sellerid}_${timestamp}`, // Unique ID for this registration
+        segment: selectedSegment,
         category: selectedCategory,
         subcategory: selectedSubcategory,
-        sellerId: sellerid,
-        products: productsToSave,
         status: 'pending_approval',
-        requestTimestamp: serverTimestamp(),
-        approved: false
-      }, { merge: true });
+        approved: false,
+        requestTimestamp: new Date(), // Use regular Date instead of serverTimestamp() in arrays
+        products: {}
+      };
 
-      console.log('Product data saved to Firestore for approval:', productsToSave);
+      // Process each selected product
+      selectedProducts.forEach(({ productId, styleType, productName }) => {
+        const product = allProducts.find(p => p.id === productId);
+        const styleData = productData[productId][styleType];
+
+        if (styleData.selected && styleData.details.purity) {
+          // Format data for this specific product according to your schema
+          newRegistration.products[productName] = {
+            productId: productId,
+            purity: styleData.details.purity,
+            wastage: styleData.details.wastage,
+            setMC: styleData.details.setMC,
+            netGramMC: styleData.details.netGramMC,
+            specification: styleData.details.specification,
+            specificationMC: styleData.details.specificationMC || "",
+            specificationGramRate: styleData.details.specificationGramRate || "",
+            image: styleData.image || "",
+            selectedStyleType: styleType
+          };
+        }
+      });
+
+      if (Object.keys(newRegistration.products).length === 0) {
+        alert('No valid products with complete details selected.');
+        return;
+      }
+
+      // Check if document exists first
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        // Document exists, add to the registrations array
+        const currentData = docSnap.data();
+        const updatedData = {
+          ...currentData,
+          sellerId: sellerid, // Ensure sellerId is always present
+          registrations: [...(currentData.registrations || []), newRegistration],
+          lastUpdated: serverTimestamp()
+        };
+        await setDoc(docRef, updatedData);
+      } else {
+        // Document doesn't exist, create new one
+        const initialData = {
+          sellerId: sellerid,
+          registrations: [newRegistration],
+          createdAt: new Date(), // Use regular Date instead of serverTimestamp()
+          lastUpdated: new Date() // Use regular Date instead of serverTimestamp()
+        };
+        await setDoc(docRef, initialData);
+      }
+
+      console.log('Product registration submitted:', newRegistration);
       alert('Product registration submitted for approval!');
+
+      // Reset form
+      setSelectedProducts([]);
+      setProductData(() => {
+        // Reset to initial state with default specification
+        const initialProductData = {};
+        allProducts.forEach(product => {
+          initialProductData[product.id] = {
+            selectedStyleType: null,
+            regular: {
+              selected: false,
+              image: null,
+              details: {
+                purity: '',
+                wastage: '',
+                setMC: '',
+                netGramMC: '',
+                specification: 'PLANE',
+                specificationMC: '',
+                specificationGramRate: ''
+              }
+            },
+            highFancy: {
+              selected: false,
+              image: null,
+              details: {
+                purity: '',
+                wastage: '',
+                setMC: '',
+                netGramMC: '',
+                specification: 'PLANE',
+                specificationMC: '',
+                specificationGramRate: ''
+              }
+            },
+            highFinish: {
+              selected: false,
+              image: null,
+              details: {
+                purity: '',
+                wastage: '',
+                setMC: '',
+                netGramMC: '',
+                specification: 'PLANE',
+                specificationMC: '',
+                specificationGramRate: ''
+              }
+            },
+            lightWeight: {
+              selected: false,
+              image: null,
+              details: {
+                purity: '',
+                wastage: '',
+                setMC: '',
+                netGramMC: '',
+                specification: 'PLANE',
+                specificationMC: '',
+                specificationGramRate: ''
+              }
+            }
+          };
+        });
+        return initialProductData;
+      });
     } catch (error) {
       console.error('Error sending data for approval:', error);
       alert('Error submitting product registration. Please try again.');
     }
   };
+
+  const handleSaveProductDetails = () => {
+    const currentProduct = allProducts.find(p => p.id === currentProductForDetails);
+    // --- Pass the selected specification and product name to getCategoryLimits ---
+    const categoryLimits = getCategoryLimits(
+        selectedSegment,
+        selectedCategory,
+        selectedSubcategory,
+        currentProduct.name, // Pass product name
+        productDetails.specification // Pass selected specification
+    );
+    // --- End of modification ---
+    const errors = {};
+
+    // Get purity limits for the selected segment and category
+    const segmentPurityLimits = purityLimits[selectedSegment] || {};
+    const categoryPurityLimits = segmentPurityLimits[selectedCategory] || { min: 0, max: 100 };
+
+    // Validate purity based on hardcoded segment/category limits
+    if (parseFloat(productDetails.purity) < categoryPurityLimits.min ||
+        parseFloat(productDetails.purity) > categoryPurityLimits.max) {
+      errors.purity = `Purity must be between ${categoryPurityLimits.min} and ${categoryPurityLimits.max} for ${selectedSegment} - ${selectedCategory}`;
+    }
+
+    if (categoryLimits) {
+      // Validate base wastage
+      const totalWastage = calculateTotalWastage(productDetails);
+      if (totalWastage > parseFloat(categoryLimits.maxWastageSeller)) {
+        errors.totalWastage = `Total wastage (${totalWastage.toFixed(2)}%) cannot exceed ${categoryLimits.maxWastageSeller}%`;
+      }
+
+      if (productDetails.specification === 'PLANE') {
+        // Validate set MC and netGramMC for PLANE using ProductConstraints field names
+        if (parseFloat(productDetails.setMC) > parseFloat(categoryLimits.maxSetMakingSeller)) {
+          errors.setMC = `Set making charges cannot exceed ${categoryLimits.maxSetMakingSeller}`;
+        }
+        if (parseFloat(productDetails.netGramMC) > parseFloat(categoryLimits.maxGramMakingSeller)) {
+          errors.netGramMC = `Net Gram MC cannot exceed ${categoryLimits.maxGramMakingSeller}`;
+        }
+        
+
+      } else {
+        // Validate specification-specific MC and Gram Rate for non-PLANE
+        // --- Use the potentially more specific limits fetched by getCategoryLimits ---
+        const specType = productDetails.specification; // This will be "MEENA WORK" etc.
+        const specMCError = validateSpecificationConstraint('mc', productDetails.specificationMC, categoryLimits, specType);
+        if (specMCError !== true) {
+            errors.specificationMC = specMCError;
+        }
+        const specGramRateError = validateSpecificationConstraint('gramRate', productDetails.specificationGramRate, categoryLimits, specType);
+        if (specGramRateError !== true) {
+            errors.specificationGramRate = specGramRateError;
+        }
+        // Validate total MC for non-PLANE if needed (assuming a total MC limit exists)
+        // if (totalMakingCharges > parseFloat(categoryLimits.maxTotalMakingSeller)) {
+        //   errors.totalMaking = `Total making charges (${totalMakingCharges.toFixed(2)}) cannot exceed ${categoryLimits.maxTotalMakingSeller}`;
+        // }
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors({});
+    const newProductData = { ...productData };
+    newProductData[currentProductForDetails][currentStyleType].details = { ...productDetails };
+    newProductData[currentProductForDetails][currentStyleType].selected = true;
+    newProductData[currentProductForDetails].selectedStyleType = currentStyleType; // Ensure style is set
+
+    const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== currentProductForDetails);
+    setSelectedProducts([...updatedSelectedProducts, {
+      productId: currentProductForDetails,
+      styleType: currentStyleType,
+      productName: allProducts.find(p => p.id === currentProductForDetails)?.name
+    }]);
+
+    setProductData(newProductData);
+    setShowProductDetails(false);
+  };
+
 
   const getTotalSelected = () => {
     return selectedProducts.length;
@@ -433,7 +779,55 @@ const ProductRegistration = () => {
     if (!showProductDetails) return null;
 
     const currentProduct = allProducts.find(p => p.id === currentProductForDetails);
-    const categoryLimits = getCategoryLimits(selectedCategory);
+    // --- Pass the selected specification and product name to getCategoryLimits ---
+    const categoryLimits = getCategoryLimits(
+        selectedSegment,
+        selectedCategory,
+        selectedSubcategory,
+        currentProduct.name, // Pass product name
+        productDetails.specification // Pass selected specification
+    );
+    // --- End of modification ---
+    const segmentPurityLimits = purityLimits[selectedSegment] || {};
+    const categoryPurityLimits = segmentPurityLimits[selectedCategory] || { min: 0, max: 100 };
+    const totalWastage = calculateTotalWastage(productDetails);
+    const totalMakingCharges = calculateTotalMakingCharges(productDetails);
+
+    // Handler for specification change to reset related fields
+    const handleSpecificationChange = (e) => {
+        const newSpec = e.target.value;
+        setProductDetails(prev => ({
+            ...prev,
+            specification: newSpec,
+            // Reset fields that are not relevant for the new spec
+            ...(newSpec === 'PLANE' ? {
+                specificationMC: '',
+                specificationGramRate: ''
+            } : {
+                // Optionally reset setMC/netGramMC if switching from PLANE,
+                // but locking logic handles their values.
+                // setMC: '',
+                // netGramMC: ''
+            })
+        }));
+    };
+
+    // Handler for MC field changes with locking logic
+    const handleMCChange = (field, value) => {
+        let updatedDetails = { ...productDetails };
+        updatedDetails[field] = value;
+
+        // If the changed field has a value (and it's not '0'), set the other to '0'
+        if (field === 'setMC' && value !== '' && value !== '0') {
+            updatedDetails.netGramMC = '0';
+        } else if (field === 'netGramMC' && value !== '' && value !== '0') {
+            updatedDetails.setMC = '0';
+        }
+        // If the changed field is cleared or set to '0', do not automatically change the other
+        // This allows the user to clear both if needed.
+
+        setProductDetails(updatedDetails);
+    };
 
     return (
       <div className="product-details-overlay">
@@ -449,16 +843,6 @@ const ProductRegistration = () => {
           </div>
 
           <div className="popup-content">
-            {categoryLimits && (
-              <div className="limits-info">
-                <h4>Category Limits:</h4>
-                <p>Purity: {categoryLimits.minPurityAllowed}% - {categoryLimits.maxPurityAllowed}%</p>
-                <p>Max Wastage: {categoryLimits.maxWastageSeller}%</p>
-                <p>Max Set MC: {categoryLimits.maxSetMakingSeller}%</p>
-                <p>Max Gram MC: {categoryLimits.maxGramMakingSeller}%</p>
-              </div>
-            )}
-
             <div className="form-group" style={{ textAlign: 'center', marginBottom: '25px' }}>
               <label className="form-label" style={{ marginBottom: '10px' }}>
                 Sample Image for {getStyleLabel(currentStyleType)}
@@ -477,25 +861,24 @@ const ProductRegistration = () => {
             </div>
 
             <div>
+              {/* Purity */}
               <div className="form-group">
-                <label className="form-label">
-                  Enter Purity(%) *
-                </label>
+                <label className="form-label">Enter Purity(%) *</label>
                 <input
                   type="number"
                   step="0.1"
-                  placeholder={`Min: ${categoryLimits?.minPurityAllowed || 'N/A'}, Max: ${categoryLimits?.maxPurityAllowed || 'N/A'}`}
+                  placeholder={`Min: ${categoryPurityLimits.min}, Max: ${categoryPurityLimits.max}`}
                   value={productDetails.purity}
                   onChange={(e) => setProductDetails({ ...productDetails, purity: e.target.value })}
                   className="form-input"
                   required
                 />
+                {validationErrors.purity && <span className="error-message">{validationErrors.purity}</span>}
               </div>
 
+              {/* Wastage */}
               <div className="form-group">
-                <label className="form-label">
-                  Wastage (%) *
-                </label>
+                <label className="form-label">Wastage (%) *</label>
                 <input
                   type="number"
                   step="0.1"
@@ -505,85 +888,105 @@ const ProductRegistration = () => {
                   className="form-input"
                   required
                 />
+                {validationErrors.wastage && <span className="error-message">{validationErrors.wastage}</span>}
               </div>
+                  <div className="form-group">
+                    <label className="form-label">Set MC *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder={`Max: ${categoryLimits?.maxSetMakingSeller || 'N/A'}`}
+                      value={productDetails.setMC}
+                      onChange={(e) => handleMCChange('setMC', e.target.value)} // Use custom handler
+                      className="form-input"
+                      required
+                    />
+                    {validationErrors.setMC && <span className="error-message">{validationErrors.setMC}</span>}
+                  </div>
 
+                  <div className="form-group">
+                    <label className="form-label">Net Gram MC *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder={`Max: ${categoryLimits?.maxGramMakingSeller || 'N/A'}`}
+                      value={productDetails.netGramMC}
+                      onChange={(e) => handleMCChange('netGramMC', e.target.value)} // Use custom handler
+                      className="form-input"
+                      required
+                    />
+                    {validationErrors.netGramMC && <span className="error-message">{validationErrors.netGramMC}</span>}
+                  </div>
+                   {/* Specification Dropdown */}
               <div className="form-group">
-                <label className="form-label">
-                  Set MC *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder={`Max: ${categoryLimits?.maxSetMakingSeller || 'N/A'}`}
-                  value={productDetails.setMC}
-                  onChange={(e) => setProductDetails({ ...productDetails, setMC: e.target.value })}
+                <label className="form-label">Specification *</label>
+                <select
+                  value={productDetails.specification}
+                  onChange={handleSpecificationChange} // Use custom handler
                   className="form-input"
                   required
-                />
+                >
+                  <option value="">Select Specification</option>
+                  {specifications.map(spec => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
+                {validationErrors.specification && <span className="error-message">{validationErrors.specification}</span>}
               </div>
+               {productDetails.specification !== 'PLANE' ? (
+                // Fields for non-PLANE specifications
+                <>
+                 <div className="form-group">
+                    <label className="form-label">Specification MC</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      // --- Improved placeholder to show the correct limit ---
+                      placeholder={`Max: ${categoryLimits?.maxSpecificationMakingSeller || 'N/A'}`}
+                      value={productDetails.specificationMC}
+                      onChange={(e) => setProductDetails({ ...productDetails, specificationMC: e.target.value })}
+                      className="form-input"
+                    />
+                    {validationErrors.specificationMC && <span className="error-message">{validationErrors.specificationMC}</span>}
+                  </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  Net Gram MC *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder={`Max: ${categoryLimits?.maxGramMakingSeller || 'N/A'}`}
-                  value={productDetails.netGramMC}
-                  onChange={(e) => setProductDetails({ ...productDetails, netGramMC: e.target.value })}
-                  className="form-input"
-                  required
-                />
-              </div>
+                  <div className="form-group">
+                    <label className="form-label">Specification Gram Rate</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      // --- Improved placeholder to show the correct limit ---
+                      placeholder={`Max: ${categoryLimits?.maxSpecificationGramRateSeller || 'N/A'}`}
+                      value={productDetails.specificationGramRate}
+                      onChange={(e) => setProductDetails({ ...productDetails, specificationGramRate: e.target.value })}
+                      className="form-input"
+                    />
+                    {validationErrors.specificationGramRate && <span className="error-message">{validationErrors.specificationGramRate}</span>}
+                  </div>
+                </>
+              ):""}
             </div>
 
-            <div className="specifications-section">
-              <h4 className="specifications-title">
-                Specification
-              </h4>
-              <div className="specifications-grid-header">
-                <div></div>
-                <div style={{ textAlign: 'center' }}>Wastage %</div>
-                <div style={{ textAlign: 'center' }}>Gram Rate</div>
+            {/* Totals Section */}
+            <div className="totals-section">
+              <div className="total-row">
+                <span className="total-label">Total Wastage:</span>
+                <span className="total-value">{totalWastage.toFixed(2)}%</span>
               </div>
-
-              {Object.entries(productDetails.specifications || {}).map(([key, value]) => (
-                <div key={key} className="specifications-row">
-                  <div className="spec-label">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}
-                  </div>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={value.wastage}
-                    onChange={(e) => setProductDetails({
-                      ...productDetails,
-                      specifications: {
-                        ...productDetails.specifications,
-                        [key]: { ...value, wastage: e.target.value }
-                      }
-                    })}
-                    className="spec-input"
-                  />
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={value.gramRate}
-                    onChange={(e) => setProductDetails({
-                      ...productDetails,
-                      specifications: {
-                        ...productDetails.specifications,
-                        [key]: { ...value, gramRate: e.target.value }
-                      }
-                    })}
-                    className="spec-input"
-                  />
-                </div>
-              ))}
+              <div className="total-row">
+                <span className="total-label">Total Making Charges:</span>
+                <span className="total-value">{totalMakingCharges.toFixed(2)}</span>
+              </div>
+              {validationErrors.totalWastage && (
+                <div className="error-message total-error">{validationErrors.totalWastage}</div>
+              )}
+              {validationErrors.totalMaking && (
+                <div className="error-message total-error">{validationErrors.totalMaking}</div>
+              )}
             </div>
           </div>
 
+          {/* Popup Actions */}
           <div className="popup-actions">
             <button
               onClick={() => setShowProductDetails(false)}
@@ -594,6 +997,7 @@ const ProductRegistration = () => {
             <button
               onClick={handleSaveProductDetails}
               className="popup-confirm-button"
+              disabled={Object.keys(validationErrors).length > 0}
             >
               Confirm
             </button>
@@ -605,7 +1009,6 @@ const ProductRegistration = () => {
 
   const renderCategoryAlert = () => {
     if (!showCategoryAlert) return null;
-
     return (
       <div className="alert-overlay">
         <div className="alert-popup">
@@ -614,8 +1017,8 @@ const ProductRegistration = () => {
             <h3>Category Not Configured</h3>
           </div>
           <div className="alert-content">
-            <p>The selected category "{selectedCategory}" is not configured in the system.</p>
-            <p>Please contact JMI to configure this category before proceeding with product registration.</p>
+            <p>The selected combination "{selectedSegment} / {selectedCategory} / {selectedSubcategory}" is not configured in the system.</p>
+            <p>Please contact JMI to configure this combination before proceeding with product registration.</p>
           </div>
           <div className="alert-actions">
             <button
@@ -633,32 +1036,47 @@ const ProductRegistration = () => {
   return (
     <div className="app-container">
       <div className="main-content">
-        <h2 className="main-heading">
-          Register Product Category
-        </h2>
-        <p className="sub-heading">
-          Choose your product category, sub-type, and styles to begin listing.
-        </p>
+        <h2 className="main-heading">Register Product Category</h2>
+        <p className="sub-heading">Choose your product category, sub-type, and styles to begin listing.</p>
 
         <div className="form-group">
-          <label className="form-label">Category</label>
+          <label className="form-label">Segment</label>
           <div className="horizontal-scroll-container">
-            {categories.map(cat => (
+            {segments.map(segment => (
               <button
-                key={cat}
+                key={segment}
                 onClick={() => {
-                  setSelectedCategory(cat);
+                  setSelectedSegment(segment);
+                  setSelectedCategory(null);
                   setSelectedSubcategory(null);
                 }}
-                className={`category-button ${selectedCategory === cat ? 'selected' : ''} ${!isCategoryConfigured(cat) ? 'not-configured' : ''}`}
-                title={!isCategoryConfigured(cat) ? 'Category not configured - Contact JMI' : ''}
+                className={`category-button ${selectedSegment === segment ? 'selected' : ''}`}
               >
-                {cat}
-                {!isCategoryConfigured(cat) && <AlertCircle size={14} />}
+                {segment}
               </button>
             ))}
           </div>
         </div>
+
+        {selectedSegment && (
+          <div className="form-group">
+            <label className="form-label">Category</label>
+            <div className="horizontal-scroll-container">
+              {categoriesBySegment[selectedSegment].map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setSelectedSubcategory(null);
+                  }}
+                  className={`category-button ${selectedCategory === cat ? 'selected' : ''}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {selectedCategory && (
           <div className="form-group">
@@ -668,9 +1086,11 @@ const ProductRegistration = () => {
                 <button
                   key={sub}
                   onClick={() => setSelectedSubcategory(sub)}
-                  className={`category-button ${selectedSubcategory === sub ? 'selected' : ''}`}
+                  className={`category-button ${selectedSubcategory === sub ? 'selected' : ''} ${!isCategoryConfigured(selectedSegment, selectedCategory, sub) ? 'not-configured' : ''}`}
+                  title={!isCategoryConfigured(selectedSegment, selectedCategory, sub) ? 'Segment/Category/Subcategory not configured - Contact JMI' : ''}
                 >
                   {sub}
+                  {!isCategoryConfigured(selectedSegment, selectedCategory, sub) && <AlertCircle size={14} />}
                 </button>
               ))}
             </div>
@@ -679,11 +1099,11 @@ const ProductRegistration = () => {
 
         <h3 className="section-title">Select Products</h3>
 
-        {selectedCategory ? (
-          !isCategoryConfigured(selectedCategory) ? (
+        {selectedSegment && selectedCategory && selectedSubcategory ? (
+          !isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory) ? (
             <div className="category-warning">
               <AlertCircle size={24} />
-              <p>This category is not configured. Please contact JMI to configure "{selectedCategory}" before proceeding.</p>
+              <p>This segment/category/subcategory combination is not configured. Please contact JMI to configure "{selectedSegment} / {selectedCategory} / {selectedSubcategory}" before proceeding.</p>
             </div>
           ) : filteredProducts.length > 0 ? (
             <div style={{ marginBottom: '30px' }}>
@@ -691,6 +1111,8 @@ const ProductRegistration = () => {
                 const selectedStyle = productData[product.id].selectedStyleType;
                 const currentDetails = getCurrentDetails(product.id);
                 const currentImage = getCurrentImage(product.id);
+                const totalWastage = calculateTotalWastage(currentDetails);
+                const totalMakingCharges = calculateTotalMakingCharges(currentDetails);
 
                 return (
                   <div key={product.id} className={`product-card ${hasStyleSelected(product.id) ? 'selected' : ''}`}
@@ -717,6 +1139,7 @@ const ProductRegistration = () => {
 
                       <div style={{ flex: 1 }}>
                         <h4 className="product-name">{product.name}</h4>
+                        <p className="product-specs">{product.segment} / {product.categoryId} / {product.subcategoryId}</p>
 
                         <div className="style-buttons-container">
                           {product.styleTypes.map(styleType => (
@@ -743,16 +1166,33 @@ const ProductRegistration = () => {
                       <div className="metrics-section">
                         <div className="metrics-header">
                           <span className="metrics-title">View Metrics - {getStyleLabel(selectedStyle)}</span>
-                          <Edit onClick={(e) => { e.stopPropagation(); handleEditDetails(product.id, selectedStyle); }}
-                            className="metrics-edit-icon" />
+                          <Edit
+                            onClick={(e) => { e.stopPropagation(); handleEditDetails(product.id, selectedStyle); }}
+                            className="metrics-edit-icon"
+                          />
                         </div>
 
                         <div className="metric-item">
                           <div className="metric-grid">
                             <div>Purity: <span className="metric-value">{currentDetails.purity || '-'}%</span></div>
-                            <div>Set MC: <span className="metric-value">{currentDetails.setMC || '-'}</span></div>
+                            <div>Specification: <span className="metric-value">{currentDetails.specification || '-'}</span></div>
                             <div>Wastage: <span className="metric-value">{currentDetails.wastage || '-'}%</span></div>
-                            <div>Net Gram MC: <span className="metric-value">{currentDetails.netGramMC || '-'}</span></div>
+                            {/* Show relevant MC fields based on specification */}
+                            {currentDetails.specification === 'PLANE' ? (
+                              <>
+                                <div>Set MC: <span className="metric-value">{currentDetails.setMC || '-'}</span></div>
+                                <div>Net Gram MC: <span className="metric-value">{currentDetails.netGramMC || '-'}</span></div>
+                              </>
+                            ) : (
+                              <>
+                                <div>Spec MC: <span className="metric-value">{currentDetails.specificationMC || '-'}</span></div>
+                                <div>Spec Gram Rate: <span className="metric-value">{currentDetails.specificationGramRate || '-'}</span></div>
+                              </>
+                            )}
+                          </div>
+                          <div className="total-metrics">
+                            <div>Total Wastage: <span className="metric-value">{totalWastage.toFixed(2)}%</span></div>
+                            <div>Total Making: <span className="metric-value">{totalMakingCharges.toFixed(2)}</span></div>
                           </div>
                         </div>
 
@@ -766,21 +1206,21 @@ const ProductRegistration = () => {
               })}
             </div>
           ) : (
-            <p style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>No products found for the selected category.</p>
+            <p style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>No products found for the selected segment, category, and subcategory.</p>
           )
         ) : (
-          <p style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>Please select a category to view products.</p>
+          <p style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>Please select a segment, category, and subcategory to view products.</p>
         )}
       </div>
 
       <div className="sticky-footer">
         <span className="selected-products-count">Selected: {getTotalSelected()} Products</span>
-        <button 
-          className="send-to-qc-button" 
+        <button
+          className="send-to-qc-button"
           onClick={handleSendToQC}
-          disabled={!isCategoryConfigured(selectedCategory)}
+          disabled={selectedProducts.length === 0 || !isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)}
         >
-          Request Approval
+          Send to QC
         </button>
       </div>
 

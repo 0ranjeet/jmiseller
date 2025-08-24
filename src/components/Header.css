@@ -1,0 +1,35 @@
+/* index.css or Header.css */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 1.35em;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.dot-menu {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+.dot-menu span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  background: #222;
+  border-radius: 50%;
+}

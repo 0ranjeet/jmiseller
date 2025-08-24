@@ -6,6 +6,8 @@
   --light-bg-color: #f0f0f0;
   --selected-bg-color: #fff8dc;
   --success-color: #4CAF50;
+  --warning-color: #dc2626;
+  --warning-bg: #fef2f2;
 }
 
 /* General Layout */
@@ -68,11 +70,20 @@
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .category-button.selected {
   background-color: var(--primary-color);
   color: white;
+}
+
+.category-button.not-configured {
+  background-color: var(--warning-bg);
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
 }
 
 /* Product Card */
@@ -125,62 +136,12 @@
   cursor: pointer;
 }
 
-/* --- New Styles for the demo image --- */
-
-/* The image-container now fills the parent */
-.image-container {
-  position: relative;
-  width: 100%; /* Take up the full width of the parent (50px) */
-  height: 100%; /* Take up the full height of the parent (50px) */
-  overflow: hidden;
-  border-radius: 6px;
-}
-
-/* The image itself also fills the container */
-.image-container img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover; /* Ensures the image covers the area without distorting */
-}
-
-/* The overlay now has a smaller font size to fit */
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none; /* Allows clicks to pass through to the file input */
-  text-align: center;
-}
-
-/* Make the overlay text smaller for the 50x50 area */
-.image-overlay p {
-  margin: 0;
-  font-size: 8px; /* Adjusted to fit within the small container */
-  line-height: 1; /* Adjust to prevent extra space */
-  font-weight: bold;
-  padding: 2px; /* Add a little padding for better readability */
-}
-
-/* On hover, the overlay becomes visible */
-.product-image-upload-area:hover .image-overlay {
-  opacity: 1;
-}
-
 .product-name {
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 500;
 }
+
 .style-buttons-container {
   display: flex;
   gap: 6px;
@@ -208,6 +169,12 @@
 .style-button.selected {
   background-color: var(--primary-color);
   color: white;
+}
+
+.style-button.not-configured {
+  background-color: var(--warning-bg);
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
 }
 
 .selection-indicator {
@@ -337,6 +304,11 @@
   font-size: 14px;
 }
 
+.send-to-qc-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 /* Custom Message Display */
 .message-popup {
   position: fixed;
@@ -428,6 +400,11 @@
   box-sizing: border-box;
 }
 
+.form-input.not-configured {
+  border-color: var(--warning-color);
+  background-color: var(--warning-bg);
+}
+
 .specifications-section {
   margin-bottom: 25px;
 }
@@ -436,207 +413,208 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 15px;
-  color: var(--text-color-dark);
-  text-align: center;
 }
 
 .specifications-grid-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
-  align-items: center;
   margin-bottom: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-color-medium);
+  font-weight: 500;
+  font-size: 12px;
 }
 
 .specifications-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
+  margin-bottom: 8px;
   align-items: center;
-  margin-bottom: 10px;
 }
 
 .spec-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
-  text-transform: capitalize;
+  color: var(--text-color-medium);
 }
 
 .spec-input {
   padding: 8px;
-  width:26vw;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   text-align: center;
 }
 
+.spec-input.not-configured {
+  border-color: var(--warning-color);
+  background-color: var(--warning-bg);
+}
+
 .popup-actions {
-  display: flex;
-  width: 100%;
+  padding: 15px 20px 20px 20px;
   border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .popup-cancel-button {
-  flex: 1;
-  padding: 12px;
-  border: none;
+  padding: 10px 20px;
   background-color: white;
-  color: var(--text-color-dark);
+  color: var(--text-color-medium);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
   font-weight: 500;
-  border-radius: 0 0 0 16px;
-  border-right: 1px solid var(--border-color);
 }
 
 .popup-confirm-button {
-  flex: 1;
-  padding: 12px;
+  padding: 10px 20px;
   background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 0 0 16px 0;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+}
+
+/* Limits Info */
+.limits-info {
+  background-color: #f5f5f5;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.limits-info h4 {
+  margin: 0 0 8px 0;
   font-size: 14px;
-}
-/* ProductRegistration.css */
-:root {
-  --primary-color: #8A6B32;
-  --primary-light: #a88c5a;
-  --primary-dark: #6b4f20;
-  --secondary-color: #f8f5f0;
-  --text-color: #1a202c;
-  --text-light: #4a5568;
-  --border-color: #e5e7eb;
-  --background-light: #f9fafb;
-  --success-color: #15803d;
-  --danger-color: #dc2626;
-  --warning-color: #d97706;
+  color: var(--text-color-dark);
 }
 
-/* Add these styles to your existing CSS */
+.limits-info p {
+  margin: 4px 0;
+  color: var(--text-color-medium);
+}
 
-/* Category warning styles */
+/* Category Warning */
 .category-warning {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background-color: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-radius: 0.5rem;
-  margin: 1rem 0;
-  color: #92400e;
+  gap: 10px;
+  padding: 15px;
+  background-color: var(--warning-bg);
+  border: 1px solid var(--warning-color);
+  border-radius: 8px;
+  color: var(--warning-color);
+  margin-bottom: 20px;
 }
 
 .category-warning p {
   margin: 0;
+  font-size: 14px;
 }
 
-/* Not configured category button */
-.category-button.not-configured {
-  position: relative;
-  background-color: #fef3c7;
-  border-color: #f59e0b;
-  color: #92400e;
-}
-
-.category-button.not-configured:hover {
-  background-color: #fde68a;
-  border-color: #f59e0b;
-}
-
-/* Alert overlay */
+/* Alert Popup */
 .alert-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .alert-popup {
   background-color: white;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 350px;
+  padding: 20px;
+  text-align: center;
 }
 
 .alert-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .alert-header h3 {
   margin: 0;
-  color: var(--danger-color);
+  font-size: 18px;
+  color: var(--warning-color);
 }
 
 .alert-content {
-  margin-bottom: 1.5rem;
+  margin-bottom: 20px;
 }
 
 .alert-content p {
-  margin: 0.5rem 0;
+  margin: 8px 0;
+  font-size: 14px;
+  color: var(--text-color-medium);
 }
 
 .alert-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .alert-button {
+  padding: 10px 20px;
   background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
+  border-radius: 6px;
   cursor: pointer;
+  font-weight: 500;
 }
 
-.alert-button:hover {
-  background-color: var(--primary-dark);
+/* Style for not-configured elements */
+.not-configured {
+  position: relative;
 }
 
-/* Limits info in product details */
-.limits-info {
-  background-color: #f0f9ff;
-  border: 1px solid #7dd3fc;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
+.not-configured::after {
+  content: "Not Configured";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: var(--warning-color);
+  color: white;
+  font-size: 8px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  z-index: 1;
 }
 
-.limits-info h4 {
-  margin: 0 0 0.5rem 0;
-  color: #0369a1;
-}
-
-.limits-info p {
-  margin: 0.25rem 0;
-  font-size: 0.875rem;
-}
-
-/* Disabled button style */
-.send-to-qc-button:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.send-to-qc-button:disabled:hover {
-  background-color: #9ca3af;
+/* Responsive adjustments */
+@media (max-width: 380px) {
+  .main-content {
+    padding: 15px;
+  }
+  
+  .product-card {
+    padding: 12px;
+  }
+  
+  .style-buttons-container {
+    gap: 4px;
+  }
+  
+  .style-button {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
 }

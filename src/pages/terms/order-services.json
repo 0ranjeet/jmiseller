@@ -1,0 +1,37 @@
+{
+  "title": "Order Services - Terms & Conditions",
+  "content": [
+    {
+      "section": "Custom Order Processing",
+      "text": "Order Services enables custom jewelry manufacturing requests with direct supplier integration. Processing time ranges from 5-15 business days depending on complexity."
+    },
+    {
+      "section": "Quality Assurance",
+      "text": "All custom orders undergo mandatory quality checks including purity testing, weight verification, and design compliance before dispatch."
+    },
+    {
+      "section": "Pricing Structure",
+      "text": "Base fee of ₹5,999/month plus 3.5% commission on each completed order. Rush orders incur additional 15% surcharge."
+    },
+    {
+      "section": "Cancellation Policy", 
+      "text": "Orders can be cancelled within 2 hours of placement without penalty. After production begins, cancellation fees of 25% apply."
+    },
+    {
+      "section": "Dispute Resolution",
+      "text": "All disputes will be resolved through arbitration as per Indian Arbitration Act. Jurisdiction limited to Mumbai courts only."
+    },
+    {
+      "section": "Delivery Terms",
+      "text": "Standard delivery within 7-10 business days. Express delivery available at additional cost. Insurance included for all shipments above ₹50,000."
+    },
+    {
+      "section": "Returns & Refunds",
+      "text": "Returns accepted within 7 days of delivery for manufacturing defects only. Custom orders are non-refundable unless there are quality issues."
+    },
+    {
+      "section": "Minimum Order Value",
+      "text": "Minimum order value of ₹25,000 required. Bulk discounts available for orders above ₹5,00,000."
+    }
+  ]
+}

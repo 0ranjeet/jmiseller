@@ -1,0 +1,25 @@
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.footer nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.add-btn {
+  background: gold;
+  border-radius: 50%;
+  border: none;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5em;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}

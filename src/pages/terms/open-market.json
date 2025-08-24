@@ -1,0 +1,41 @@
+{
+  "title": "Open Market - Terms & Conditions",
+  "content": [
+    {
+      "section": "Market Access",
+      "text": "Open Market provides access to multiple buyers and sellers in the jewelry ecosystem. Real-time price discovery and competitive bidding available."
+    },
+    {
+      "section": "Transaction Security",
+      "text": "All transactions are secured with escrow services and digital signatures. Payment release only after successful delivery confirmation."
+    },
+    {
+      "section": "Commission Structure",
+      "text": "Platform fee of 1.5% per transaction from both buyer and seller. Premium features available at ₹8,999/month subscription."
+    },
+    {
+      "section": "Market Rules",
+      "text": "Strict compliance with market regulations required. Price manipulation, false listings, or fraudulent activities result in immediate account suspension."
+    },
+    {
+      "section": "Data Privacy",
+      "text": "User data is protected as per Indian Data Protection laws. Transaction history and personal information are encrypted and not shared with third parties."
+    },
+    {
+      "section": "Trading Hours",
+      "text": "Market operates 24/7 except during scheduled maintenance. All transactions timestamped and recorded for audit purposes."
+    },
+    {
+      "section": "Verification Requirements",
+      "text": "All participants must complete KYC verification. Business license and trade permits required for commercial sellers."
+    },
+    {
+      "section": "Price Guidelines",
+      "text": "All listings must be within 10% of current market rates. Pricing significantly above or below market rates may be flagged for review."
+    },
+    {
+      "section": "Dispute Mediation",
+      "text": "Platform provides free mediation services for transaction disputes. Final arbitration through registered arbitration centers if required."
+    }
+  ]
+}

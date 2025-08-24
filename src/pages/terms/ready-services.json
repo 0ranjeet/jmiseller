@@ -1,0 +1,33 @@
+{
+  "title": "Ready Services - Terms & Conditions",
+  "content": [
+    {
+      "section": "Service Description",
+      "text": "Ready Services provides immediate access to pre-configured jewelry products and services. This includes inventory management, pricing updates, and instant order processing capabilities."
+    },
+    {
+      "section": "Service Availability", 
+      "text": "Services are available 24/7 with guaranteed uptime of 99.5%. Maintenance windows will be scheduled during off-peak hours with prior notification."
+    },
+    {
+      "section": "Payment Terms",
+      "text": "Monthly subscription fee of ₹2,999 plus transaction fees of 2.5% per order. Payment due within 15 days of invoice generation."
+    },
+    {
+      "section": "Liability",
+      "text": "Service provider is not liable for any indirect damages or loss of business due to service interruptions. Maximum liability is limited to one month's subscription fee."
+    },
+    {
+      "section": "Termination",
+      "text": "Either party may terminate this agreement with 30 days written notice. All pending orders must be completed before termination becomes effective."
+    },
+    {
+      "section": "Data Protection",
+      "text": "All user data is encrypted and stored securely. We comply with applicable data protection laws and do not share personal information with third parties without consent."
+    },
+    {
+      "section": "Support",
+      "text": "24/7 customer support available via phone, email, and live chat. Response time guaranteed within 2 hours for critical issues."
+    }
+  ]
+}
