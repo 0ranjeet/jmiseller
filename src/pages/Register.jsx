@@ -15,16 +15,19 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
-import bcrypt from "bcryptjs"; // npm install bcryptjs
-import { v4 as uuidv4 } from "uuid"; // npm install uuid
+import bcrypt from "bcryptjs";
+import { v4 as uuidv4 } from "uuid";
+import { useSeller } from "../contexts/SellerContext";
 
 const Register = () => {
+  const { updateSeller } = useSeller();
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+  const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
   // Setup invisible recaptcha
@@ -43,38 +46,46 @@ const Register = () => {
 
   // Send OTP
   const sendOtp = async () => {
-    if (mobile.length !== 10) {
-      alert("Enter valid 10-digit number");
+    if (mobile.length !== 10 || isNaN(mobile)) {
+      alert("Enter a valid 10-digit mobile number");
       return;
     }
+
+    setLoading(true);
     setupRecaptcha();
     const appVerifier = window.recaptchaVerifier;
     const fullPhone = `+91${mobile}`;
+
     try {
       const result = await signInWithPhoneNumber(auth, fullPhone, appVerifier);
       setConfirmationResult(result);
       setOtpSent(true);
     } catch (err) {
-      console.error(err);
-      alert("Failed to send OTP");
+      console.error("Error sending OTP:", err);
+      alert("Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   // Verify OTP and Register
   const verifyOtpAndRegister = async () => {
     if (!otp || !password || !confirmPass) {
-      alert("Fill all fields");
+      alert("Please fill all fields");
       return;
     }
+
     if (password !== confirmPass) {
       alert("Passwords do not match");
       return;
     }
 
+    setLoading(true);
+
     try {
       await confirmationResult.confirm(otp);
 
-      // 🔍 Check if mobile already registered
+      // Check if mobile already registered
       const q = query(collection(db, "sellers"), where("mobile", "==", mobile));
       const querySnapshot = await getDocs(q);
 
@@ -83,14 +94,13 @@ const Register = () => {
         return;
       }
 
-      // Generate secure unique sellerId
-      const sellerId = "SELLER-" + uuidv4().split("-")[0].toUpperCase(); 
-      // Example: SELLER-3F9A1C2B
+      // Generate unique seller ID
+      const sellerId = "SELLER-" + uuidv4().split("-")[0].toUpperCase();
 
-      // Hash password securely
+      // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Save seller info
+      // Save seller to Firestore
       await setDoc(doc(db, "sellers", sellerId), {
         sellerId,
         mobile,
@@ -99,18 +109,20 @@ const Register = () => {
         status: "pending",
       });
 
-      // Audit log
-      await setDoc(doc(db, "seller-registrations", sellerId), {
+      // Update context with seller data
+      updateSeller({
         sellerId,
         mobile,
-        registeredAt: new Date(),
+        registrationStatus: false,
       });
 
       alert(`Seller registered successfully with ID: ${sellerId}`);
       nav("/sellerregistration");
     } catch (err) {
-      alert("OTP verification failed");
-      console.error(err);
+      console.error("Registration error:", err);
+      alert("OTP verification failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,13 +140,17 @@ const Register = () => {
           maxLength="10"
           placeholder="Enter Mobile Number"
           value={mobile}
-          onChange={(e) => setMobile(e.target.value.replace(/\D/, ""))}
+          onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
           disabled={otpSent}
         />
 
         {!otpSent ? (
-          <button className="login-btn" onClick={sendOtp}>
-            Send OTP
+          <button
+            className="login-btn"
+            onClick={sendOtp}
+            disabled={loading}
+          >
+            {loading ? "Sending OTP..." : "Send OTP"}
           </button>
         ) : (
           <>
@@ -162,8 +178,12 @@ const Register = () => {
               onChange={(e) => setConfirmPass(e.target.value)}
             />
 
-            <button className="login-btn" onClick={verifyOtpAndRegister}>
-              Register
+            <button
+              className="login-btn"
+              onClick={verifyOtpAndRegister}
+              disabled={loading}
+            >
+              {loading ? "Registering..." : "Register"}
             </button>
           </>
         )}
@@ -171,7 +191,7 @@ const Register = () => {
 
       <p className="register-link">
         Already have an account?{" "}
-        <span onClick={() => (window.location.href = "/login")}>Login</span>
+        <span onClick={() => nav("/login")}>Login</span>
       </p>
 
       <p className="support">

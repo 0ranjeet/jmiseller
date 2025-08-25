@@ -1,15 +1,13 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo,  useEffect } from 'react';
 import { db } from '../services/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import "./SellerRegistration.css";
 import { useNavigate } from 'react-router-dom';
+import { useSeller } from '../contexts/SellerContext'; // Import useSeller
 
-
-// Memoize step components to prevent unnecessary re-renders
 const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNumber, businessDocuments, setBusinessDocuments, organizationPhotos, setOrganizationPhotos, organizationName, setOrganizationName, address, setAddress, city, setCity, district, setDistrict, state, setState, pinCode, setPinCode, organizationContact, setOrganizationContact, organizationEmail, setOrganizationEmail, businessTypes, setBusinessTypes, storeLogo, setStoreLogo, removeBusinessType, removeBusinessDocument, removeOrganizationPhoto, handleBusinessTypeKeyPress }) => (
   <div className="step-content">
     <h2>Organisation Information</h2>
-
     <div className="form-group">
       <label>GSTR Status</label>
       <div className="radio-group">
@@ -33,7 +31,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         </label>
       </div>
     </div>
-
     <div className="form-group">
       <label>GSTIN Number</label>
       <input
@@ -45,7 +42,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
       />
       <small>Format: 22AAAAA0000A1Z5</small>
     </div>
-
     <div className="form-group">
       <label>Business Documents</label>
       <div className="upload-area">
@@ -78,7 +74,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         </div>
       )}
     </div>
-
     <div className="form-group">
       <label>Organization Photos</label>
       <div className="upload-area">
@@ -115,7 +110,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         </div>
       )}
     </div>
-
     <div className="form-group">
       <label>Organization Name</label>
       <input
@@ -126,7 +120,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         autoComplete="organization"
       />
     </div>
-
     <div className="form-group">
       <label>Address</label>
       <input
@@ -137,7 +130,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         autoComplete="street-address"
       />
     </div>
-
     <div className="form-row">
       <div className="form-group">
         <label>City/Village</label>
@@ -160,7 +152,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         />
       </div>
     </div>
-
     <div className="form-row">
       <div className="form-group">
         <label>State</label>
@@ -210,7 +201,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         />
       </div>
     </div>
-
     <div className="form-group">
       <label>Organization Contact</label>
       <input
@@ -221,7 +211,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         autoComplete="tel"
       />
     </div>
-
     <div className="form-group">
       <label>Organization Email</label>
       <input
@@ -232,7 +221,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         autoComplete="email"
       />
     </div>
-
     <div className="form-group">
       <label>Nature of Business</label>
       <div className="business-types">
@@ -255,7 +243,6 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
         autoComplete="off"
       />
     </div>
-
     <div className="form-group">
       <label>Store Logo (Optional)</label>
       <div className="upload-area">
@@ -299,7 +286,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
     <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
       You can add more than one contact person for your business.
     </p>
-
     {dealingPersons.map((person, index) => (
       <div key={index} className="person-card">
         <div className="person-header">
@@ -316,7 +302,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             )}
           </div>
         </div>
-
         <div className="form-group">
           <label>Full Name</label>
           <input
@@ -327,7 +312,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             autoComplete="name"
           />
         </div>
-
         <div className="form-group">
           <label>Contact Number</label>
           <input
@@ -338,7 +322,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             autoComplete="tel"
           />
         </div>
-
         <div className="form-group">
           <label>Email Address</label>
           <input
@@ -349,7 +332,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             autoComplete="email"
           />
         </div>
-
         <div className="form-group">
           <label>Department</label>
           <input
@@ -360,7 +342,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             autoComplete="organization-title"
           />
         </div>
-
         <div className="form-group">
           <label>Designation/Role</label>
           <select
@@ -375,7 +356,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             <option value="other">Other</option>
           </select>
         </div>
-
         <div className="form-group">
           <label>Person Photos</label>
           <div className="upload-area">
@@ -408,7 +388,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
         </div>
       </div>
     ))}
-
     <button
       type="button"
       onClick={addDealingPerson}
@@ -422,7 +401,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
 const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transactionalEmail, setTransactionalEmail, shopNumber, setShopNumber, buildingName, setBuildingName, streetAddress, setStreetAddress, contactCity, setContactCity, contactDistrict, setContactDistrict, contactState, setContactState, contactPinCode, setContactPinCode }) => (
   <div className="step-content">
     <h2>Transactional Contact</h2>
-
     <div className="form-group">
       <label>Mobile</label>
       <input
@@ -433,7 +411,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="tel"
       />
     </div>
-
     <div className="form-group">
       <label>Email</label>
       <input
@@ -444,9 +421,7 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="email"
       />
     </div>
-
     <h2 style={{ marginTop: '40px' }}>Shipping Address</h2>
-
     <div className="form-group">
       <label>Shop Number / Flat Number</label>
       <input
@@ -457,7 +432,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="off"
       />
     </div>
-
     <div className="form-group">
       <label>Building / Complex Name</label>
       <input
@@ -468,7 +442,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="off"
       />
     </div>
-
     <div className="form-group">
       <label>Street Address</label>
       <input
@@ -479,7 +452,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="street-address"
       />
     </div>
-
     <div className="form-group">
       <label>City / Village</label>
       <input
@@ -490,7 +462,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="address-level2"
       />
     </div>
-
     <div className="form-group">
       <label>District</label>
       <input
@@ -501,7 +472,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
         autoComplete="off"
       />
     </div>
-
     <div className="form-row">
       <div className="form-group">
         <label>State</label>
@@ -557,7 +527,6 @@ const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transac
 const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountType, setAccountType, accountHolderName, setAccountHolderName, accountNumber, setAccountNumber, confirmAccountNumber, setConfirmAccountNumber }) => (
   <div className="step-content">
     <h2>Organization Bank Details</h2>
-
     <div className="form-group">
       <label className="required">Bank Name</label>
       <select
@@ -577,7 +546,6 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
         <option value="indian">Indian Bank</option>
       </select>
     </div>
-
     <div className="form-group">
       <label className="required">IFSC Code</label>
       <input
@@ -589,7 +557,6 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
       />
       <small>Format: 4 letters followed by 7 numbers</small>
     </div>
-
     <div className="form-group">
       <label className="required">Account Type</label>
       <select
@@ -603,7 +570,6 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
         <option value="od">Overdraft</option>
       </select>
     </div>
-
     <div className="form-group">
       <label className="required">Account Holder Name</label>
       <input
@@ -614,7 +580,6 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
         autoComplete="name"
       />
     </div>
-
     <div className="form-group">
       <label className="required">Account Number</label>
       <input
@@ -625,7 +590,6 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
         autoComplete="off"
       />
     </div>
-
     <div className="form-group">
       <label className="required">Confirm Account Number</label>
       <input
@@ -659,7 +623,6 @@ const SecurityStep = memo(({ jmiOfficerID, setJmiOfficerID, privatePasskey, setP
         </button>
       </div>
     </div>
-
     <div className="security-section">
       <h3>Set Private Passkey</h3>
       <div className="form-group">
@@ -672,7 +635,6 @@ const SecurityStep = memo(({ jmiOfficerID, setJmiOfficerID, privatePasskey, setP
           autoComplete="new-password"
         />
       </div>
-
       <div className="form-group">
         <label>Re-enter Private Passkey</label>
         <input
@@ -703,10 +665,14 @@ const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
   </div>
 ));
 
+// --- Main Component ---
+
 const SellerRegistration = () => {
   const nav = useNavigate();
+  const { seller } = useSeller(); // Get seller object from context
+  const sellerId = seller?.sellerId; // Extract sellerId
 
-  const mobile = localStorage.getItem("sellerMobile");
+  // --- ALL HOOKS MUST BE AT THE TOP LEVEL ---
   // Step and progress states
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -775,25 +741,30 @@ const SellerRegistration = () => {
     { number: 5, title: 'Security', key: 'security' }
   ];
 
+  // --- EFFECT TO HANDLE MISSING CONTEXT ---
+  useEffect(() => {
+    if (sellerId === undefined) { // Check if context is still loading or missing
+       console.warn("Seller ID not found in context. Redirecting...");
+       alert("Registration session expired or not found. Please log in again.");
+       nav('/login'); // Or appropriate redirect
+    }
+  }, [sellerId, nav]);
+
   // Upload single file to Cloudinary
   const uploadToCloudinary = useCallback(async (file, folder = '') => {
     try {
       if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
         throw new Error('Cloudinary configuration missing.');
       }
-
       const formDataCloud = new FormData();
       formDataCloud.append('file', file);
       formDataCloud.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
       if (folder) {
         formDataCloud.append('folder', `seller-registration/${folder}`);
       }
-
       const timestamp = Date.now();
       const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
       formDataCloud.append('public_id', fileName);
-
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
         {
@@ -801,12 +772,10 @@ const SellerRegistration = () => {
           body: formDataCloud,
         }
       );
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`Upload failed: ${errorData.error?.message || response.statusText}`);
       }
-
       const data = await response.json();
       return {
         url: data.secure_url,
@@ -824,37 +793,36 @@ const SellerRegistration = () => {
     return Promise.all(uploadPromises);
   }, [uploadToCloudinary]);
 
-  // Save data to Firestore
-const saveToFirestore = useCallback(async (data) => {
-  try {
-    const docRef = doc(db, 'seller-registrations', mobile);
+  // Save data to Firestore - Modified to use sellerId
+  const saveToFirestore = useCallback(async (data) => {
+    if (!sellerId) {
+        console.error("Cannot save to Firestore: sellerId is missing.");
+        throw new Error("Seller ID is required to save registration data.");
+    }
+    try {
+      // Use sellerId as the document ID in 'sellerregistrations' collection
+      const docRef = doc(db, 'sellerregistrations', sellerId);
 
-    // Save seller registration data
-    await setDoc(docRef, {
-      ...data,
-      mobile,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    // Update user profile to indicate completion of seller registration
-    
-    if (mobile) {
-      const profileRef = doc(db, 'profiles', mobile);
-      await setDoc(profileRef, {
-        sellerRegistrationCompleted: true,
-        segmentRegistrationCompleted: false,
+      // Save seller registration data using sellerId
+      await setDoc(docRef, {
+        ...data,
+        sellerId: sellerId,
         updatedAt: serverTimestamp()
       }, { merge: true });
+
+      // Update the main seller document (in 'sellers' collection) to indicate registration completion
+      const sellerProfileRef = doc(db, 'profile', sellerId);
+      await setDoc(sellerProfileRef, {
+        SellerRegistration: true,
+      }, { merge: true });
+
+      alert("Seller registered successfully!");
+      nav('/segmentregistration');
+    } catch (error) {
+      console.error('Error saving to Firestore:', error);
+      throw error;
     }
-
-    alert("Seller registered!");
-    nav('/segmentregistration');
-  } catch (error) {
-    console.error('Error saving to Firestore:', error);
-    throw error;
-  }
-}, [nav, mobile]);
-
+  }, [nav, sellerId]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 5) {
@@ -869,10 +837,14 @@ const saveToFirestore = useCallback(async (data) => {
     }
   }, [currentStep]);
 
-
-
   const handleRegister = useCallback(async () => {
+    if (!sellerId) {
+        alert("Registration session expired. Please log in again.");
+        nav('/login');
+        return;
+    }
     setLoading(true);
+    setUploadProgress({}); // Reset progress
     try {
       const dataToSave = {
         gstrStatus,
@@ -950,55 +922,12 @@ const saveToFirestore = useCallback(async (data) => {
 
       setUploadProgress(prev => ({ ...prev, saving: 'Saving registration data...' }));
 
-      // Save to Firestore
-      const docId = await saveToFirestore(dataToSave);
+      // Save to Firestore using sellerId
+      await saveToFirestore(dataToSave);
 
       setCompletedSteps(prev => [...prev, currentStep]);
-      alert(`Registration completed successfully! Your registration ID is: ${docId}`);
+      alert(`Registration completed successfully! Your ID is: ${sellerId}`);
 
-      // Reset form
-      setCurrentStep(1);
-      setCompletedSteps([]);
-      setGstrStatus('registered');
-      setGstinNumber('');
-      setBusinessDocuments([]);
-      setOrganizationPhotos([]);
-      setOrganizationName('');
-      setAddress('');
-      setCity('');
-      setDistrict('');
-      setState('');
-      setPinCode('');
-      setOrganizationContact('');
-      setOrganizationEmail('');
-      setBusinessTypes(['Gold Jewelry', 'Diamond Jewelry']);
-      setStoreLogo(null);
-      setDealingPersons([{
-        fullName: '',
-        contactNumber: '',
-        email: '',
-        department: '',
-        role: '',
-        photo: null
-      }]);
-      setTransactionalMobile('');
-      setTransactionalEmail('');
-      setShopNumber('');
-      setBuildingName('');
-      setStreetAddress('');
-      setContactCity('');
-      setContactDistrict('');
-      setContactState('');
-      setContactPinCode('');
-      setBankName('');
-      setIfscCode('');
-      setAccountType('');
-      setAccountHolderName('');
-      setAccountNumber('');
-      setConfirmAccountNumber('');
-      setJmiOfficerID('');
-      setPrivatePasskey('');
-      setConfirmPasskey('');
     } catch (error) {
       console.error('Registration failed:', error);
       alert('Registration failed. Please try again.');
@@ -1006,7 +935,15 @@ const saveToFirestore = useCallback(async (data) => {
       setLoading(false);
       setUploadProgress({});
     }
-  }, [gstrStatus, gstinNumber, organizationName, address, city, district, state, pinCode, organizationContact, organizationEmail, businessTypes, storeLogo, dealingPersons, transactionalMobile, transactionalEmail, shopNumber, buildingName, streetAddress, contactCity, contactDistrict, contactState, contactPinCode, bankName, ifscCode, accountType, accountHolderName, accountNumber, confirmAccountNumber, jmiOfficerID, privatePasskey, confirmPasskey, businessDocuments, organizationPhotos, currentStep, uploadToCloudinary, uploadMultipleFiles, saveToFirestore]);
+  }, [
+    sellerId, nav, gstrStatus, gstinNumber, organizationName, address, city, district, state, pinCode,
+    organizationContact, organizationEmail, businessTypes, storeLogo, dealingPersons,
+    transactionalMobile, transactionalEmail, shopNumber, buildingName, streetAddress,
+    contactCity, contactDistrict, contactState, contactPinCode, bankName, ifscCode,
+    accountType, accountHolderName, accountNumber, confirmAccountNumber, jmiOfficerID,
+    privatePasskey, confirmPasskey, businessDocuments, organizationPhotos, currentStep,
+    uploadToCloudinary, uploadMultipleFiles, saveToFirestore
+  ]);
 
   const addDealingPerson = useCallback(() => {
     setDealingPersons(prev => [...prev, {
@@ -1192,6 +1129,16 @@ const saveToFirestore = useCallback(async (data) => {
     }
   };
 
+  // Render nothing or a loading state while checking context or if sellerId is missing
+  if (sellerId === undefined) {
+      return <div>Loading registration session...</div>; // Or null, or a specific loading/error component
+  }
+
+  if (!sellerId) {
+      // This case is handled by the useEffect and handleRegister, but a fallback UI is good
+      return <div>Registration session not found. Redirecting...</div>;
+  }
+
   return (
     <div className="seller-registration" style={{
       maxWidth: '600px',
@@ -1215,10 +1162,8 @@ const saveToFirestore = useCallback(async (data) => {
         }}>Seller Registration</h1>
         <StepIndicator steps={steps} currentStep={currentStep} completedSteps={completedSteps} />
       </div>
-
       <div className="registration-content" style={{ padding: '30px' }}>
         {renderStepContent()}
-
         <div className="step-navigation" style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -1285,7 +1230,6 @@ const saveToFirestore = useCallback(async (data) => {
             </button>
           )}
         </div>
-
         {loading && (
           <div style={{
             marginTop: '20px',

@@ -4,10 +4,12 @@ import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import './MyRegisteredProducts.css';
 import { useNavigate } from 'react-router-dom';
+import { useSeller } from '../contexts/SellerContext';
 
 const MyRegisteredProducts = () => {
     const navigate = useNavigate();
-    const sellerid = localStorage.getItem("sellerMobile");
+    const { seller } = useSeller(); // Get seller object from context
+  const sellerId = seller?.sellerId;
     const [activeTab, setActiveTab] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('newest');
@@ -18,14 +20,14 @@ const MyRegisteredProducts = () => {
 
     useEffect(() => {
         fetchRegisteredProducts();
-    }, [sellerid]);
+    }, [sellerId]);
 
     const fetchRegisteredProducts = async () => {
-        if (!sellerid) return;
+        if (!sellerId) return;
 
         setLoading(true);
         try {
-            const docRef = doc(db, 'ProductRegistrations', sellerid);
+            const docRef = doc(db, 'ProductRegistrations', sellerId);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {

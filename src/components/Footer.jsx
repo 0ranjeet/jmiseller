@@ -12,7 +12,8 @@ const Footer = () => {
           <Home size={20} />
           <span className="footer-label-active">Home</span>
         </button>
-        <button className="footer-btn footer-btn-inactive">
+        <button className="footer-btn footer-btn-inactive" onClick={()=>navigate('/productregistration')}>
+
           <List size={20} />
           <span className="footer-label">Catalogue</span>
         </button>

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { db,auth } from '../services/firebase'; // Adjust path as needed
+import { db } from '../services/firebase'; // Removed auth import
 import './SegmentRegistration.css';
 // Import JSON files for Terms & Conditions
 import readyServicesTerms from './terms/ready-services.json';
 import orderServicesTerms from './terms/order-services.json';
 import openMarketTerms from './terms/open-market.json';
+import { useSeller } from '../contexts/SellerContext'; // Import the context
 
 const SegmentRegistration = () => {
   const [operatorId, setOperatorId] = useState('');
@@ -17,8 +18,9 @@ const SegmentRegistration = () => {
   const [operatorOtp, setOperatorOtp] = useState(['', '', '', '', '', '']);
   const [showPopup, setShowPopup] = useState(false);
   const [popupContent, setPopupContent] = useState(null);
-  const [segment, setSegment] = useState('gold'); // Added state for segment selection
+  const [segment, setSegment] = useState('gold');
   const nav = useNavigate();
+  const { seller } = useSeller(); // Get seller from context
 
   // Terms & Conditions mapping to imported JSON files
   const termsAndConditions = {
@@ -110,15 +112,15 @@ const SegmentRegistration = () => {
   // Function to save segment registration data
   const saveSegmentRegistration = useCallback(async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('User not authenticated');
+      // Use sellerId from context instead of Firebase Auth
+      if (!seller || !seller.sellerId) {
+        throw new Error('Seller not found in context');
       }
 
       // Create segment registration document
-      const segmentDocRef = doc(db, 'segment-registrations', user.uid);
+      const segmentDocRef = doc(db, 'SellerSegmentRegistrations', seller.sellerId);
       await setDoc(segmentDocRef, {
-        userId: user.uid,
+        sellerId: seller.sellerId,
         segment: segment,
         operatorId: operatorId,
         operatorDetails: operatorDetails,
@@ -128,25 +130,25 @@ const SegmentRegistration = () => {
           openMarket: document.getElementById('open-market')?.checked || false
         },
         agreedToTerms: document.getElementById('agree')?.checked || false,
+        registrationComplete: true, // Mark segment registration as complete
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // Update user profile
-      const profileRef = doc(db, 'profiles', user.uid);
-      await setDoc(profileRef, {
-        segmentRegistrationCompleted: true,
-        productRegistrationCompleted: false,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-
       alert("Segment registered successfully!");
-      nav('/productregistration');
+       const sellerProfileRef = doc(db, 'profile', seller.sellerId);
+
+      await setDoc(sellerProfileRef, {
+        SegmentRegistration: true,
+      }, { merge: true });
+     
+        nav('/productregistration');
+     
     } catch (error) {
       console.error('Error saving segment registration:', error);
       alert("Error registering segment. Please try again.");
     }
-  }, [segment, operatorId, operatorDetails, nav]);
+  }, [segment, operatorId, operatorDetails, nav, seller]);
 
   const handleSubmit = () => {
     // Validate required fields

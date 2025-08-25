@@ -11,9 +11,6 @@ const Header = ({ title = "Dashboard" }) => {
 
   const handleLogout = () => {
     try {
-      // Clear localStorage authentication data
-      localStorage.removeItem("sellerId");
-      localStorage.removeItem("sellerMobile");
       
       // Redirect to login page
       navigate("/login");
@@ -38,15 +35,15 @@ const Header = ({ title = "Dashboard" }) => {
           </button>
           {showMenu && (
             <div className="dropdown-menu">
-              <button className="dropdown-item" onClick={() => alert('Settings clicked')}>Settings</button>
-              <button className="dropdown-item" onClick={() => alert('Profile clicked')}>Profile</button>
-              <button className="dropdown-item" onClick={() => alert('Help clicked')}>Help</button>
-              <button 
+              <span className="dropdown-item" onClick={() => alert('Settings clicked')}>Settings</span>
+              <span className="dropdown-item" onClick={() => alert('Profile clicked')}>Profile</span>
+              <span className="dropdown-item" onClick={() => alert('Help clicked')}>Help</span>
+              <span 
                 className="dropdown-item" 
                 onClick={handleLogout}
               >
                 Logout
-              </button>
+              </span>
             </div>
           )}
         </div>
