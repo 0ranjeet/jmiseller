@@ -5,6 +5,8 @@ import { doc, setDoc, collection, getDocs, getDoc } from 'firebase/firestore'; /
 import './ProductRegistration.css';
 import { useNavigate } from 'react-router-dom';
 import { useSeller } from '../contexts/SellerContext';
+import Header from '../components/Header';
+import PageHeader from '../components/PageHeader';
 
 const ProductRegistration = () => {
   const nav = useNavigate();
@@ -1035,9 +1037,10 @@ const ProductRegistration = () => {
     );
   };
   return (
+    <>
+    <PageHeader title="Product Registration" />
     <div className="app-container">
       <div className="main-content">
-        <h2 className="main-heading">Register Product Category</h2>
         <p className="sub-heading">Choose your product category, sub-type, and styles to begin listing.</p>
         <div className="form-group">
           <label className="form-label">Segment</label>
@@ -1214,6 +1217,7 @@ const ProductRegistration = () => {
       {renderProductDetailsPopup()}
       {renderCategoryAlert()}
     </div>
+    </>
   );
 };
 export default ProductRegistration;

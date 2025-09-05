@@ -14,11 +14,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SellerRegistration from "./pages/SellerRegistartion"; // Note: Typo in filename?
 import ProductRegistration from "./pages/ProductRegistration";
-import JewelMartProduct from "./pages/AddProduct";
+import UploadProduct from "./pages/UploadProduct";
 import Dashboard from "./components/Dashboard";
 import SegmentRegistration from "./pages/SegmentRegistration";
 import MyRegisteredProducts from "./pages/MyregisteredProducts";
 import QCApprovalPage from "./pages/QCApprovalPage";
+import MyCatalogue from "./pages/MyCatalogue";
 
 // 🔒 Protected Route Wrapper - Updated to check SellerContext
 // This component must be rendered inside the Router and SellerProvider
@@ -56,7 +57,8 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/AddProduct" element={<JewelMartProduct />} />
+            <Route path="/UploadProduct" element={<UploadProduct />} />
+            <Route path="/MyCatalogue" element={<MyCatalogue />} />
 
             {/* Protected Routes */}
             {/* Each protected route now uses the ProtectedRoute wrapper */}

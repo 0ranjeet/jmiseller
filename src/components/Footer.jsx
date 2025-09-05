@@ -12,13 +12,15 @@ const Footer = () => {
           <Home size={20} />
           <span className="footer-label-active">Home</span>
         </button>
-        <button className="footer-btn footer-btn-inactive" onClick={()=>navigate('/productregistration')}>
+        <button className="footer-btn footer-btn-inactive" onClick={()=>navigate('/MyCatalogue')}>
+
 
           <List size={20} />
           <span className="footer-label">Catalogue</span>
         </button>
         <button className="footer-btn">
-          <div className="plus-button" onClick={()=>navigate('/AddProduct')}>
+          <div className="plus-button" onClick={()=>navigate('/UploadProduct')}>
+
             <Plus size={24} color="white" />
           </div>
         </button>
@@ -28,7 +30,7 @@ const Footer = () => {
         </button>
         <button className="footer-btn footer-btn-inactive">
           <User size={20} />
-          <span className="footer-label">Profile</span>
+          <span className="footer-label" onClick={()=>navigate('/sellerregistration')}>Profile</span>
         </button>
       </div>
     </footer>

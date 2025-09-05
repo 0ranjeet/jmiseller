@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronDown, Camera } from 'lucide-react';
-import './AddProduct.css';
+import './UploadProduct.css';
 import { db } from '../services/firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { useSeller } from '../contexts/SellerContext';
+import PageHeader from '../components/PageHeader';
 
-const AddProduct = () => {
+const UploadProduct = () => {
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
 
@@ -199,14 +200,6 @@ const AddProduct = () => {
     }
   };
 
-  const toggleTag = (tag) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedTags: prev.selectedTags.includes(tag)
-        ? prev.selectedTags.filter(t => t !== tag)
-        : [...prev.selectedTags, tag]
-    }));
-  };
 
   const handleProductSelect = (product) => {
     console.log('Selected product:', product);
@@ -267,6 +260,7 @@ const AddProduct = () => {
       
       setUploadedImages([]);
       setFormData({
+        sellerId: sellerId,
         productCategory: '',
         subCategory: '',
         productName: '',
@@ -306,11 +300,9 @@ const AddProduct = () => {
   };
 
   return (
+    <>
+    <PageHeader title='Upload Product' />
     <div className="add-product-container">
-      <div className="header">
-        <div className="header-title">Add Product</div>
-      </div>
-
       <div className="tab-container">
         <button
           onClick={() => setActiveTab('ready')}
@@ -796,7 +788,8 @@ const AddProduct = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
-export default AddProduct;
+export default UploadProduct;

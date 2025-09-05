@@ -1142,7 +1142,7 @@ const SellerRegistration = () => {
   return (
     <div className="seller-registration" style={{
       maxWidth: '600px',
-      margin: '20px auto',
+      margin: '0px',
       background: '#ffffff',
       borderRadius: '12px',
       overflow: 'hidden',

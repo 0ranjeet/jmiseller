@@ -5,11 +5,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import './MyRegisteredProducts.css';
 import { useNavigate } from 'react-router-dom';
 import { useSeller } from '../contexts/SellerContext';
+import Header from '../components/Header';
 
 const MyRegisteredProducts = () => {
     const navigate = useNavigate();
     const { seller } = useSeller(); // Get seller object from context
-  const sellerId = seller?.sellerId;
+    const sellerId = seller?.sellerId;
     const [activeTab, setActiveTab] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('newest');
@@ -148,35 +149,24 @@ const MyRegisteredProducts = () => {
 
     if (loading) {
         return (
-            <div className="catalogue-container">
-                <div className="catalogue-header">
-                    <h1 className="catalogue-title">My Registered Products</h1>
-                </div>
-                <div className="loading-state">Loading...</div>
-            </div>
+            <Header title='My Registered Products' />
         );
     }
 
     return (
-        <div className="catalogue-container">
-            <div className='topbar'>
-
-                <div className="catalogue-header">
-                    <h1 className="catalogue-title">My Registered Products</h1>
-                </div>
-
-                {/* Tabs */}
-                <div className="tabs-container">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`registertab-button ${activeTab === tab ? 'active' : ''}`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
+        <>
+            <Header title='My Registered Products' />
+            <div className="catalogue-container">                <div className="tabs-container">
+                {tabs.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`registertab-button ${activeTab === tab ? 'active' : ''}`}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
             </div>
 
             {/* Search and Sort */}
@@ -237,8 +227,6 @@ const MyRegisteredProducts = () => {
                     })
                 )}
             </div>
-
-            {/* Bottom Fixed Button */}
             <div className="bottom-bar">
 
                 <button
@@ -248,7 +236,7 @@ const MyRegisteredProducts = () => {
                     Register New Product
                 </button>
             </div>
-        </div>
+        </>
     );
 };
 

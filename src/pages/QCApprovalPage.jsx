@@ -1,13 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 const QCApprovalPage = () => {
   const nav = useNavigate();
-  useEffect(() => {
-    setTimeout(() => {
-      nav("/dashboard");
-    }, 3000);
-  }, [nav]);
-
+  
   return (
     <div
       style={{

@@ -1,0 +1,163 @@
+.catalogue-container {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .catalogue-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: white;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .menu-icon {
+    font-size: 20px;
+    margin-right: 12px;
+    cursor: pointer;
+  }
+
+  .catalogue-header h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .catalogue-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .catalogue-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: white;
+    border-bottom: 1px solid #e5e5e5;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 8px 16px;
+    position: relative;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .catalogue-item:last-child {
+    border-bottom: none;
+  }
+
+  .catalogue-item:hover {
+    background-color: #f5f5f5;
+  }
+
+  .item-vertical-line {
+    width: 6px;
+    height: 100%;
+    margin-right: 12px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 8px 0 0 8px;
+  }
+
+  .item-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    margin-left: 2px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid white;
+  }
+
+  .item-content-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 20px;
+  }
+
+  .item-content {
+    flex: 1;
+  }
+
+  .item-content h3 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .item-content p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+  }
+  .item-icon {
+    background-color: #d97706;
+    color: white;
+    border-radius: 50%;
+    justify-content: center;
+    height: 30px;
+    width: 30px;
+    display: flex;
+    padding: 2px;
+}
+
+  .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .item-count {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .arrow {
+    font-size: 14px;
+    color: #999;
+  }
+
+  /* Specific colors for each item */
+  .bg-yellow-500 {
+    background-color: #d97706;
+  }
+  .bg-yellow-400{
+    background-color: rgb(219, 160, 25);
+  }
+
+  .bg-red-500 {
+    background-color: #ef4444;
+  }
+
+  .bg-green-500 {
+    background-color: #10b981;
+  }
+
+  .bg-blue-500 {
+    background-color: #3b82f6;
+  }
+
+  .bg-gray-400 {
+    background-color: #6b7280;
+  }
