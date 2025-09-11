@@ -240,7 +240,7 @@ const Catalogue = () => {
           </div>
         ) : (
           products.map((product) => (
-            <div key={product.id} className="product-card">
+            <div key={product.id} className="catalog-card">
               <div className="product-image">
                 {product.images && product.images.length > 0 && (
                   <img 

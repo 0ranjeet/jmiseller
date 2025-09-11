@@ -94,7 +94,7 @@
   margin-bottom: 20px;
 }
 
-.product-card {
+.catalog-card {
   background-color: #ffffff;
   border-radius: 12px;
   overflow: hidden;
@@ -172,7 +172,7 @@
 /* Responsive design */
 @media (max-width: 480px) {
   .products-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   
   .header {
