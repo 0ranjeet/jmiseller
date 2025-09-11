@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, MoreVertical, Home, FileText, BookImage, BookA, Bell, Plus, Truck, TrendingUpDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Header.css';
+import Logo from '../JMIlogo.png';
 
 const Header = ({ title = "Dashboard" }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -48,7 +49,7 @@ const Header = ({ title = "Dashboard" }) => {
     { label: 'Live Rate', icon: <TrendingUpDown size={18} />, path: '/live-rate' },
     { label: 'Registered Products', icon: <FileText size={18} />, path: '/myregisteredproducts' },
     { label: 'My Catalogue', icon: <BookImage size={18} />, path: '/MyCatalogue' },
-    { label: 'Ready Stock Services', icon: <Truck size={18} />, path: '/ready-stock' },
+    { label: 'Ready Stock Services', icon: <Truck size={18} />, path: '/readystockservices' },
     { label: 'Order Serve Services', icon: <BookA size={18} />, path: '/order-serve' },
     { label: 'Open Market Services', icon: <Plus size={18} />, path: '/open-market' },
     { label: 'Offers & Discount', icon: <Bell size={18} />, path: '/offers' },
@@ -66,6 +67,7 @@ const Header = ({ title = "Dashboard" }) => {
       
       {/* Sidebar Drawer */}
       <div className={`sidebar ${showSidebar ? 'show' : ''}`}>
+        <img src={Logo} alt="" style={{width:"120px",margin:"5px 60px"}} />
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;

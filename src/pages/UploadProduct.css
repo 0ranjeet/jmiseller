@@ -1,27 +1,14 @@
-/* AddProduct.css */
+/* UploadProduct.css */
 .add-product-container {
   max-width: 448px;
   margin: 0 auto;
+  padding: 3vw;
   background-color: #ffffff;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.header-title {
-  flex: 1;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.tab-container {
+.radio-group {
   display: flex;
   background-color: #f9fafb;
   padding: 4px;
@@ -29,30 +16,38 @@
   border-radius: 8px;
 }
 
-.tab-button {
+.radio-option {
   flex: 1;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  border: none;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.tab-button.active {
+.radio-option.active {
   background-color: #d97706;
   color: #ffffff;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.tab-button.inactive {
+.radio-option:not(.active) {
   background-color: transparent;
   color: #6b7280;
 }
 
-.tab-button:hover.inactive {
+.radio-option:hover:not(.active) {
   color: #374151;
+}
+
+.radio-option input[type="radio"] {
+  display: none;
 }
 
 .content {
@@ -70,20 +65,29 @@
   margin-bottom: 16px;
 }
 
+/* 3-column grid layout */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* 2-column grid layout */
 .form-grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .form-label {
   display: block;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #374151;
   margin-bottom: 4px;
@@ -96,19 +100,21 @@
 
 .select-wrapper {
   position: relative;
+  width: 100%;
 }
 
 .form-select {
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 6px;
   background-color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   color: #1f2937;
   appearance: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: 40px;
 }
 
 .form-select:focus {
@@ -122,20 +128,22 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   color: #9ca3af;
   pointer-events: none;
 }
 
 .form-input {
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   color: #1f2937;
   transition: all 0.2s ease;
+  height: 40px;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -144,88 +152,135 @@
   box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
 }
 
-.tags-container {
+/* Radio group styles */
+.radio-group-horizontal {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 16px;
+  margin-top: 4px;
 }
 
-.tag-button {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  border: 1px solid #d97706;
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radio-input {
+  width: 16px;
+  height: 16px;
+  accent-color: #d97706;
+  margin: 0;
+}
+
+.radio-label {
+  font-size: 13px;
+  color: #374151;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: none;
 }
 
-.tag-button.selected {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.tag-button.unselected {
-  background-color: #ffffff;
-  color: #d97706;
-}
-
-.tag-button:hover.unselected {
-  background-color: #fffbeb;
-}
-
+/* Upload section styles */
 .upload-section {
   margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
 }
 
-.image-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+.image-upload-container {
   margin-bottom: 16px;
 }
 
-.image-container {
-  position: relative;
-}
-
-.uploaded-image {
+.main-image-container {
   width: 100%;
-  height: 128px;
-  object-fit: cover;
+  height: 200px;
+  margin-bottom: 12px;
+  border: 2px solid #d1d5db;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
 }
 
-.remove-image-btn {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #ef4444;
-  color: #ffffff;
-  border-radius: 50%;
-  padding: 4px;
-  border: none;
+.main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.remove-image-btn:hover {
+.thumbnail-container.active {
+  border-color: #d97706;
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-thumbnail-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  padding: 2px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-thumbnail-btn:hover {
   background-color: #dc2626;
+}
+
+.remove-thumbnail-btn svg {
+  width: 12px;
+  height: 12px;
 }
 
 .upload-area {
   border: 2px dashed #d1d5db;
   border-radius: 8px;
-  padding: 32px;
+  padding: 24px;
   text-align: center;
   background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.upload-area:hover {
+  border-color: #d97706;
 }
 
 .upload-icon-container {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
   background-color: #fef3c7;
   border-radius: 50%;
   display: flex;
@@ -234,8 +289,8 @@
 }
 
 .upload-icon {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   color: #d97706;
 }
 
@@ -244,6 +299,7 @@
   color: #6b7280;
   margin-bottom: 16px;
   white-space: pre-line;
+  line-height: 1.4;
 }
 
 .upload-input {
@@ -252,15 +308,16 @@
 
 .upload-button {
   display: inline-block;
-  padding: 8px 24px;
+  padding: 8px 20px;
   background-color: #d97706;
   color: #ffffff;
-  border-radius: 8px;
+  border-radius: 6px;
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .upload-button:hover:not(:disabled) {
@@ -272,30 +329,12 @@
   cursor: not-allowed;
 }
 
-.radio-group {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+.upload-button.loading {
+  opacity: 0.7;
+  pointer-events: none;
 }
 
-.radio-item {
-  display: flex;
-  align-items: center;
-}
-
-.radio-input {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  accent-color: #d97706;
-}
-
-.radio-label {
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-}
-
+/* Submit button */
 .submit-button {
   width: 100%;
   padding: 12px 16px;
@@ -307,6 +346,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 16px;
+  margin-top: 16px;
 }
 
 .submit-button:hover:not(:disabled) {
@@ -318,36 +358,28 @@
   cursor: not-allowed;
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .add-product-container {
-    max-width: 100%;
-  }
-  
-  .content {
-    padding: 12px;
-  }
-  
-  .form-grid-2 {
-    gap: 12px;
-  }
+/* Loading indicator */
+.loading-indicator {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6b7280;
 }
 
+
+
+
+
 /* Focus styles for accessibility */
-.tab-button:focus,
+.radio-option:focus,
 .form-select:focus,
 .form-input:focus,
-.tag-button:focus,
 .upload-button:focus,
 .submit-button:focus {
   outline: 2px solid #d97706;
   outline-offset: 2px;
-}
-
-/* Loading state */
-.loading {
-  opacity: 0.7;
-  pointer-events: none;
 }
 
 /* Error state */
@@ -360,4 +392,114 @@
   color: #ef4444;
   font-size: 12px;
   margin-top: 4px;
+}
+
+/* Full-width form groups */
+.form-group-full {
+  grid-column: 1 / -1;
+}
+
+/* Radio group specific styles */
+.radio-group-compact {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.radio-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.radio-item-compact .radio-label {
+  font-size: 12px;
+}
+/* Add this to your existing CSS */
+.not-registered {
+  color: #dc2626 !important;
+  font-style: italic;
+}
+
+.select-wrapper option.not-registered {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.size-note {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+}
+/* Alert Message Styles */
+.alert-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #dc2626;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 300px;
+  max-width: 90%;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.alert-text {
+  flex: 1;
+  margin-right: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.alert-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Required field indicator */
+.form-label[class*="*"]::after {
+  content: " *";
+  color: #dc2626;
+}
+
+/* Make not-registered items more noticeable */
+.not-registered {
+  color: #dc2626 !important;
+  font-weight: 600;
+  background-color: #fef2f2 !important;
+}
+
+.select-wrapper option.not-registered {
+  color: #dc2626;
+  background-color: #fef2f2;
+  font-style: italic;
 }

@@ -1,10 +1,254 @@
-import React, { useState, useCallback, memo,  useEffect } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import "./SellerRegistration.css";
 import { useNavigate } from 'react-router-dom';
 import { useSeller } from '../contexts/SellerContext'; // Import useSeller
 
+// --- Updated ContactStep Component ---
+const ContactStep = memo(({ 
+  transactionalMobile, setTransactionalMobile, 
+  transactionalEmail, setTransactionalEmail, 
+  shopNumber, setShopNumber, 
+  buildingName, setBuildingName, 
+  streetAddress, setStreetAddress, 
+  contactCity, setContactCity, 
+  contactDistrict, setContactDistrict, 
+  contactState, setContactState, 
+  contactPinCode, setContactPinCode,
+  // --- New Props for Geo Location ---
+  shippingLatitude, 
+  shippingLongitude, 
+  setShippingLatitude, 
+  setShippingLongitude 
+  // --- End of New Props ---
+}) => {
+  // --- Local state for button text and error message ---
+  const [geoLocateStatus, setGeoLocateStatus] = useState('Geo Locate'); // 'Geo Locate', 'Getting Location...', 'Error: ...'
+  const [geoError, setGeoError] = useState('');
+
+  // --- Function to handle Geo Locate button click ---
+  const handleGeoLocate = useCallback(() => {
+    if (!navigator.geolocation) {
+      const errorMsg = 'Geolocation is not supported by your browser.';
+      setGeoLocateStatus('Error');
+      setGeoError(errorMsg);
+      console.error(errorMsg);
+      return;
+    }
+
+    setGeoLocateStatus('Getting Location...');
+    setGeoError('');
+
+    const successCallback = (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      setShippingLatitude(lat);
+      setShippingLongitude(lng);
+      setGeoLocateStatus('Location Found');
+      // Optional: Clear status after a few seconds
+      // setTimeout(() => setGeoLocateStatus('Geo Locate'), 5000); 
+    };
+
+    const errorCallback = (error) => {
+      let errorMsg = '';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg = "Location access denied by user.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg = "Location information is unavailable.";
+          break;
+        case error.TIMEOUT:
+          errorMsg = "The request to get user location timed out.";
+          break;
+        default:
+          errorMsg = "An unknown error occurred getting location.";
+          break;
+      }
+      setGeoLocateStatus('Error');
+      setGeoError(errorMsg);
+      setShippingLatitude(null); // Clear previous values on error
+      setShippingLongitude(null);
+      console.error("Geolocation error:", errorMsg);
+    };
+
+    // Options for geolocation request
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000, // 10 seconds
+      maximumAge: 300000 // 5 minutes
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
+  }, [setShippingLatitude, setShippingLongitude]); // Dependencies
+
+  // --- Display the coordinates in a readable format ---
+  const displayCoordinates = shippingLatitude !== null && shippingLongitude !== null 
+    ? `Lat: ${shippingLatitude.toFixed(6)}, Lng: ${shippingLongitude.toFixed(6)}` 
+    : 'Location not found';
+
+  return (
+    <div className="step-content">
+      <h2>Transactional Contact</h2>
+      <div className="form-group">
+        <label>Mobile</label>
+        <input
+          type="tel"
+          placeholder="10-digit mobile number"
+          value={transactionalMobile}
+          onChange={(e) => setTransactionalMobile(e.target.value)}
+          autoComplete="tel"
+        />
+      </div>
+      <div className="form-group">
+        <label>Email</label>
+        <input
+          type="email"
+          placeholder="business@example.com"
+          value={transactionalEmail}
+          onChange={(e) => setTransactionalEmail(e.target.value)}
+          autoComplete="email"
+        />
+      </div>
+      
+      <h2 style={{ marginTop: '40px' }}>Shipping Address</h2>
+      
+      {/* --- New Geo Locate Section --- */}
+      <div className="form-group">
+        <label>Get Location</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <input
+            type="text"
+            // Display coordinates or status/error message
+            value={geoLocateStatus === 'Getting Location...' ? 'Getting Location...' : 
+                   geoLocateStatus === 'Error' ? `Error: ${geoError}` : 
+                   geoLocateStatus === 'Location Found' ? displayCoordinates : 
+                   displayCoordinates} 
+            readOnly
+            disabled // Make it non-editable
+            style={{ flex: 1, backgroundColor: '#f5f5f5' }} // Visual cue it's disabled
+          />
+          <button
+            type="button"
+            onClick={handleGeoLocate}
+            disabled={geoLocateStatus === 'Getting Location...'} // Disable while fetching
+            className="btn-secondary" // Assuming you have this class or similar
+            style={{ whiteSpace: 'nowrap' }} // Prevent button text wrapping
+          >
+            {geoLocateStatus === 'Getting Location...' ? '...' : 'Geo Locate'}
+          </button>
+        </div>
+        {/* Optional: Display error message below if needed */}
+        {/* {geoError && <small style={{ color: 'red' }}>{geoError}</small>} */}
+      </div>
+      {/* --- End of New Geo Locate Section --- */}
+
+      <div className="form-group">
+        <label>Shop Number / Flat Number</label>
+        <input
+          type="text"
+          placeholder="Shop/Flat Number"
+          value={shopNumber}
+          onChange={(e) => setShopNumber(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+      <div className="form-group">
+        <label>Building / Complex Name</label>
+        <input
+          type="text"
+          placeholder="Building or Complex"
+          value={buildingName}
+          onChange={(e) => setBuildingName(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+      <div className="form-group">
+        <label>Street Address</label>
+        <input
+          type="text"
+          placeholder="Street Address"
+          value={streetAddress}
+          onChange={(e) => setStreetAddress(e.target.value)}
+          autoComplete="street-address"
+        />
+      </div>
+      <div className="form-group">
+        <label>City / Village</label>
+        <input
+          type="text"
+          placeholder="City or Village"
+          value={contactCity}
+          onChange={(e) => setContactCity(e.target.value)}
+          autoComplete="address-level2"
+        />
+      </div>
+      <div className="form-group">
+        <label>District</label>
+        <input
+          type="text"
+          placeholder="District"
+          value={contactDistrict}
+          onChange={(e) => setContactDistrict(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label>State</label>
+          <select
+            value={contactState}
+            onChange={(e) => setContactState(e.target.value)}
+          >
+            <option value="">Select State</option>
+            <option value="andhra-pradesh">Andhra Pradesh</option>
+            <option value="arunachal-pradesh">Arunachal Pradesh</option>
+            <option value="assam">Assam</option>
+            <option value="bihar">Bihar</option>
+            <option value="chhattisgarh">Chhattisgarh</option>
+            <option value="goa">Goa</option>
+            <option value="gujarat">Gujarat</option>
+            <option value="haryana">Haryana</option>
+            <option value="himachal-pradesh">Himachal Pradesh</option>
+            <option value="jharkhand">Jharkhand</option>
+            <option value="karnataka">Karnataka</option>
+            <option value="kerala">Kerala</option>
+            <option value="madhya-pradesh">Madhya Pradesh</option>
+            <option value="maharashtra">Maharashtra</option>
+            <option value="manipur">Manipur</option>
+            <option value="meghalaya">Meghalaya</option>
+            <option value="mizoram">Mizoram</option>
+            <option value="nagaland">Nagaland</option>
+            <option value="odisha">Odisha</option>
+            <option value="punjab">Punjab</option>
+            <option value="rajasthan">Rajasthan</option>
+            <option value="sikkim">Sikkim</option>
+            <option value="tamil-nadu">Tamil Nadu</option>
+            <option value="telangana">Telangana</option>
+            <option value="tripura">Tripura</option>
+            <option value="uttar-pradesh">Uttar Pradesh</option>
+            <option value="uttarakhand">Uttarakhand</option>
+            <option value="west-bengal">West Bengal</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>PIN Code</label>
+          <input
+            type="text"
+            placeholder="PIN Code"
+            value={contactPinCode}
+            onChange={(e) => setContactPinCode(e.target.value)}
+            autoComplete="postal-code"
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+// --- End of Updated ContactStep Component ---
+
+// --- Other Components (BusinessStep, PersonStep, BankStep, SecurityStep, StepIndicator) remain unchanged ---
 const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNumber, businessDocuments, setBusinessDocuments, organizationPhotos, setOrganizationPhotos, organizationName, setOrganizationName, address, setAddress, city, setCity, district, setDistrict, state, setState, pinCode, setPinCode, organizationContact, setOrganizationContact, organizationEmail, setOrganizationEmail, businessTypes, setBusinessTypes, storeLogo, setStoreLogo, removeBusinessType, removeBusinessDocument, removeOrganizationPhoto, handleBusinessTypeKeyPress }) => (
   <div className="step-content">
     <h2>Organisation Information</h2>
@@ -398,132 +642,6 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
   </div>
 ));
 
-const ContactStep = memo(({ transactionalMobile, setTransactionalMobile, transactionalEmail, setTransactionalEmail, shopNumber, setShopNumber, buildingName, setBuildingName, streetAddress, setStreetAddress, contactCity, setContactCity, contactDistrict, setContactDistrict, contactState, setContactState, contactPinCode, setContactPinCode }) => (
-  <div className="step-content">
-    <h2>Transactional Contact</h2>
-    <div className="form-group">
-      <label>Mobile</label>
-      <input
-        type="tel"
-        placeholder="10-digit mobile number"
-        value={transactionalMobile}
-        onChange={(e) => setTransactionalMobile(e.target.value)}
-        autoComplete="tel"
-      />
-    </div>
-    <div className="form-group">
-      <label>Email</label>
-      <input
-        type="email"
-        placeholder="business@example.com"
-        value={transactionalEmail}
-        onChange={(e) => setTransactionalEmail(e.target.value)}
-        autoComplete="email"
-      />
-    </div>
-    <h2 style={{ marginTop: '40px' }}>Shipping Address</h2>
-    <div className="form-group">
-      <label>Shop Number / Flat Number</label>
-      <input
-        type="text"
-        placeholder="Shop/Flat Number"
-        value={shopNumber}
-        onChange={(e) => setShopNumber(e.target.value)}
-        autoComplete="off"
-      />
-    </div>
-    <div className="form-group">
-      <label>Building / Complex Name</label>
-      <input
-        type="text"
-        placeholder="Building or Complex"
-        value={buildingName}
-        onChange={(e) => setBuildingName(e.target.value)}
-        autoComplete="off"
-      />
-    </div>
-    <div className="form-group">
-      <label>Street Address</label>
-      <input
-        type="text"
-        placeholder="Street Address"
-        value={streetAddress}
-        onChange={(e) => setStreetAddress(e.target.value)}
-        autoComplete="street-address"
-      />
-    </div>
-    <div className="form-group">
-      <label>City / Village</label>
-      <input
-        type="text"
-        placeholder="City or Village"
-        value={contactCity}
-        onChange={(e) => setContactCity(e.target.value)}
-        autoComplete="address-level2"
-      />
-    </div>
-    <div className="form-group">
-      <label>District</label>
-      <input
-        type="text"
-        placeholder="District"
-        value={contactDistrict}
-        onChange={(e) => setContactDistrict(e.target.value)}
-        autoComplete="off"
-      />
-    </div>
-    <div className="form-row">
-      <div className="form-group">
-        <label>State</label>
-        <select
-          value={contactState}
-          onChange={(e) => setContactState(e.target.value)}
-        >
-          <option value="">Select State</option>
-          <option value="andhra-pradesh">Andhra Pradesh</option>
-          <option value="arunachal-pradesh">Arunachal Pradesh</option>
-          <option value="assam">Assam</option>
-          <option value="bihar">Bihar</option>
-          <option value="chhattisgarh">Chhattisgarh</option>
-          <option value="goa">Goa</option>
-          <option value="gujarat">Gujarat</option>
-          <option value="haryana">Haryana</option>
-          <option value="himachal-pradesh">Himachal Pradesh</option>
-          <option value="jharkhand">Jharkhand</option>
-          <option value="karnataka">Karnataka</option>
-          <option value="kerala">Kerala</option>
-          <option value="madhya-pradesh">Madhya Pradesh</option>
-          <option value="maharashtra">Maharashtra</option>
-          <option value="manipur">Manipur</option>
-          <option value="meghalaya">Meghalaya</option>
-          <option value="mizoram">Mizoram</option>
-          <option value="nagaland">Nagaland</option>
-          <option value="odisha">Odisha</option>
-          <option value="punjab">Punjab</option>
-          <option value="rajasthan">Rajasthan</option>
-          <option value="sikkim">Sikkim</option>
-          <option value="tamil-nadu">Tamil Nadu</option>
-          <option value="telangana">Telangana</option>
-          <option value="tripura">Tripura</option>
-          <option value="uttar-pradesh">Uttar Pradesh</option>
-          <option value="uttarakhand">Uttarakhand</option>
-          <option value="west-bengal">West Bengal</option>
-        </select>
-      </div>
-      <div className="form-group">
-        <label>PIN Code</label>
-        <input
-          type="text"
-          placeholder="PIN Code"
-          value={contactPinCode}
-          onChange={(e) => setContactPinCode(e.target.value)}
-          autoComplete="postal-code"
-        />
-      </div>
-    </div>
-  </div>
-));
-
 const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountType, setAccountType, accountHolderName, setAccountHolderName, accountNumber, setAccountNumber, confirmAccountNumber, setConfirmAccountNumber }) => (
   <div className="step-content">
     <h2>Organization Bank Details</h2>
@@ -666,7 +784,6 @@ const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
 ));
 
 // --- Main Component ---
-
 const SellerRegistration = () => {
   const nav = useNavigate();
   const { seller } = useSeller(); // Get seller object from context
@@ -716,6 +833,11 @@ const SellerRegistration = () => {
   const [contactState, setContactState] = useState('');
   const [contactPinCode, setContactPinCode] = useState('');
 
+  // --- Add State Variables for Shipping Coordinates ---
+  const [shippingLatitude, setShippingLatitude] = useState(null);
+  const [shippingLongitude, setShippingLongitude] = useState(null);
+  // --- End of new state variables ---
+
   // Bank details states
   const [bankName, setBankName] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -732,7 +854,6 @@ const SellerRegistration = () => {
   // Cloudinary configuration
   const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
   const CLOUDINARY_UPLOAD_PRESET = "jmiseller";
-
   const steps = [
     { number: 1, title: 'Organization', key: 'business' },
     { number: 2, title: 'Person', key: 'person' },
@@ -802,20 +923,17 @@ const SellerRegistration = () => {
     try {
       // Use sellerId as the document ID in 'sellerregistrations' collection
       const docRef = doc(db, 'sellerregistrations', sellerId);
-
       // Save seller registration data using sellerId
       await setDoc(docRef, {
         ...data,
         sellerId: sellerId,
         updatedAt: serverTimestamp()
       }, { merge: true });
-
       // Update the main seller document (in 'sellers' collection) to indicate registration completion
       const sellerProfileRef = doc(db, 'profile', sellerId);
       await setDoc(sellerProfileRef, {
         SellerRegistration: true,
       }, { merge: true });
-
       alert("Seller registered successfully!");
       nav('/segmentregistration');
     } catch (error) {
@@ -868,6 +986,10 @@ const SellerRegistration = () => {
         contactDistrict,
         contactState,
         contactPinCode,
+        // --- Include Coordinates in Data to Save ---
+        shippingLatitude,
+        shippingLongitude,
+        // --- End of Including Coordinates ---
         bankName,
         ifscCode,
         accountType,
@@ -878,7 +1000,6 @@ const SellerRegistration = () => {
         privatePasskey,
         confirmPasskey
       };
-
       // Upload business documents
       if (businessDocuments.length > 0) {
         setUploadProgress(prev => ({ ...prev, businessDocs: 'Uploading business documents...' }));
@@ -886,7 +1007,6 @@ const SellerRegistration = () => {
         dataToSave.businessDocumentUrls = businessDocResults.map(result => result.url);
         dataToSave.businessDocumentIds = businessDocResults.map(result => result.publicId);
       }
-
       // Upload organization photos
       if (organizationPhotos.length > 0) {
         setUploadProgress(prev => ({ ...prev, orgPhotos: 'Uploading organization photos...' }));
@@ -894,7 +1014,6 @@ const SellerRegistration = () => {
         dataToSave.organizationPhotoUrls = orgPhotoResults.map(result => result.url);
         dataToSave.organizationPhotoIds = orgPhotoResults.map(result => result.publicId);
       }
-
       // Upload dealing person photos
       setUploadProgress(prev => ({ ...prev, personPhotos: 'Uploading person photos...' }));
       dataToSave.dealingPersons = await Promise.all(
@@ -911,7 +1030,6 @@ const SellerRegistration = () => {
           return person;
         })
       );
-
       // Upload store logo
       if (storeLogo) {
         setUploadProgress(prev => ({ ...prev, logo: 'Uploading store logo...' }));
@@ -919,15 +1037,11 @@ const SellerRegistration = () => {
         dataToSave.storeLogoUrl = logoResult.url;
         dataToSave.storeLogoId = logoResult.publicId;
       }
-
       setUploadProgress(prev => ({ ...prev, saving: 'Saving registration data...' }));
-
       // Save to Firestore using sellerId
       await saveToFirestore(dataToSave);
-
       setCompletedSteps(prev => [...prev, currentStep]);
       alert(`Registration completed successfully! Your ID is: ${sellerId}`);
-
     } catch (error) {
       console.error('Registration failed:', error);
       alert('Registration failed. Please try again.');
@@ -939,7 +1053,11 @@ const SellerRegistration = () => {
     sellerId, nav, gstrStatus, gstinNumber, organizationName, address, city, district, state, pinCode,
     organizationContact, organizationEmail, businessTypes, storeLogo, dealingPersons,
     transactionalMobile, transactionalEmail, shopNumber, buildingName, streetAddress,
-    contactCity, contactDistrict, contactState, contactPinCode, bankName, ifscCode,
+    contactCity, contactDistrict, contactState, contactPinCode, 
+    // --- Add Coordinates to Dependencies ---
+    shippingLatitude, shippingLongitude,
+    // --- End of Adding Coordinates ---
+    bankName, ifscCode,
     accountType, accountHolderName, accountNumber, confirmAccountNumber, jmiOfficerID,
     privatePasskey, confirmPasskey, businessDocuments, organizationPhotos, currentStep,
     uploadToCloudinary, uploadMultipleFiles, saveToFirestore
@@ -1040,6 +1158,7 @@ const SellerRegistration = () => {
         );
       case 3:
         return (
+          // --- Pass New Props to ContactStep ---
           <ContactStep
             transactionalMobile={transactionalMobile}
             setTransactionalMobile={setTransactionalMobile}
@@ -1059,7 +1178,14 @@ const SellerRegistration = () => {
             setContactState={setContactState}
             contactPinCode={contactPinCode}
             setContactPinCode={setContactPinCode}
+            // --- Pass New Geo Location Props ---
+            shippingLatitude={shippingLatitude}
+            shippingLongitude={shippingLongitude}
+            setShippingLatitude={setShippingLatitude}
+            setShippingLongitude={setShippingLongitude}
+            // --- End of Passing New Props ---
           />
+          // --- End of Passing New Props ---
         );
       case 4:
         return (
@@ -1128,17 +1254,12 @@ const SellerRegistration = () => {
         );
     }
   };
-
-  // Render nothing or a loading state while checking context or if sellerId is missing
   if (sellerId === undefined) {
       return <div>Loading registration session...</div>; // Or null, or a specific loading/error component
   }
-
   if (!sellerId) {
-      // This case is handled by the useEffect and handleRegister, but a fallback UI is good
       return <div>Registration session not found. Redirecting...</div>;
   }
-
   return (
     <div className="seller-registration" style={{
       maxWidth: '600px',

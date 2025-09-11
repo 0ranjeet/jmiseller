@@ -20,6 +20,8 @@ import SegmentRegistration from "./pages/SegmentRegistration";
 import MyRegisteredProducts from "./pages/MyregisteredProducts";
 import QCApprovalPage from "./pages/QCApprovalPage";
 import MyCatalogue from "./pages/MyCatalogue";
+import ReadyStockServices from "./pages/ReadyStockServices";
+import Catalogue from "./pages/Catlouge";
 
 // 🔒 Protected Route Wrapper - Updated to check SellerContext
 // This component must be rendered inside the Router and SellerProvider
@@ -59,6 +61,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/UploadProduct" element={<UploadProduct />} />
             <Route path="/MyCatalogue" element={<MyCatalogue />} />
+            <Route path="/catalogue/:type" element={<Catalogue />} />
 
             {/* Protected Routes */}
             {/* Each protected route now uses the ProtectedRoute wrapper */}
@@ -83,6 +86,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MyRegisteredProducts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/readystockservices"
+              element={
+                <ProtectedRoute>
+                  <ReadyStockServices />
                 </ProtectedRoute>
               }
             />

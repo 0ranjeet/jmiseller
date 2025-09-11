@@ -1,0 +1,152 @@
+{
+  "segments": ["Gold", "Silver", "Platinum", "Diamond", "Gems", "Pearls"],
+  
+  "categoriesBySegment": {
+    "Gold": ["916 HUID", "750 HUID", "840", "650", "480"],
+    "Silver": ["925", "999", "800", "900"],
+    "Platinum": ["950", "900", "850"],
+    "Diamond": ["VS1", "VS2", "VVS1", "VVS2", "SI1", "SI2"],
+    "Gems": ["Emerald", "Ruby", "Sapphire", "Topaz"],
+    "Pearls": ["Freshwater", "Akoya", "Tahitian", "South Sea"]
+  },
+
+  "productSources": [
+    "KATAKI", "RAJKOT", "BOMBAY", "COIMBATORE", "KOLKATA", "CASTING",
+    "MACHINE MADE", "SOUTH", "TURKEY", "CNC", "ITALIAN", "SANKHA POLA",
+    "NAKASHI", "DIECE THUKAI", "ACCESORIES", "MARWAD"
+  ],
+
+  "productNames": [
+    "MANGTIKA", "NATH", "NOSEPIN", "MANGAL SUTRA", "CHAINS", "DOKIA",
+    "SHORT NECKLACE", "LONG NECKLACE", "CHOKKAR", "CHEEK", "PENDENTS",
+    "BABY LOCKET", "GOD LOCKET", "BAJU BANDH", "BANGLE", "SANKHA POLA",
+    "BRASLET & KADA", "LADIES RING", "GENTS RING", "BABY RING",
+    "KAMAR BANDH", "PAYAL", "BICHHIYA", "ACCESORIES"
+  ],
+
+  "styleTypes": ["regular", "highFancy", "highFinish", "lightWeight"],
+
+  "specifications": ["PLANE", "MEENA WORK", "STONE WORK", "OTHER WORK"],
+
+  "productSizes": {
+    "MANGTIKA": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Typically adjustable"
+    },
+    "NATH": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Typically adjustable"
+    },
+    "NOSEPIN": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"]
+    },
+    "MANGAL SUTRA": {
+      "sizing_unit": "Inches",
+      "options": ["16\"", "18\"", "20\"", "22\"", "24\"", "26\"", "28\"", "30\"", "32\"", "34\"", "36\""],
+      "note": "Length of the chain"
+    },
+    "CHAINS": {
+      "sizing_unit": "Inches",
+      "options": ["16\"", "18\"", "20\"", "22\"", "24\"", "26\"", "28\"", "30\"", "32\"", "34\"", "36\""],
+      "note": "Length of the chain"
+    },
+    "DOKIA": {
+      "sizing_unit": "Inches",
+      "options": ["18\"", "20\"", "22\"", "24\"", "26\"", "28\"", "30\""],
+      "note": "Length of the chain"
+    },
+    "SHORT NECKLACE": {
+      "sizing_unit": "Inches",
+      "options": ["16\"", "18\"", "20\""],
+      "note": "Length of the necklace"
+    },
+    "LONG NECKLACE": {
+      "sizing_unit": "Inches",
+      "options": ["22\"", "24\"", "26\"", "28\"", "30\"", "32\"", "34\"", "36\""],
+      "note": "Length of the necklace"
+    },
+    "CHOKKAR": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Typically fits closely around the neck, often adjustable"
+    },
+    "CHEEK": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Can be adjustable"
+    },
+    "PENDENTS": {
+      "sizing_unit": "Dimensions (mm)",
+      "options": [],
+      "note": "Specify Height and Width in millimeters (mm)"
+    },
+    "BABY LOCKET": {
+      "sizing_unit": "Dimensions (mm)",
+      "options": [],
+      "note": "Specify Height and Width in millimeters (mm)"
+    },
+    "GOD LOCKET": {
+      "sizing_unit": "Dimensions (mm)",
+      "options": [],
+      "note": "Specify Height and Width in millimeters (mm)"
+    },
+    "BAJU BANDH": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Typically adjustable"
+    },
+    "BANGLE": {
+      "sizing_unit": "Indian Bangle Size",
+      "options": ["2.2", "2.4", "2.6", "2.8", "2.10", "2.12"],
+      "note": "Diameter of the bangle in inches"
+    },
+    "SANKHA POLA": {
+      "sizing_unit": "Indian Bangle Size",
+      "options": ["2.2", "2.4", "2.6", "2.8", "2.10", "2.12"],
+      "note": "Diameter of the Sankha Pola in inches"
+    },
+    "BRASLET & KADA": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Typically adjustable"
+    },
+    "LADIES RING": {
+      "sizing_unit": "US Ring Size",
+      "options": ["4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
+      "note": "Commonly used sizes for ladies rings"
+    },
+    "GENTS RING": {
+      "sizing_unit": "US Ring Size",
+      "options": ["8", "9", "10", "11", "12", "13", "14"],
+      "note": "Commonly used sizes for gents rings"
+    },
+    "BABY RING": {
+      "sizing_unit": "US Ring Size",
+      "options": ["0", "1", "2", "3", "4"],
+      "note": "Commonly used sizes for baby rings"
+    },
+    "KAMAR BANDH": {
+      "sizing_unit": "Inches",
+      "options": ["28\"", "30\"", "32\"", "34\"", "36\"", "38\"", "40\""],
+      "note": "Waist size"
+    },
+    "PAYAL": {
+      "sizing_unit": "Inches",
+      "options": ["9\"", "9.5\"", "10\"", "10.5\"", "11\""],
+      "note": "Ankle length"
+    },
+    "BICHHIYA": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Can be adjustable"
+    },
+    "ACCESORIES": {
+      "sizing_unit": "Not Applicable",
+      "options": [],
+      "note": "Provide a description of the size or dimensions in the product details."
+    }
+  }
+}

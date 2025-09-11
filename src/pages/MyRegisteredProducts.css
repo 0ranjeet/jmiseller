@@ -49,7 +49,7 @@
 
 .registertab-button.active {
   color: #C19720;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .registertab-button.active::after {
@@ -139,7 +139,6 @@
 
 /* Product Card */
 .product-card {
-  display: flex;
   align-items: center;
   padding: 16px;
   background-color: #FFFFFF;
@@ -263,7 +262,7 @@
   background-color: #FFFFFF;
   box-sizing: border-box;
   border-top: 1px solid #E0E0E0;
-  z-index: 1000;
+  z-index: 3;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -295,4 +294,109 @@
   z-index: 100;
   background-color: #FFFFFF;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #C19720;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid #E0E0E0;
+}
+
+.cancel-button,
+.submit-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-button {
+  background-color: #F3F4F6;
+  color: #666;
+}
+
+.submit-button {
+  background-color: #C19720;
+  color: white;
+}
+
+.submit-button:hover {
+  background-color: #A17710;
 }
