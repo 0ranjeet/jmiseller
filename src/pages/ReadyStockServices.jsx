@@ -93,7 +93,7 @@ const ReadyStockServices = () => {
           {steps.map((step, index) => (
             <div key={step.id} className="step-card">
               <div className={`step-line ${step.color}`} />
-              <div className="step-content">
+              <div className="readystep-content">
                 <div className="step-number">
                   <span className={`number ${step.color}`}>{step.id}</span>
                 </div>
