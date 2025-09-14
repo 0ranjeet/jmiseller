@@ -3,30 +3,32 @@ import { db } from '../services/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import "./SellerRegistration.css";
 import { useNavigate } from 'react-router-dom';
-import { useSeller } from '../contexts/SellerContext'; // Import useSeller
+import { useSeller } from '../contexts/SellerContext';
 
 // --- Updated ContactStep Component ---
-const ContactStep = memo(({ 
-  transactionalMobile, setTransactionalMobile, 
-  transactionalEmail, setTransactionalEmail, 
-  shopNumber, setShopNumber, 
-  buildingName, setBuildingName, 
-  streetAddress, setStreetAddress, 
-  contactCity, setContactCity, 
-  contactDistrict, setContactDistrict, 
-  contactState, setContactState, 
+const ContactStep = memo(({
+  transactionalMobile, setTransactionalMobile,
+  transactionalEmail, setTransactionalEmail,
+  shopNumber, setShopNumber,
+  buildingName, setBuildingName,
+  streetAddress, setStreetAddress,
+  contactCity, setContactCity,
+  contactDistrict, setContactDistrict,
+  contactState, setContactState,
   contactPinCode, setContactPinCode,
   // --- New Props for Geo Location ---
-  shippingLatitude, 
-  shippingLongitude, 
-  setShippingLatitude, 
-  setShippingLongitude 
-  // --- End of New Props ---
+  shippingLatitude,
+  shippingLongitude,
+  setShippingLatitude,
+  setShippingLongitude,
+  // --- Validation ---
+  errors,
+  setErrors
+  // --- End of Validation Props ---
 }) => {
   // --- Local state for button text and error message ---
   const [geoLocateStatus, setGeoLocateStatus] = useState('Geo Locate'); // 'Geo Locate', 'Getting Location...', 'Error: ...'
   const [geoError, setGeoError] = useState('');
-
   // --- Function to handle Geo Locate button click ---
   const handleGeoLocate = useCallback(() => {
     if (!navigator.geolocation) {
@@ -36,23 +38,20 @@ const ContactStep = memo(({
       console.error(errorMsg);
       return;
     }
-
     setGeoLocateStatus('Getting Location...');
     setGeoError('');
-
     const successCallback = (position) => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       setShippingLatitude(lat);
       setShippingLongitude(lng);
       setGeoLocateStatus('Location Found');
-      // Optional: Clear status after a few seconds
-      // setTimeout(() => setGeoLocateStatus('Geo Locate'), 5000); 
+      // Clear potential error if location is found
+      setErrors(prev => ({ ...prev, shippingCoordinates: null }));
     };
-
     const errorCallback = (error) => {
       let errorMsg = '';
-      switch(error.code) {
+      switch (error.code) {
         case error.PERMISSION_DENIED:
           errorMsg = "Location access denied by user.";
           break;
@@ -70,50 +69,52 @@ const ContactStep = memo(({
       setGeoError(errorMsg);
       setShippingLatitude(null); // Clear previous values on error
       setShippingLongitude(null);
+      // Set error for validation
+      setErrors(prev => ({ ...prev, shippingCoordinates: errorMsg }));
       console.error("Geolocation error:", errorMsg);
     };
-
     // Options for geolocation request
     const options = {
       enableHighAccuracy: true,
       timeout: 10000, // 10 seconds
       maximumAge: 300000 // 5 minutes
     };
-
     navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
-  }, [setShippingLatitude, setShippingLongitude]); // Dependencies
+  }, [setShippingLatitude, setShippingLongitude, setErrors]); // Dependencies
 
   // --- Display the coordinates in a readable format ---
-  const displayCoordinates = shippingLatitude !== null && shippingLongitude !== null 
-    ? `Lat: ${shippingLatitude.toFixed(6)}, Lng: ${shippingLongitude.toFixed(6)}` 
+  const displayCoordinates = shippingLatitude !== null && shippingLongitude !== null
+    ? `Lat: ${shippingLatitude.toFixed(6)}, Lng: ${shippingLongitude.toFixed(6)}`
     : 'Location not found';
 
   return (
     <div className="step-content">
       <h2>Transactional Contact</h2>
       <div className="form-group">
-        <label>Mobile</label>
+        <label>Mobile <span className="required-asterisk">*</span></label>
         <input
           type="tel"
           placeholder="10-digit mobile number"
           value={transactionalMobile}
           onChange={(e) => setTransactionalMobile(e.target.value)}
           autoComplete="tel"
+          required
         />
+         {errors.transactionalMobile && <span className="error-message">{errors.transactionalMobile}</span>}
       </div>
       <div className="form-group">
-        <label>Email</label>
+        <label>Email <span className="required-asterisk">*</span></label>
         <input
           type="email"
           placeholder="business@example.com"
           value={transactionalEmail}
           onChange={(e) => setTransactionalEmail(e.target.value)}
           autoComplete="email"
+          required
         />
+         {errors.transactionalEmail && <span className="error-message">{errors.transactionalEmail}</span>}
       </div>
-      
       <h2 style={{ marginTop: '40px' }}>Shipping Address</h2>
-      
       {/* --- New Geo Locate Section --- */}
       <div className="form-group">
         <label>Get Location</label>
@@ -121,10 +122,10 @@ const ContactStep = memo(({
           <input
             type="text"
             // Display coordinates or status/error message
-            value={geoLocateStatus === 'Getting Location...' ? 'Getting Location...' : 
-                   geoLocateStatus === 'Error' ? `Error: ${geoError}` : 
-                   geoLocateStatus === 'Location Found' ? displayCoordinates : 
-                   displayCoordinates} 
+            value={geoLocateStatus === 'Getting Location...' ? 'Getting Location...' :
+              geoLocateStatus === 'Error' ? `Error: ${geoError}` :
+                geoLocateStatus === 'Location Found' ? displayCoordinates :
+                  displayCoordinates}
             readOnly
             disabled // Make it non-editable
             style={{ flex: 1, backgroundColor: '#f5f5f5' }} // Visual cue it's disabled
@@ -141,65 +142,76 @@ const ContactStep = memo(({
         </div>
         {/* Optional: Display error message below if needed */}
         {/* {geoError && <small style={{ color: 'red' }}>{geoError}</small>} */}
+        {errors.shippingCoordinates && <span className="error-message">{errors.shippingCoordinates}</span>}
       </div>
       {/* --- End of New Geo Locate Section --- */}
-
       <div className="form-group">
-        <label>Shop Number / Flat Number</label>
+        <label>Shop Number / Flat Number <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="Shop/Flat Number"
           value={shopNumber}
           onChange={(e) => setShopNumber(e.target.value)}
           autoComplete="off"
+          required
         />
+         {errors.shopNumber && <span className="error-message">{errors.shopNumber}</span>}
       </div>
       <div className="form-group">
-        <label>Building / Complex Name</label>
+        <label>Building / Complex Name <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="Building or Complex"
           value={buildingName}
           onChange={(e) => setBuildingName(e.target.value)}
           autoComplete="off"
+          required
         />
+         {errors.buildingName && <span className="error-message">{errors.buildingName}</span>}
       </div>
       <div className="form-group">
-        <label>Street Address</label>
+        <label>Street Address <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="Street Address"
           value={streetAddress}
           onChange={(e) => setStreetAddress(e.target.value)}
           autoComplete="street-address"
+          required
         />
+         {errors.streetAddress && <span className="error-message">{errors.streetAddress}</span>}
       </div>
       <div className="form-group">
-        <label>City / Village</label>
+        <label>City / Village <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="City or Village"
           value={contactCity}
           onChange={(e) => setContactCity(e.target.value)}
           autoComplete="address-level2"
+          required
         />
+         {errors.contactCity && <span className="error-message">{errors.contactCity}</span>}
       </div>
       <div className="form-group">
-        <label>District</label>
+        <label>District <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="District"
           value={contactDistrict}
           onChange={(e) => setContactDistrict(e.target.value)}
           autoComplete="off"
+          required
         />
+         {errors.contactDistrict && <span className="error-message">{errors.contactDistrict}</span>}
       </div>
       <div className="form-row">
         <div className="form-group">
-          <label>State</label>
+          <label>State <span className="required-asterisk">*</span></label>
           <select
             value={contactState}
             onChange={(e) => setContactState(e.target.value)}
+            required
           >
             <option value="">Select State</option>
             <option value="andhra-pradesh">Andhra Pradesh</option>
@@ -231,16 +243,19 @@ const ContactStep = memo(({
             <option value="uttarakhand">Uttarakhand</option>
             <option value="west-bengal">West Bengal</option>
           </select>
+          {errors.contactState && <span className="error-message">{errors.contactState}</span>}
         </div>
         <div className="form-group">
-          <label>PIN Code</label>
+          <label>PIN Code <span className="required-asterisk">*</span></label>
           <input
             type="text"
             placeholder="PIN Code"
             value={contactPinCode}
             onChange={(e) => setContactPinCode(e.target.value)}
             autoComplete="postal-code"
+            required
           />
+           {errors.contactPinCode && <span className="error-message">{errors.contactPinCode}</span>}
         </div>
       </div>
     </div>
@@ -248,19 +263,43 @@ const ContactStep = memo(({
 });
 // --- End of Updated ContactStep Component ---
 
-// --- Other Components (BusinessStep, PersonStep, BankStep, SecurityStep, StepIndicator) remain unchanged ---
-const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNumber, businessDocuments, setBusinessDocuments, organizationPhotos, setOrganizationPhotos, organizationName, setOrganizationName, address, setAddress, city, setCity, district, setDistrict, state, setState, pinCode, setPinCode, organizationContact, setOrganizationContact, organizationEmail, setOrganizationEmail, businessTypes, setBusinessTypes, storeLogo, setStoreLogo, removeBusinessType, removeBusinessDocument, removeOrganizationPhoto, handleBusinessTypeKeyPress }) => (
+// --- Updated BusinessStep Component ---
+const BusinessStep = memo(({
+  gstrStatus, setGstrStatus, gstinNumber, setGstinNumber,
+  businessDocuments, setBusinessDocuments,
+  organizationPhotos, setOrganizationPhotos,
+  organizationName, setOrganizationName,
+  address, setAddress,
+  city, setCity,
+  district, setDistrict,
+  state, setState,
+  pinCode, setPinCode,
+  organizationContact, setOrganizationContact,
+  organizationEmail, setOrganizationEmail,
+  // --- New Props ---
+  businessType, setBusinessType, // Replaces businessTypes array
+  teamSize, setTeamSize, // New field
+  storeLogo, setStoreLogo,
+  removeBusinessDocument,
+  removeOrganizationPhoto,
+  // --- Validation ---
+  errors,
+  setErrors
+  // --- End of Validation Props ---
+}) => (
   <div className="step-content">
     <h2>Organisation Information</h2>
     <div className="form-group">
-      <label>GSTR Status</label>
+      <label>GSTR Status <span className="required-asterisk">*</span></label>
       <div className="radio-group">
         <label className={`radio-option ${gstrStatus === 'registered' ? 'active' : ''}`}>
           <input
             type="radio"
             value="registered"
+            name="gstrStatus"
             checked={gstrStatus === 'registered'}
             onChange={(e) => setGstrStatus(e.target.value)}
+            required
           />
           Registered
         </label>
@@ -268,35 +307,40 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
           <input
             type="radio"
             value="non-registered"
+            name="gstrStatus"
             checked={gstrStatus === 'non-registered'}
             onChange={(e) => setGstrStatus(e.target.value)}
           />
           Non-Registered
         </label>
       </div>
+       {errors.gstrStatus && <span className="error-message">{errors.gstrStatus}</span>}
     </div>
     <div className="form-group">
-      <label>GSTIN Number</label>
+      <label>{gstrStatus === 'non-registered' ? 'Pan Number' : 'GSTIN Number'} <span className="required-asterisk">*</span></label>
       <input
         type="text"
-        placeholder="e.g. 22AAAAA0000A1Z5"
+        placeholder={gstrStatus === 'non-registered' ? "e.g. ABCDE1234F" : "e.g. 22AAAAA0000A1Z5"}
         value={gstinNumber}
         onChange={(e) => setGstinNumber(e.target.value)}
         autoComplete="off"
+        required={gstrStatus === 'registered' || gstrStatus === 'non-registered'} // Always required if GSTR status is selected
       />
-      <small>Format: 22AAAAA0000A1Z5</small>
+      <small>{gstrStatus === 'non-registered' ? "Format: ABCDE1234F" : "Format: 22AAAAA0000A1Z5"}</small>
+       {errors.gstinNumber && <span className="error-message">{errors.gstinNumber}</span>}
     </div>
     <div className="form-group">
-      <label>Business Documents</label>
+      <label>Business Documents <span className="required-asterisk">*</span></label>
       <div className="upload-area">
         <div className="upload-icon">📄</div>
-        <p>Upload PDF, JPG or PNG files</p>
+        <p>Upload GST Certificate,BIS License</p>
         <input
           type="file"
           multiple
           accept=".pdf,.jpg,.jpeg,.png"
           onChange={(e) => setBusinessDocuments(Array.from(e.target.files))}
           style={{ display: 'none' }}
+          required={businessDocuments.length === 0} // Required if no files uploaded
           id="business-docs"
         />
         <label htmlFor="business-docs" className="btn-secondary">Select Files</label>
@@ -317,9 +361,10 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
           ))}
         </div>
       )}
+       {errors.businessDocuments && <span className="error-message">{errors.businessDocuments}</span>}
     </div>
     <div className="form-group">
-      <label>Organization Photos</label>
+      <label>Organization Photos <span className="required-asterisk">*</span></label>
       <div className="upload-area">
         <div className="upload-icon">📷</div>
         <p>Upload store photos</p>
@@ -330,6 +375,7 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
           onChange={(e) => setOrganizationPhotos(Array.from(e.target.files))}
           style={{ display: 'none' }}
           id="org-photos"
+          required={organizationPhotos.length === 0} // Required if no photos uploaded
         />
         <label htmlFor="org-photos" className="btn-secondary">Add Photos</label>
       </div>
@@ -353,55 +399,65 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
           ))}
         </div>
       )}
+       {errors.organizationPhotos && <span className="error-message">{errors.organizationPhotos}</span>}
     </div>
     <div className="form-group">
-      <label>Organization Name</label>
+      <label>Organization Name <span className="required-asterisk">*</span></label>
       <input
         type="text"
         placeholder="Enter business name"
         value={organizationName}
         onChange={(e) => setOrganizationName(e.target.value)}
         autoComplete="organization"
+        required
       />
+       {errors.organizationName && <span className="error-message">{errors.organizationName}</span>}
     </div>
     <div className="form-group">
-      <label>Address</label>
+      <label>Address <span className="required-asterisk">*</span></label>
       <input
         type="text"
         placeholder="Street/Building"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
         autoComplete="street-address"
+        required
       />
+       {errors.address && <span className="error-message">{errors.address}</span>}
     </div>
     <div className="form-row">
       <div className="form-group">
-        <label>City/Village</label>
+        <label>City/Village <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="City/Village"
           value={city}
           onChange={(e) => setCity(e.target.value)}
           autoComplete="address-level2"
+          required
         />
+         {errors.city && <span className="error-message">{errors.city}</span>}
       </div>
       <div className="form-group">
-        <label>District</label>
+        <label>District <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="District"
           value={district}
           onChange={(e) => setDistrict(e.target.value)}
           autoComplete="off"
+          required
         />
+         {errors.district && <span className="error-message">{errors.district}</span>}
       </div>
     </div>
     <div className="form-row">
       <div className="form-group">
-        <label>State</label>
+        <label>State <span className="required-asterisk">*</span></label>
         <select
           value={state}
           onChange={(e) => setState(e.target.value)}
+          required
         >
           <option value="">Select State</option>
           <option value="andhra-pradesh">Andhra Pradesh</option>
@@ -433,60 +489,80 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
           <option value="uttarakhand">Uttarakhand</option>
           <option value="west-bengal">West Bengal</option>
         </select>
+         {errors.state && <span className="error-message">{errors.state}</span>}
       </div>
       <div className="form-group">
-        <label>PIN Code</label>
+        <label>PIN Code <span className="required-asterisk">*</span></label>
         <input
           type="text"
           placeholder="PIN Code"
           value={pinCode}
           onChange={(e) => setPinCode(e.target.value)}
           autoComplete="postal-code"
+          required
         />
+         {errors.pinCode && <span className="error-message">{errors.pinCode}</span>}
       </div>
     </div>
     <div className="form-group">
-      <label>Organization Contact</label>
+      <label>Organization Contact <span className="required-asterisk">*</span></label>
       <input
         type="tel"
         placeholder="10-digit mobile number"
         value={organizationContact}
         onChange={(e) => setOrganizationContact(e.target.value)}
         autoComplete="tel"
+        required
       />
+       {errors.organizationContact && <span className="error-message">{errors.organizationContact}</span>}
     </div>
     <div className="form-group">
-      <label>Organization Email</label>
+      <label>Organization Email <span className="required-asterisk">*</span></label>
       <input
         type="email"
         placeholder="business@example.com"
         value={organizationEmail}
         onChange={(e) => setOrganizationEmail(e.target.value)}
         autoComplete="email"
+        required
       />
+       {errors.organizationEmail && <span className="error-message">{errors.organizationEmail}</span>}
     </div>
+    {/* --- New Business Type Dropdown --- */}
     <div className="form-group">
-      <label>Nature of Business</label>
-      <div className="business-types">
-        {businessTypes.map((type, index) => (
-          <span key={type + index} className="business-tag">
-            {type}
-            <span
-              className="remove"
-              onClick={() => removeBusinessType(index)}
-            >
-              ×
-            </span>
-          </span>
-        ))}
-      </div>
-      <input
-        type="text"
-        placeholder="Add more business types"
-        onKeyPress={handleBusinessTypeKeyPress}
-        autoComplete="off"
-      />
+      <label>Business Type <span className="required-asterisk">*</span></label>
+      <select
+        value={businessType}
+        onChange={(e) => setBusinessType(e.target.value)}
+        required
+      >
+        <option value="">Select Business Type</option>
+        <option value="karigar">Karigar</option>
+        <option value="super_stockist">Super Stockist</option>
+        <option value="c_and_f">C&F</option>
+        <option value="wholesaler">WholeSeller</option>
+        <option value="broker">Broker</option>
+        <option value="corporate_b2b">Coporate B2B</option>
+      </select>
+       {errors.businessType && <span className="error-message">{errors.businessType}</span>}
     </div>
+    {/* --- End of New Business Type Dropdown ---*/}
+
+    {/* --- New Team Size Input --- */}
+    <div className="form-group">
+      <label>Team Size <span className="required-asterisk">*</span></label>
+      <input
+        type="number"
+        placeholder="Enter team size"
+        value={teamSize}
+        onChange={(e) => setTeamSize(e.target.value)}
+        min="0" // Optional: Set minimum value
+        required
+      />
+       {errors.teamSize && <span className="error-message">{errors.teamSize}</span>}
+    </div>
+    {/* --- End of New Team Size Input ---*/}
+
     <div className="form-group">
       <label>Store Logo (Optional)</label>
       <div className="upload-area">
@@ -521,7 +597,14 @@ const BusinessStep = memo(({ gstrStatus, setGstrStatus, gstinNumber, setGstinNum
   </div>
 ));
 
-const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, updateDealingPerson, removeDealingPerson }) => (
+const PersonStep = memo(({
+  dealingPersons, setDealingPersons,
+  addDealingPerson, updateDealingPerson, removeDealingPerson,
+  // --- Validation ---
+  errors,
+  setErrors
+  // --- End of Validation Props ---
+}) => (
   <div className="step-content">
     <h2>Dealing Person Details</h2>
     <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
@@ -547,50 +630,59 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
           </div>
         </div>
         <div className="form-group">
-          <label>Full Name</label>
+          <label>Full Name <span className="required-asterisk">*</span></label>
           <input
             type="text"
             placeholder="Enter full name"
             value={person.fullName}
             onChange={(e) => updateDealingPerson(index, 'fullName', e.target.value)}
             autoComplete="name"
+            required
           />
+           {errors[`dealingPerson_${index}_fullName`] && <span className="error-message">{errors[`dealingPerson_${index}_fullName`]}</span>}
         </div>
         <div className="form-group">
-          <label>Contact Number</label>
+          <label>Contact Number <span className="required-asterisk">*</span></label>
           <input
             type="tel"
             placeholder="10-digit mobile number"
             value={person.contactNumber}
             onChange={(e) => updateDealingPerson(index, 'contactNumber', e.target.value)}
             autoComplete="tel"
+            required
           />
+           {errors[`dealingPerson_${index}_contactNumber`] && <span className="error-message">{errors[`dealingPerson_${index}_contactNumber`]}</span>}
         </div>
         <div className="form-group">
-          <label>Email Address</label>
+          <label>Email Address <span className="required-asterisk">*</span></label>
           <input
             type="email"
             placeholder="person@example.com"
             value={person.email}
             onChange={(e) => updateDealingPerson(index, 'email', e.target.value)}
             autoComplete="email"
+            required
           />
+           {errors[`dealingPerson_${index}_email`] && <span className="error-message">{errors[`dealingPerson_${index}_email`]}</span>}
         </div>
         <div className="form-group">
-          <label>Department</label>
+          <label>Department <span className="required-asterisk">*</span></label>
           <input
             type="text"
             placeholder="Enter department"
             value={person.department}
             onChange={(e) => updateDealingPerson(index, 'department', e.target.value)}
             autoComplete="organization-title"
+            required
           />
+           {errors[`dealingPerson_${index}_department`] && <span className="error-message">{errors[`dealingPerson_${index}_department`]}</span>}
         </div>
         <div className="form-group">
-          <label>Designation/Role</label>
+          <label>Designation/Role <span className="required-asterisk">*</span></label>
           <select
             value={person.role}
             onChange={(e) => updateDealingPerson(index, 'role', e.target.value)}
+            required
           >
             <option value="">Select role</option>
             <option value="owner">Owner</option>
@@ -599,9 +691,10 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
             <option value="accountant">Accountant</option>
             <option value="other">Other</option>
           </select>
+           {errors[`dealingPerson_${index}_role`] && <span className="error-message">{errors[`dealingPerson_${index}_role`]}</span>}
         </div>
         <div className="form-group">
-          <label>Person Photos</label>
+          <label>Person Photos <span className="required-asterisk">*</span></label>
           <div className="upload-area">
             <div className="upload-icon">📷</div>
             <p>Upload JPG or PNG files</p>
@@ -611,6 +704,7 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
               onChange={(e) => updateDealingPerson(index, 'photo', e.target.files[0])}
               style={{ display: 'none' }}
               id={`person-photo-${index}`}
+              required={!person.photo} // Required if no photo uploaded for this person
             />
             <label htmlFor={`person-photo-${index}`} className="btn-secondary">Take Photo</label>
           </div>
@@ -629,6 +723,7 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
               </button>
             </div>
           )}
+           {errors[`dealingPerson_${index}_photo`] && <span className="error-message">{errors[`dealingPerson_${index}_photo`]}</span>}
         </div>
       </div>
     ))}
@@ -641,15 +736,26 @@ const PersonStep = memo(({ dealingPersons, setDealingPersons, addDealingPerson, 
     </button>
   </div>
 ));
-
-const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountType, setAccountType, accountHolderName, setAccountHolderName, accountNumber, setAccountNumber, confirmAccountNumber, setConfirmAccountNumber }) => (
+const BankStep = memo(({
+  bankName, setBankName,
+  ifscCode, setIfscCode,
+  accountType, setAccountType,
+  accountHolderName, setAccountHolderName,
+  accountNumber, setAccountNumber,
+  confirmAccountNumber, setConfirmAccountNumber,
+  // --- Validation ---
+  errors,
+  setErrors
+  // --- End of Validation Props ---
+}) => (
   <div className="step-content">
     <h2>Organization Bank Details</h2>
     <div className="form-group">
-      <label className="required">Bank Name</label>
+      <label className="required">Bank Name <span className="required-asterisk">*</span></label>
       <select
         value={bankName}
         onChange={(e) => setBankName(e.target.value)}
+        required
       >
         <option value="">Enter bank name</option>
         <option value="sbi">State Bank of India</option>
@@ -663,23 +769,27 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
         <option value="bob">Bank of Baroda</option>
         <option value="indian">Indian Bank</option>
       </select>
+       {errors.bankName && <span className="error-message">{errors.bankName}</span>}
     </div>
     <div className="form-group">
-      <label className="required">IFSC Code</label>
+      <label className="required">IFSC Code <span className="required-asterisk">*</span></label>
       <input
         type="text"
         placeholder="e.g. SBIN0001234"
         value={ifscCode}
         onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
         autoComplete="off"
+        required
       />
       <small>Format: 4 letters followed by 7 numbers</small>
+       {errors.ifscCode && <span className="error-message">{errors.ifscCode}</span>}
     </div>
     <div className="form-group">
-      <label className="required">Account Type</label>
+      <label className="required">Account Type <span className="required-asterisk">*</span></label>
       <select
         value={accountType}
         onChange={(e) => setAccountType(e.target.value)}
+        required
       >
         <option value="">Select account type</option>
         <option value="savings">Savings Account</option>
@@ -687,54 +797,71 @@ const BankStep = memo(({ bankName, setBankName, ifscCode, setIfscCode, accountTy
         <option value="cc">Cash Credit</option>
         <option value="od">Overdraft</option>
       </select>
+       {errors.accountType && <span className="error-message">{errors.accountType}</span>}
     </div>
     <div className="form-group">
-      <label className="required">Account Holder Name</label>
+      <label className="required">Account Holder Name <span className="required-asterisk">*</span></label>
       <input
         type="text"
         placeholder="Account holder name"
         value={accountHolderName}
         onChange={(e) => setAccountHolderName(e.target.value)}
         autoComplete="name"
+        required
       />
+       {errors.accountHolderName && <span className="error-message">{errors.accountHolderName}</span>}
     </div>
     <div className="form-group">
-      <label className="required">Account Number</label>
+      <label className="required">Account Number <span className="required-asterisk">*</span></label>
       <input
         type="text"
         placeholder="Account number"
         value={accountNumber}
         onChange={(e) => setAccountNumber(e.target.value)}
         autoComplete="off"
+        required
       />
+       {errors.accountNumber && <span className="error-message">{errors.accountNumber}</span>}
     </div>
     <div className="form-group">
-      <label className="required">Confirm Account Number</label>
+      <label className="required">Confirm Account Number <span className="required-asterisk">*</span></label>
       <input
         type="text"
         placeholder="Re-enter account number"
         value={confirmAccountNumber}
         onChange={(e) => setConfirmAccountNumber(e.target.value)}
         autoComplete="off"
+        required
       />
+       {errors.confirmAccountNumber && <span className="error-message">{errors.confirmAccountNumber}</span>}
+       {errors.accountNumbersMatch && <span className="error-message">{errors.accountNumbersMatch}</span>}
     </div>
   </div>
 ));
-
-const SecurityStep = memo(({ jmiOfficerID, setJmiOfficerID, privatePasskey, setPrivatePasskey, confirmPasskey, setConfirmPasskey }) => (
+const SecurityStep = memo(({
+  jmiOfficerID, setJmiOfficerID,
+  privatePasskey, setPrivatePasskey,
+  confirmPasskey, setConfirmPasskey,
+  // --- Validation ---
+  errors,
+  setErrors
+  // --- End of Validation Props ---
+}) => (
   <div className="step-content">
     <div className="security-section">
       <h3>Enter Officer ID</h3>
       <div className="otp-section">
         <div className="form-group">
-          <label>JMI Officer ID</label>
+          <label>JMI Officer ID <span className="required-asterisk">*</span></label>
           <input
             type="text"
             placeholder="Enter ID"
             value={jmiOfficerID}
             onChange={(e) => setJmiOfficerID(e.target.value)}
             autoComplete="off"
+            required
           />
+           {errors.jmiOfficerID && <span className="error-message">{errors.jmiOfficerID}</span>}
         </div>
         <button type="button" className="send-otp-btn">
           Send OTP
@@ -744,29 +871,33 @@ const SecurityStep = memo(({ jmiOfficerID, setJmiOfficerID, privatePasskey, setP
     <div className="security-section">
       <h3>Set Private Passkey</h3>
       <div className="form-group">
-        <label>Private Passkey</label>
+        <label>Private Passkey <span className="required-asterisk">*</span></label>
         <input
           type="password"
           placeholder="Create a Passkey"
           value={privatePasskey}
           onChange={(e) => setPrivatePasskey(e.target.value)}
           autoComplete="new-password"
+          required
         />
+         {errors.privatePasskey && <span className="error-message">{errors.privatePasskey}</span>}
       </div>
       <div className="form-group">
-        <label>Re-enter Private Passkey</label>
+        <label>Re-enter Private Passkey <span className="required-asterisk">*</span></label>
         <input
           type="password"
           placeholder="Re-enter a Passkey"
           value={confirmPasskey}
           onChange={(e) => setConfirmPasskey(e.target.value)}
           autoComplete="new-password"
+          required
         />
+         {errors.confirmPasskey && <span className="error-message">{errors.confirmPasskey}</span>}
+         {errors.passkeysMatch && <span className="error-message">{errors.passkeysMatch}</span>}
       </div>
     </div>
   </div>
 ));
-
 const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
   <div className="step-indicator">
     {steps.map((step, index) => (
@@ -782,20 +913,17 @@ const StepIndicator = memo(({ steps, currentStep, completedSteps }) => (
     ))}
   </div>
 ));
-
 // --- Main Component ---
 const SellerRegistration = () => {
   const nav = useNavigate();
   const { seller } = useSeller(); // Get seller object from context
   const sellerId = seller?.sellerId; // Extract sellerId
-
   // --- ALL HOOKS MUST BE AT THE TOP LEVEL ---
   // Step and progress states
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
-
   // Organization states
   const [gstrStatus, setGstrStatus] = useState('registered');
   const [gstinNumber, setGstinNumber] = useState('');
@@ -809,9 +937,10 @@ const SellerRegistration = () => {
   const [pinCode, setPinCode] = useState('');
   const [organizationContact, setOrganizationContact] = useState('');
   const [organizationEmail, setOrganizationEmail] = useState('');
-  const [businessTypes, setBusinessTypes] = useState(['Gold Jewelry', 'Diamond Jewelry']);
+  // --- Updated businessTypes state to businessType (single value) ---
+  const [businessType, setBusinessType] = useState(''); // Changed from array to string
+  const [teamSize, setTeamSize] = useState(''); // Added teamSize state
   const [storeLogo, setStoreLogo] = useState(null);
-
   // Dealing persons state
   const [dealingPersons, setDealingPersons] = useState([{
     fullName: '',
@@ -821,7 +950,6 @@ const SellerRegistration = () => {
     role: '',
     photo: null
   }]);
-
   // Transactional contact states
   const [transactionalMobile, setTransactionalMobile] = useState('');
   const [transactionalEmail, setTransactionalEmail] = useState('');
@@ -832,12 +960,10 @@ const SellerRegistration = () => {
   const [contactDistrict, setContactDistrict] = useState('');
   const [contactState, setContactState] = useState('');
   const [contactPinCode, setContactPinCode] = useState('');
-
   // --- Add State Variables for Shipping Coordinates ---
   const [shippingLatitude, setShippingLatitude] = useState(null);
   const [shippingLongitude, setShippingLongitude] = useState(null);
   // --- End of new state variables ---
-
   // Bank details states
   const [bankName, setBankName] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -845,11 +971,13 @@ const SellerRegistration = () => {
   const [accountHolderName, setAccountHolderName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
-
   // Security states
   const [jmiOfficerID, setJmiOfficerID] = useState('');
   const [privatePasskey, setPrivatePasskey] = useState('');
   const [confirmPasskey, setConfirmPasskey] = useState('');
+
+  // --- Validation State ---
+  const [errors, setErrors] = useState({});
 
   // Cloudinary configuration
   const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
@@ -861,15 +989,88 @@ const SellerRegistration = () => {
     { number: 4, title: 'Bank', key: 'bank' },
     { number: 5, title: 'Security', key: 'security' }
   ];
-
   // --- EFFECT TO HANDLE MISSING CONTEXT ---
   useEffect(() => {
     if (sellerId === undefined) { // Check if context is still loading or missing
-       console.warn("Seller ID not found in context. Redirecting...");
-       alert("Registration session expired or not found. Please log in again.");
-       nav('/login'); // Or appropriate redirect
+      console.warn("Seller ID not found in context. Redirecting...");
+      alert("Registration session expired or not found. Please log in again.");
+      nav('/login'); // Or appropriate redirect
     }
   }, [sellerId, nav]);
+
+  // --- VALIDATION FUNCTIONS ---
+  const validateStep = useCallback((stepNumber) => {
+    const newErrors = {};
+    switch (stepNumber) {
+      case 1: // Business Step
+        if (!gstrStatus) newErrors.gstrStatus = "GSTR Status is required.";
+        if (!gstinNumber.trim()) newErrors.gstinNumber = `${gstrStatus === 'non-registered' ? 'Pan Number' : 'GSTIN Number'} is required.`;
+        if (businessDocuments.length === 0) newErrors.businessDocuments = "At least one business document is required.";
+        if (organizationPhotos.length === 0) newErrors.organizationPhotos = "At least one organization photo is required.";
+        if (!organizationName.trim()) newErrors.organizationName = "Organization Name is required.";
+        if (!address.trim()) newErrors.address = "Address is required.";
+        if (!city.trim()) newErrors.city = "City/Village is required.";
+        if (!district.trim()) newErrors.district = "District is required.";
+        if (!state) newErrors.state = "State is required.";
+        if (!pinCode.trim()) newErrors.pinCode = "PIN Code is required.";
+        if (!organizationContact.trim()) newErrors.organizationContact = "Organization Contact is required.";
+        if (!organizationEmail.trim()) newErrors.organizationEmail = "Organization Email is required.";
+        // --- Validate New Fields ---
+        if (!businessType) newErrors.businessType = "Business Type is required.";
+        if (!teamSize || teamSize <= 0) newErrors.teamSize = "Team Size must be a positive number.";
+        // --- End of New Fields Validation ---
+        break;
+      case 2: // Person Step
+        dealingPersons.forEach((person, index) => {
+          if (!person.fullName.trim()) newErrors[`dealingPerson_${index}_fullName`] = "Full Name is required.";
+          if (!person.contactNumber.trim()) newErrors[`dealingPerson_${index}_contactNumber`] = "Contact Number is required.";
+          if (!person.email.trim()) newErrors[`dealingPerson_${index}_email`] = "Email Address is required.";
+          if (!person.department.trim()) newErrors[`dealingPerson_${index}_department`] = "Department is required.";
+          if (!person.role) newErrors[`dealingPerson_${index}_role`] = "Designation/Role is required.";
+          if (!person.photo) newErrors[`dealingPerson_${index}_photo`] = "Person Photo is required.";
+        });
+        break;
+      case 3: // Contact Step
+        if (!transactionalMobile.trim()) newErrors.transactionalMobile = "Mobile is required.";
+        if (!transactionalEmail.trim()) newErrors.transactionalEmail = "Email is required.";
+        if (!shopNumber.trim()) newErrors.shopNumber = "Shop Number / Flat Number is required.";
+        if (!buildingName.trim()) newErrors.buildingName = "Building / Complex Name is required.";
+        if (!streetAddress.trim()) newErrors.streetAddress = "Street Address is required.";
+        if (!contactCity.trim()) newErrors.contactCity = "City / Village is required.";
+        if (!contactDistrict.trim()) newErrors.contactDistrict = "District is required.";
+        if (!contactState) newErrors.contactState = "State is required.";
+        if (!contactPinCode.trim()) newErrors.contactPinCode = "PIN Code is required.";
+        // Note: Shipping coordinates are optional but Geo Locate can set errors if it fails
+        break;
+      case 4: // Bank Step
+        if (!bankName) newErrors.bankName = "Bank Name is required.";
+        if (!ifscCode.trim()) newErrors.ifscCode = "IFSC Code is required.";
+        if (!accountType) newErrors.accountType = "Account Type is required.";
+        if (!accountHolderName.trim()) newErrors.accountHolderName = "Account Holder Name is required.";
+        if (!accountNumber.trim()) newErrors.accountNumber = "Account Number is required.";
+        if (!confirmAccountNumber.trim()) newErrors.confirmAccountNumber = "Confirm Account Number is required.";
+        if (accountNumber !== confirmAccountNumber) newErrors.accountNumbersMatch = "Account Numbers do not match.";
+        break;
+      case 5: // Security Step
+        if (!jmiOfficerID.trim()) newErrors.jmiOfficerID = "JMI Officer ID is required.";
+        if (!privatePasskey) newErrors.privatePasskey = "Private Passkey is required.";
+        if (!confirmPasskey) newErrors.confirmPasskey = "Re-enter Private Passkey is required.";
+        if (privatePasskey !== confirmPasskey) newErrors.passkeysMatch = "Passkeys do not match.";
+        break;
+      default:
+        break;
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Return true if no errors
+  }, [
+    gstrStatus, gstinNumber, businessDocuments, organizationPhotos, organizationName, address, city, district, state, pinCode,
+    organizationContact, organizationEmail, businessType, teamSize, // Dependencies for step 1
+    dealingPersons, // Dependencies for step 2
+    transactionalMobile, transactionalEmail, shopNumber, buildingName, streetAddress,
+    contactCity, contactDistrict, contactState, contactPinCode, // Dependencies for step 3
+    bankName, ifscCode, accountType, accountHolderName, accountNumber, confirmAccountNumber, // Dependencies for step 4
+    jmiOfficerID, privatePasskey, confirmPasskey // Dependencies for step 5
+  ]);
 
   // Upload single file to Cloudinary
   const uploadToCloudinary = useCallback(async (file, folder = '') => {
@@ -907,18 +1108,16 @@ const SellerRegistration = () => {
       throw error;
     }
   }, [CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET]);
-
   // Upload multiple files to Cloudinary
   const uploadMultipleFiles = useCallback(async (files, folder = '') => {
     const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file, folder));
     return Promise.all(uploadPromises);
   }, [uploadToCloudinary]);
-
   // Save data to Firestore - Modified to use sellerId
   const saveToFirestore = useCallback(async (data) => {
     if (!sellerId) {
-        console.error("Cannot save to Firestore: sellerId is missing.");
-        throw new Error("Seller ID is required to save registration data.");
+      console.error("Cannot save to Firestore: sellerId is missing.");
+      throw new Error("Seller ID is required to save registration data.");
     }
     try {
       // Use sellerId as the document ID in 'sellerregistrations' collection
@@ -944,25 +1143,44 @@ const SellerRegistration = () => {
 
   const handleNext = useCallback(() => {
     if (currentStep < 5) {
-      setCompletedSteps(prev => [...prev, currentStep]);
-      setCurrentStep(prev => prev + 1);
+      const isValid = validateStep(currentStep);
+      if (isValid) {
+        setCompletedSteps(prev => [...prev, currentStep]);
+        setCurrentStep(prev => prev + 1);
+        setErrors({}); // Clear errors on successful step
+      } else {
+        // Errors are already set by validateStep
+        console.log("Validation failed for step", currentStep, errors);
+        alert("Please fill in all required fields correctly.");
+      }
     }
-  }, [currentStep]);
+  }, [currentStep, validateStep, errors]); // Include errors in dependency array
 
   const handlePrevious = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
+      // Optionally clear errors when going back
+      // setErrors({});
     }
   }, [currentStep]);
 
   const handleRegister = useCallback(async () => {
     if (!sellerId) {
-        alert("Registration session expired. Please log in again.");
-        nav('/login');
-        return;
+      alert("Registration session expired. Please log in again.");
+      nav('/login');
+      return;
     }
+
+    // Validate the final step (Security)
+    const isValid = validateStep(5);
+    if (!isValid) {
+      alert("Please fill in all required fields correctly.");
+      return;
+    }
+
     setLoading(true);
     setUploadProgress({}); // Reset progress
+    setErrors({}); // Clear any previous errors before final submission
     try {
       const dataToSave = {
         gstrStatus,
@@ -975,7 +1193,8 @@ const SellerRegistration = () => {
         pinCode,
         organizationContact,
         organizationEmail,
-        businessTypes,
+        businessType, // Changed key
+        teamSize, // Added teamSize
         dealingPersons,
         transactionalMobile,
         transactionalEmail,
@@ -1051,16 +1270,16 @@ const SellerRegistration = () => {
     }
   }, [
     sellerId, nav, gstrStatus, gstinNumber, organizationName, address, city, district, state, pinCode,
-    organizationContact, organizationEmail, businessTypes, storeLogo, dealingPersons,
+    organizationContact, organizationEmail, businessType, teamSize, storeLogo, dealingPersons, // Updated dependencies
     transactionalMobile, transactionalEmail, shopNumber, buildingName, streetAddress,
-    contactCity, contactDistrict, contactState, contactPinCode, 
+    contactCity, contactDistrict, contactState, contactPinCode,
     // --- Add Coordinates to Dependencies ---
     shippingLatitude, shippingLongitude,
     // --- End of Adding Coordinates ---
     bankName, ifscCode,
     accountType, accountHolderName, accountNumber, confirmAccountNumber, jmiOfficerID,
     privatePasskey, confirmPasskey, businessDocuments, organizationPhotos, currentStep,
-    uploadToCloudinary, uploadMultipleFiles, saveToFirestore
+    uploadToCloudinary, uploadMultipleFiles, saveToFirestore, validateStep // Added validateStep
   ]);
 
   const addDealingPerson = useCallback(() => {
@@ -1078,34 +1297,58 @@ const SellerRegistration = () => {
     setDealingPersons(prev => prev.map((person, i) =>
       i === index ? { ...person, [field]: value } : person
     ));
-  }, []);
+    // Clear specific error for this field if it's updated
+    if (errors[`dealingPerson_${index}_${field}`]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[`dealingPerson_${index}_${field}`];
+        return newErrors;
+      });
+    }
+  }, [errors]); // Include errors in dependency array
 
   const removeDealingPerson = useCallback((index) => {
     setDealingPersons(prev => prev.filter((_, i) => i !== index));
+    // Clear errors related to the removed person
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      Object.keys(newErrors).forEach(key => {
+        if (key.startsWith(`dealingPerson_${index}_`)) {
+          delete newErrors[key];
+        }
+      });
+      // Re-index errors for remaining persons if needed (optional but cleaner)
+      // This part can be complex, so we'll just clear errors for simplicity
+      return newErrors;
+    });
   }, []);
 
-  const removeBusinessType = useCallback((indexToRemove) => {
-    setBusinessTypes(prev => prev.filter((_, index) => index !== indexToRemove));
-  }, []);
-
+  // --- Removed removeBusinessType as it's no longer needed ---
   const removeBusinessDocument = useCallback((indexToRemove) => {
     setBusinessDocuments(prev => prev.filter((_, index) => index !== indexToRemove));
-  }, []);
+    // Clear error if documents are now present
+    if (businessDocuments.length <= 1 && errors.businessDocuments) {
+       setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.businessDocuments;
+        return newErrors;
+      });
+    }
+  }, [businessDocuments, errors]); // Include errors in dependency array
 
   const removeOrganizationPhoto = useCallback((indexToRemove) => {
     setOrganizationPhotos(prev => prev.filter((_, index) => index !== indexToRemove));
-  }, []);
-
-  const handleBusinessTypeKeyPress = useCallback((e) => {
-    if (e.key === 'Enter' && e.target.value.trim()) {
-      e.preventDefault();
-      const newType = e.target.value.trim();
-      if (!businessTypes.includes(newType)) {
-        setBusinessTypes(prev => [...prev, newType]);
-      }
-      e.target.value = '';
+    // Clear error if photos are now present
+    if (organizationPhotos.length <= 1 && errors.organizationPhotos) {
+       setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.organizationPhotos;
+        return newErrors;
+      });
     }
-  }, [businessTypes]);
+  }, [organizationPhotos, errors]); // Include errors in dependency array
+
+  // --- Removed handleBusinessTypeKeyPress as it's no longer needed ---
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -1136,14 +1379,20 @@ const SellerRegistration = () => {
             setOrganizationContact={setOrganizationContact}
             organizationEmail={organizationEmail}
             setOrganizationEmail={setOrganizationEmail}
-            businessTypes={businessTypes}
-            setBusinessTypes={setBusinessTypes}
+            businessType={businessType} // Passed new prop
+            setBusinessType={setBusinessType} // Passed new prop
+            teamSize={teamSize} // Passed new prop
+            setTeamSize={setTeamSize} // Passed new prop
             storeLogo={storeLogo}
             setStoreLogo={setStoreLogo}
-            removeBusinessType={removeBusinessType}
+            // --- Removed removeBusinessType ---
             removeBusinessDocument={removeBusinessDocument}
             removeOrganizationPhoto={removeOrganizationPhoto}
-            handleBusinessTypeKeyPress={handleBusinessTypeKeyPress}
+            // --- Removed handleBusinessTypeKeyPress ---
+            // --- Pass Validation Props ---
+            errors={errors}
+            setErrors={setErrors}
+            // --- End of Validation Props ---
           />
         );
       case 2:
@@ -1154,6 +1403,10 @@ const SellerRegistration = () => {
             addDealingPerson={addDealingPerson}
             updateDealingPerson={updateDealingPerson}
             removeDealingPerson={removeDealingPerson}
+            // --- Pass Validation Props ---
+            errors={errors}
+            setErrors={setErrors}
+            // --- End of Validation Props ---
           />
         );
       case 3:
@@ -1183,9 +1436,12 @@ const SellerRegistration = () => {
             shippingLongitude={shippingLongitude}
             setShippingLatitude={setShippingLatitude}
             setShippingLongitude={setShippingLongitude}
-            // --- End of Passing New Props ---
-          />
+            // --- Pass Validation Props ---
+            errors={errors}
+            setErrors={setErrors}
+            // --- End of Validation Props ---
           // --- End of Passing New Props ---
+          />
         );
       case 4:
         return (
@@ -1202,6 +1458,10 @@ const SellerRegistration = () => {
             setAccountNumber={setAccountNumber}
             confirmAccountNumber={confirmAccountNumber}
             setConfirmAccountNumber={setConfirmAccountNumber}
+            // --- Pass Validation Props ---
+            errors={errors}
+            setErrors={setErrors}
+            // --- End of Validation Props ---
           />
         );
       case 5:
@@ -1213,6 +1473,10 @@ const SellerRegistration = () => {
             setPrivatePasskey={setPrivatePasskey}
             confirmPasskey={confirmPasskey}
             setConfirmPasskey={setConfirmPasskey}
+            // --- Pass Validation Props ---
+            errors={errors}
+            setErrors={setErrors}
+            // --- End of Validation Props ---
           />
         );
       default:
@@ -1242,24 +1506,32 @@ const SellerRegistration = () => {
             setOrganizationContact={setOrganizationContact}
             organizationEmail={organizationEmail}
             setOrganizationEmail={setOrganizationEmail}
-            businessTypes={businessTypes}
-            setBusinessTypes={setBusinessTypes}
+            businessType={businessType} // Passed new prop
+            setBusinessType={setBusinessType} // Passed new prop
+            teamSize={teamSize} // Passed new prop
+            setTeamSize={setTeamSize} // Passed new prop
             storeLogo={storeLogo}
             setStoreLogo={setStoreLogo}
-            removeBusinessType={removeBusinessType}
+            // --- Removed removeBusinessType ---
             removeBusinessDocument={removeBusinessDocument}
             removeOrganizationPhoto={removeOrganizationPhoto}
-            handleBusinessTypeKeyPress={handleBusinessTypeKeyPress}
+            // --- Removed handleBusinessTypeKeyPress ---
+            // --- Pass Validation Props ---
+            errors={errors}
+            setErrors={setErrors}
+            // --- End of Validation Props ---
           />
         );
     }
   };
+
   if (sellerId === undefined) {
-      return <div>Loading registration session...</div>; // Or null, or a specific loading/error component
+    return <div>Loading registration session...</div>; // Or null, or a specific loading/error component
   }
   if (!sellerId) {
-      return <div>Registration session not found. Redirecting...</div>;
+    return <div>Registration session not found. Redirecting...</div>;
   }
+
   return (
     <div className="seller-registration" style={{
       maxWidth: '600px',
@@ -1387,5 +1659,4 @@ const SellerRegistration = () => {
     </div>
   );
 };
-
 export default SellerRegistration;

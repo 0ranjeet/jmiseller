@@ -1,32 +1,32 @@
 {
-  "segments": ["Gold", "Silver", "Platinum", "Diamond", "Gems", "Pearls"],
+  "segments": ["GOLD", "SILVER", "PLATINUM", "DIAMOND", "GEMS", "PEARLS"],
   
   "categoriesBySegment": {
-    "Gold": ["916 HUID", "750 HUID", "840", "650", "480"],
-    "Silver": ["925", "999", "800", "900"],
-    "Platinum": ["950", "900", "850"],
-    "Diamond": ["VS1", "VS2", "VVS1", "VVS2", "SI1", "SI2"],
-    "Gems": ["Emerald", "Ruby", "Sapphire", "Topaz"],
-    "Pearls": ["Freshwater", "Akoya", "Tahitian", "South Sea"]
+    "GOLD": ["916HUID", "750HUID", "840", "650", "480"],
+    "SILVER": ["925", "999", "800", "900"],
+    "PLATINUM": ["950", "900", "850"],
+    "DIAMOND": ["VS1", "VS2", "VVS1", "VVS2", "SI1", "SI2"],
+    "GEMS": ["Emerald", "Ruby", "Sapphire", "Topaz"],
+    "PEARLS": ["Freshwater", "Akoya", "Tahitian", "South Sea"]
   },
 
   "productSources": [
     "KATAKI", "RAJKOT", "BOMBAY", "COIMBATORE", "KOLKATA", "CASTING",
-    "MACHINE MADE", "SOUTH", "TURKEY", "CNC", "ITALIAN", "SANKHA POLA",
+    "MACHINE MADE", "SOUTH", "TURKEY", "CNC", "ITALIAN", "SANKHAPOLA",
     "NAKASHI", "DIECE THUKAI", "ACCESORIES", "MARWAD"
   ],
 
   "productNames": [
-    "MANGTIKA", "NATH", "NOSEPIN", "MANGAL SUTRA", "CHAINS", "DOKIA",
-    "SHORT NECKLACE", "LONG NECKLACE", "CHOKKAR", "CHEEK", "PENDENTS",
-    "BABY LOCKET", "GOD LOCKET", "BAJU BANDH", "BANGLE", "SANKHA POLA",
-    "BRASLET & KADA", "LADIES RING", "GENTS RING", "BABY RING",
-    "KAMAR BANDH", "PAYAL", "BICHHIYA", "ACCESORIES"
+    "MANGTIKA", "NATH", "NOSEPIN", "MANGALSUTRA", "CHAINS", "DOKIA",
+    "SHORTNECKLACE", "LONGNECKLACE", "CHOKKAR", "CHEEK", "PENDENTS",
+    "BABYLOCKET", "GODLOCKET", "BAJUBANDH", "BANGLE", "SANKHAPOLA",
+    "BRASLETKADA", "LADIESRING", "GENTSRING", "BABYRING",
+    "KAMARBANDH", "PAYAL", "BICHHIYA", "ACCESORIES"
   ],
 
   "styleTypes": ["regular", "highFancy", "highFinish", "lightWeight"],
 
-  "specifications": ["PLANE", "MEENA WORK", "STONE WORK", "OTHER WORK"],
+  "specifications": ["PLANE", "MEENAWORK", "STONEWORK", "OTHERWORK"],
 
   "productSizes": {
     "MANGTIKA": {

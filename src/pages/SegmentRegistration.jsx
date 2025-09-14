@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../services/firebase'; // Removed auth import
+import { db } from '../services/firebase';
 import './SegmentRegistration.css';
-// Import JSON files for Terms & Conditions
 import readyServicesTerms from './terms/ready-services.json';
 import orderServicesTerms from './terms/order-services.json';
 import openMarketTerms from './terms/open-market.json';
-import { useSeller } from '../contexts/SellerContext'; // Import the context
+import { useSeller } from '../contexts/SellerContext';
 
 const SegmentRegistration = () => {
   const [operatorId, setOperatorId] = useState('');
@@ -18,11 +17,10 @@ const SegmentRegistration = () => {
   const [operatorOtp, setOperatorOtp] = useState(['', '', '', '', '', '']);
   const [showPopup, setShowPopup] = useState(false);
   const [popupContent, setPopupContent] = useState(null);
-  const [segment, setSegment] = useState('gold');
+  const [segment, setSegment] = useState('gold'); // Default segment is 'gold'
   const nav = useNavigate();
-  const { seller } = useSeller(); // Get seller from context
+  const { seller } = useSeller();
 
-  // Terms & Conditions mapping to imported JSON files
   const termsAndConditions = {
     'ready-services': readyServicesTerms,
     'order-services': orderServicesTerms,
@@ -32,27 +30,23 @@ const SegmentRegistration = () => {
   const openPopup = (serviceType) => {
     setPopupContent(termsAndConditions[serviceType]);
     setShowPopup(true);
-    // Prevent body scroll when popup is open
     document.body.style.overflow = 'hidden';
   };
 
   const closePopup = () => {
     setShowPopup(false);
     setPopupContent(null);
-    // Restore body scroll
     document.body.style.overflow = 'auto';
   };
 
-  // Effect to watch for changes in operatorId
   useEffect(() => {
-    // A simple check to trigger the fetch, e.g., when the length is 15
     if (operatorId.length === 15) {
       setIsLoading(true);
       // Simulate an API call
       setTimeout(() => {
         const fetchedDetails = {
           businessDocuments: ['Document.pdf', 'License.jpg'],
-          organizationPhotos: ['https://placehold.co/80x80/e5e7eb/000000?text=Img1', '  https://placehold.co/80x80/e5e7eb/000000?text=Img2'],
+          organizationPhotos: ['https://placehold.co/80x80/e5e7eb/000000?text=Img1', 'https://placehold.co/80x80/e5e7eb/000000?text=Img2'],
           orgName: 'Golden Jewelry Pvt. Ltd.',
           address: '123, Gold Souk Market',
           city: 'Mumbai',
@@ -62,11 +56,10 @@ const SegmentRegistration = () => {
           contact: '9876543210'
         };
         setOperatorDetails(fetchedDetails);
-        setIsAccordionOpen(true); // Open accordion when data is fetched
+        setIsAccordionOpen(true);
         setIsLoading(false);
-      }, 1500); // 1.5-second delay to simulate fetching
+      }, 1500);
     } else {
-      // Reset if the ID is cleared or invalid
       setOperatorDetails(null);
       setIsAccordionOpen(false);
     }
@@ -81,7 +74,7 @@ const SegmentRegistration = () => {
   };
 
   const handleOtpChange = (index, value, isOperatorOtp = false) => {
-    if (value.length > 1) return; // Prevent multiple characters
+    if (value.length > 1) return;
 
     const newOtp = isOperatorOtp ? [...operatorOtp] : [...otp];
     newOtp[index] = value;
@@ -92,7 +85,6 @@ const SegmentRegistration = () => {
       setOtp(newOtp);
     }
 
-    // Auto-focus to next input
     if (value && index < 5) {
       const nextInput = document.querySelector(
         `input[name="${isOperatorOtp ? 'operator-otp' : 'otp'}-${index + 1}"]`
@@ -100,7 +92,6 @@ const SegmentRegistration = () => {
       if (nextInput) nextInput.focus();
     }
 
-    // Auto-focus to previous input on backspace
     if (!value && index > 0) {
       const prevInput = document.querySelector(
         `input[name="${isOperatorOtp ? 'operator-otp' : 'otp'}-${index - 1}"]`
@@ -109,15 +100,12 @@ const SegmentRegistration = () => {
     }
   };
 
-  // Function to save segment registration data
   const saveSegmentRegistration = useCallback(async () => {
     try {
-      // Use sellerId from context instead of Firebase Auth
       if (!seller || !seller.sellerId) {
         throw new Error('Seller not found in context');
       }
 
-      // Create segment registration document
       const segmentDocRef = doc(db, 'SellerSegmentRegistrations', seller.sellerId);
       await setDoc(segmentDocRef, {
         sellerId: seller.sellerId,
@@ -130,20 +118,20 @@ const SegmentRegistration = () => {
           openMarket: document.getElementById('open-market')?.checked || false
         },
         agreedToTerms: document.getElementById('agree')?.checked || false,
-        registrationComplete: true, // Mark segment registration as complete
+        registrationComplete: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
       alert("Segment registered successfully!");
-       const sellerProfileRef = doc(db, 'profile', seller.sellerId);
+      const sellerProfileRef = doc(db, 'profile', seller.sellerId);
 
       await setDoc(sellerProfileRef, {
         SegmentRegistration: true,
       }, { merge: true });
-     
-        nav('/productregistration');
-     
+
+      nav('/productregistration');
+
     } catch (error) {
       console.error('Error saving segment registration:', error);
       alert("Error registering segment. Please try again.");
@@ -151,27 +139,41 @@ const SegmentRegistration = () => {
   }, [segment, operatorId, operatorDetails, nav, seller]);
 
   const handleSubmit = () => {
-    // Validate required fields
+    // --- Validation for Required Fields ---
+    if (!segment) { // Check if segment is selected (though default 'gold' makes this unlikely)
+      alert("Please select a Segment");
+      return;
+    }
+
     if (!operatorId || operatorId.length !== 15) {
-      alert("Please enter a valid Operator ID");
+      alert("Please enter a valid 15-character Operator ID");
       return;
     }
 
     if (!operatorDetails) {
-      alert("Please fetch operator details first");
+      alert("Please fetch operator details first by entering a valid Operator ID");
       return;
     }
 
     const otpValue = otp.join('');
-    const operatorOtpValue = operatorOtp.join('');
-    
-    if (otpValue.length !== 6) {
-      alert("Please enter a valid OTP");
+    if (otpValue.length !== 6 || otpValue.includes('')) { // Check if all 6 digits are entered
+      alert("Please enter a valid 6-digit OTP");
       return;
     }
 
-    if (operatorOtpValue.length !== 6) {
-      alert("Please enter a valid Operator OTP");
+    const operatorOtpValue = operatorOtp.join('');
+    if (operatorOtpValue.length !== 6 || operatorOtpValue.includes('')) { // Check if all 6 digits are entered
+      alert("Please enter a valid 6-digit Operator OTP");
+      return;
+    }
+
+    const readyServicesChecked = document.getElementById('ready-services')?.checked;
+    const orderServicesChecked = document.getElementById('order-services')?.checked;
+    const openMarketChecked = document.getElementById('open-market')?.checked;
+
+    // Check if at least one service is selected
+    if (!readyServicesChecked && !orderServicesChecked && !openMarketChecked) {
+      alert("Please select at least one Service");
       return;
     }
 
@@ -194,13 +196,15 @@ const SegmentRegistration = () => {
         <section className="segment-information">
           <h2>Segment Information</h2>
           <div className="form-group">
-            <label htmlFor="segment">Segment</label>
-            <select 
-              id="segment" 
+            <label htmlFor="segment">Segment *</label> {/* Added asterisk */}
+            <select
+              id="segment"
               name="segment"
               value={segment}
               onChange={(e) => setSegment(e.target.value)}
+              required // Added required attribute
             >
+              <option value="">Select Segment</option> {/* Added default option */}
               <option value="gold">Gold</option>
               <option value="silver">Silver</option>
               <option value="platinum">Platinum</option>
@@ -208,7 +212,7 @@ const SegmentRegistration = () => {
             </select>
           </div>
           <div className="form-group">
-            <label htmlFor="operator-id">Operator ID</label>
+            <label htmlFor="operator-id">Operator ID *</label> {/* Added asterisk */}
             <input
               type="text"
               id="operator-id"
@@ -217,6 +221,7 @@ const SegmentRegistration = () => {
               value={operatorId}
               onChange={handleOperatorIdChange}
               maxLength="15"
+              required // Added required attribute
             />
             {isLoading && <div className="loading-spinner"></div>}
           </div>
@@ -230,6 +235,7 @@ const SegmentRegistration = () => {
           <div className={`accordion-content ${isAccordionOpen ? 'open' : ''}`}>
             {operatorDetails ? (
               <>
+                {/* Operator Details fields are read-only, so they don't need 'required' */}
                 <div className="form-group">
                   <label>Business Documents</label>
                   <div className="file-uploads">
@@ -301,9 +307,9 @@ const SegmentRegistration = () => {
         </section>
 
         <section className="service-selection">
-          <h2>Service Selection</h2>
+          <h2>Service Selection *</h2> {/* Added asterisk to section title */}
           <div className="checkbox-group">
-            <input type="checkbox" id="ready-services" />
+            <input type="checkbox" id="ready-services" name="services" /> {/* Added name for grouping */}
             <label htmlFor="ready-services">Ready Services</label>
             <button
               type="button"
@@ -314,7 +320,7 @@ const SegmentRegistration = () => {
             </button>
           </div>
           <div className="checkbox-group">
-            <input type="checkbox" id="order-services" />
+            <input type="checkbox" id="order-services" name="services" /> {/* Added name for grouping */}
             <label htmlFor="order-services">Order Services</label>
             <button
               type="button"
@@ -325,7 +331,7 @@ const SegmentRegistration = () => {
             </button>
           </div>
           <div className="checkbox-group">
-            <input type="checkbox" id="open-market" />
+            <input type="checkbox" id="open-market" name="services" /> {/* Added name for grouping */}
             <label htmlFor="open-market">Open Market</label>
             <button
               type="button"
@@ -336,15 +342,15 @@ const SegmentRegistration = () => {
             </button>
           </div>
           <div className="checkbox-group agreement">
-            <input type="checkbox" id="agree" />
-            <label htmlFor="agree">I agree to all availing services with Terms & Conditions</label>
+            <input type="checkbox" id="agree" required /> {/* Added required attribute */}
+            <label htmlFor="agree">I agree to all availing services with Terms & Conditions *</label> {/* Added asterisk */}
           </div>
         </section>
 
         <section className="verification">
-          <h2>Verification</h2>
+          <h2>Verification *</h2> {/* Added asterisk to section title */}
           <div className="form-group">
-            <label>OTP</label>
+            <label>OTP *</label> {/* Added asterisk */}
             <div className="otp-inputs">
               {otp.map((digit, index) => (
                 <input
@@ -360,13 +366,16 @@ const SegmentRegistration = () => {
                       if (prevInput) prevInput.focus();
                     }
                   }}
+                  required // Added required attribute to each OTP input
+                  inputMode="numeric" // Suggest numeric keyboard on mobile
+                  pattern="[0-9]*"    // Suggest numeric keyboard on mobile
                 />
               ))}
             </div>
             <p>OTP sent to your registered mobile number</p>
           </div>
           <div className="form-group">
-            <label>Operator OTP</label>
+            <label>Operator OTP *</label> {/* Added asterisk */}
             <div className="otp-inputs">
               {operatorOtp.map((digit, index) => (
                 <input
@@ -382,6 +391,9 @@ const SegmentRegistration = () => {
                       if (prevInput) prevInput.focus();
                     }
                   }}
+                  required // Added required attribute to each Operator OTP input
+                  inputMode="numeric" // Suggest numeric keyboard on mobile
+                  pattern="[0-9]*"    // Suggest numeric keyboard on mobile
                 />
               ))}
             </div>

@@ -11,7 +11,7 @@ const ProductRegistration = () => {
   const nav = useNavigate();
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
-  const [selectedSegment, setSelectedSegment] = useState('Gold');
+  const [selectedSegment, setSelectedSegment] = useState('GOLD');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -34,25 +34,25 @@ const ProductRegistration = () => {
   const [registeredProducts, setRegisteredProducts] = useState([]);
   
   const purityLimits = {
-    Gold: {
-      '916 HUID': { min: 91.6, max: 92 },
-      '750 HUID': { min: 72, max: 75 },
+    GOLD: {
+      '916HUID': { min: 91.6, max: 92 },
+      '750HUID': { min: 72, max: 75 },
       '840': { min: 80, max: 88 },
       '650': { min: 60, max: 70 },
       '480': { min: 45, max: 48 }
     },
-    Silver: {
+    SILVER: {
       '925': { min: 90, max: 95 },
       '999': { min: 95, max: 100 },
       '800': { min: 75, max: 85 },
       '900': { min: 85, max: 95 }
     },
-    Platinum: {
+    PLATINUM: {
       '950': { min: 90, max: 98 },
       '900': { min: 85, max: 95 },
       '850': { min: 80, max: 90 }
     },
-    Diamond: {
+    DIAMOND: {
       'VS1': { min: 0, max: 100 },
       'VS2': { min: 0, max: 100 },
       'VVS1': { min: 0, max: 100 },
@@ -60,13 +60,13 @@ const ProductRegistration = () => {
       'SI1': { min: 0, max: 100 },
       'SI2': { min: 0, max: 100 }
     },
-    Gems: {
+    GEMS: {
       'Emerald': { min: 0, max: 100 },
       'Ruby': { min: 0, max: 100 },
       'Sapphire': { min: 0, max: 100 },
       'Topaz': { min: 0, max: 100 }
     },
-    Pearls: {
+    PEARLS: {
       'Freshwater': { min: 0, max: 100 },
       'Akoya': { min: 0, max: 100 },
       'Tahitian': { min: 0, max: 100 },
@@ -74,32 +74,32 @@ const ProductRegistration = () => {
     }
   };
   
-  const segments = ['Gold', 'Silver', 'Platinum', 'Diamond', 'Gems', 'Pearls'];
+  const segments = ["GOLD", "SILVER", "PLATINUM", "DIAMOND", "GEMS", "PEARLS"];
   const categoriesBySegment = {
-    Gold: ['916 HUID', '750 HUID', '840', '650', '480'],
-    Silver: ['925', '999', '800', '900'],
-    Platinum: ['950', '900', '850'],
-    Diamond: ['VS1', 'VS2', 'VVS1', 'VVS2', 'SI1', 'SI2'],
-    Gems: ['Emerald', 'Ruby', 'Sapphire', 'Topaz'],
-    Pearls: ['Freshwater', 'Akoya', 'Tahitian', 'South Sea']
+    GOLD: ['916HUID', '750HUID', '840', '650', '480'],
+    SILVER: ['925', '999', '800', '900'],
+    PLATINUM: ['950', '900', '850'],
+    DIAMOND: ['VS1', 'VS2', 'VVS1', 'VVS2', 'SI1', 'SI2'],
+    GEMS: ['Emerald', 'Ruby', 'Sapphire', 'Topaz'],
+    PEARLS: ['Freshwater', 'Akoya', 'Tahitian', 'SouthSea']
   };
   
   const subcategories = [
     'KATAKI', 'RAJKOT', 'BOMBAY', 'COIMBATORE', 'KOLKATA', 'CASTING',
-    'MACHINE MADE', 'SOUTH', 'TURKEY', 'CNC', 'ITALIAN', 'SANKHA POLA',
+    'MACHINE MADE', 'SOUTH', 'TURKEY', 'CNC', 'ITALIAN', 'SANKHAPOLA',
     'NAKASHI', 'DIECE THUKAI', 'ACCESORIES', 'MARWAD'
   ];
   
   const productNames = [
-    'MANGTIKA', 'NATH', 'NOSEPIN', 'MANGAL SUTRA', 'CHAINS', 'DOKIA',
-    'SHORT NECKLACE', 'LONG NECKLACE', 'CHOKKAR', 'CHEEK', 'PENDENTS',
-    'BABY LOCKET', 'GOD LOCKET', 'BAJU BANDH', 'BANGLE', 'SANKHA POLA',
-    'BRASLET & KADA', 'LADIES RING', 'GENTS RING', 'BABY RING',
-    'KAMAR BANDH', 'PAYAL', 'BICHHIYA', 'ACCESORIES'
+    'MANGTIKA', 'NATH', 'NOSEPIN', 'MANGALSUTRA', 'CHAINS', 'DOKIA',
+    'SHORTNECKLACE', 'LONGNECKLACE', 'CHOKKAR', 'CHEEK', 'PENDENTS',
+    'BABYLOCKET', 'GODLOCKET', 'BAJUBANDH', 'BANGLE', 'SANKHAPOLA',
+    'BRASLET&KADA', 'LADIESRING', 'GENTSRING', 'BABYRING',
+    'KAMARBANDH', 'PAYAL', 'BICHHIYA', 'ACCESORIES'
   ];
   
   const styleTypes = ['regular', 'highFancy', 'highFinish', 'lightWeight'];
-  const specifications = ['PLANE', 'MEENA WORK', 'STONE WORK', 'OTHER WORK'];
+  const specifications = ['PLANE', 'MEENAWORK', 'STONEWORK', 'OTHERWORK'];
   
   const allProducts = useMemo(() => {
     const products = [];

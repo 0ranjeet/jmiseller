@@ -11,8 +11,6 @@
 .radio-group {
   display: flex;
   background-color: #f9fafb;
-  padding: 4px;
-  margin: 16px;
   border-radius: 8px;
 }
 
