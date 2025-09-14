@@ -145,8 +145,8 @@ const SegmentRegistration = () => {
       return;
     }
 
-    if (!operatorId || operatorId.length !== 15) {
-      alert("Please enter a valid 15-character Operator ID");
+    if (!operatorId || operatorId.length !== 10) {
+      alert("Please enter a valid 10-digit Operator ID")
       return;
     }
 
@@ -155,17 +155,7 @@ const SegmentRegistration = () => {
       return;
     }
 
-    const otpValue = otp.join('');
-    if (otpValue.length !== 6 || otpValue.includes('')) { // Check if all 6 digits are entered
-      alert("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    const operatorOtpValue = operatorOtp.join('');
-    if (operatorOtpValue.length !== 6 || operatorOtpValue.includes('')) { // Check if all 6 digits are entered
-      alert("Please enter a valid 6-digit Operator OTP");
-      return;
-    }
+    
 
     const readyServicesChecked = document.getElementById('ready-services')?.checked;
     const orderServicesChecked = document.getElementById('order-services')?.checked;
