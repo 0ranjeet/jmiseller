@@ -40,7 +40,7 @@ const SegmentRegistration = () => {
   };
 
   useEffect(() => {
-    if (operatorId.length === 15) {
+    if (operatorId.length === 10) {
       setIsLoading(true);
       // Simulate an API call
       setTimeout(() => {
@@ -145,10 +145,7 @@ const SegmentRegistration = () => {
       return;
     }
 
-    if (!operatorId || operatorId.length !== 10) {
-      alert("Please enter a valid 10-digit Operator ID")
-      return;
-    }
+  
 
     if (!operatorDetails) {
       alert("Please fetch operator details first by entering a valid Operator ID");
