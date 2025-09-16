@@ -20,6 +20,7 @@ const UploadProduct = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     segment: '',
@@ -40,7 +41,7 @@ const UploadProduct = () => {
     styleType: '',
     specification: '',
     productSource: '',
-    size: '',
+    sizes: [],
     status: 'pending'
   });
 
@@ -194,7 +195,8 @@ const UploadProduct = () => {
           wastage: productDetails.wastage || '',
           setMc: productDetails.setMC || '',
           netGramMc: productDetails.netGramMC || '',
-          netWtPurity: productDetails.purity || ''
+          netWtPurity: productDetails.purity || '',
+          sizes: []
         }));
       } else {
         setSelectedProduct(null);
@@ -204,7 +206,8 @@ const UploadProduct = () => {
           wastage: '',
           setMc: '',
           netGramMc: '',
-          netWtPurity: ''
+          netWtPurity: '',
+          sizes: []
         }));
       }
     }
@@ -214,14 +217,14 @@ const UploadProduct = () => {
   const handleImageUpload = async (files) => {
     setUploading(true);
     const uploadPromises = Array.from(files).map(async (file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const formDataCloud = new FormData();
+      formDataCloud.append('file', file);
+      formDataCloud.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       try {
         const response = await fetch(CLOUDINARY_API_URL, {
           method: 'POST',
-          body: formData,
+          body: formDataCloud,
         });
         const data = await response.json();
         return {
@@ -292,6 +295,35 @@ const UploadProduct = () => {
     }
   };
 
+  // Handle size selection (multi-select)
+  const toggleSizeSelection = (size) => {
+    setFormData(prev => {
+      const newSizes = prev.sizes.includes(size)
+        ? prev.sizes.filter(s => s !== size)
+        : [...prev.sizes, size];
+      return { ...prev, sizes: newSizes };
+    });
+  };
+
+  // Toggle size dropdown visibility
+  const toggleSizeDropdown = () => {
+    setIsSizeDropdownOpen(!isSizeDropdownOpen);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isSizeDropdownOpen && !event.target.closest('.multi-select-dropdown')) {
+        setIsSizeDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSizeDropdownOpen]);
+
   const handleSubmit = async () => {
     // Validate if all required fields are filled
     if (!formData.segment || !formData.category || !formData.productName || 
@@ -308,6 +340,11 @@ const UploadProduct = () => {
 
     if (!uploadedImages.length) {
       showAlertMessage('Please upload at least one product image.');
+      return;
+    }
+
+    if (formData.sizes.length === 0) {
+      showAlertMessage('Please select at least one size.');
       return;
     }
 
@@ -332,8 +369,8 @@ const UploadProduct = () => {
         instockSet: activeTab === 'ready' ? formData.instockSet : '',
         grossWt: formData.grossWt,
         netWt: formData.netWt,
-        specificationWt: formData.specification !== 'PLANE' ? formData.grossWt-formData.netWt : '',
-        size: formData.size,
+        specificationWt: formData.specification !== 'PLANE' ? formData.grossWt - formData.netWt : '',
+        sizes: formData.sizes,
         paymentMethod: formData.paymentMethod,
         status: 'pending',
         timestamp: new Date()
@@ -364,9 +401,10 @@ const UploadProduct = () => {
         styleType: '',
         specification: '',
         productSource: '',
-        size: '',
+        sizes: [],
         status: 'pending'
       });
+      setIsSizeDropdownOpen(false);
     } catch (error) {
       console.error('Error saving product:', error);
       alert('Error saving product. Please try again.');
@@ -396,6 +434,13 @@ const UploadProduct = () => {
   const getCategoriesForSegment = () => {
     if (!formData.segment) return [];
     return categoriesBySegment[formData.segment] || [];
+  };
+
+  // Get display text for selected sizes
+  const getSelectedSizesText = () => {
+    if (formData.sizes.length === 0) return 'Select Sizes';
+    if (formData.sizes.length === 1) return formData.sizes[0];
+    return `${formData.sizes.length} sizes selected`;
   };
 
   return (
@@ -491,8 +536,6 @@ const UploadProduct = () => {
               </div>
             </div>
 
-           
-
             {/* Product Source */}
             <div className="form-group">
               <label className="form-label">Source *</label>
@@ -516,7 +559,8 @@ const UploadProduct = () => {
                 <ChevronDown className="select-icon" />
               </div>
             </div>
-             {/* Product Name */}
+            
+            {/* Product Name */}
             <div className="form-group">
               <label className="form-label">Product *</label>
               <div className="select-wrapper">
@@ -539,6 +583,7 @@ const UploadProduct = () => {
                 <ChevronDown className="select-icon" />
               </div>
             </div>
+            
             {/* Style Type */}
             <div className="form-group">
               <label className="form-label">Style Type *</label>
@@ -587,9 +632,8 @@ const UploadProduct = () => {
               </div>
             </div>
           </div>
-
-          
         </div>
+        
         {/* Upload Section */}
         <div className="upload-section">
           <h3 className="section-title">Upload Photos</h3>
@@ -761,46 +805,57 @@ const UploadProduct = () => {
               <input
                 type="number"
                 step="0.01"
-                value={formData.grossWt-formData.netWt}
-                onChange={(e) => handleInputChange('specificationWt', formData.grossWt-formData.netWt)}
+                value={formData.grossWt - formData.netWt}
+                onChange={(e) => handleInputChange('specificationWt', formData.grossWt - formData.netWt)}
                 className="form-input"
                 placeholder="Enter specification weight"
               />
             </div>
           )}
 
-          {/* Size Selection */}
+          {/* Size Selection - Multi-select Dropdown */}
           {formData.productName && productSizes[formData.productName.toUpperCase()] && (
             <div className="form-group">
               <label className="form-label">
-                Size ({getSizeUnit()})
+                Sizes ({getSizeUnit()})
                 {productSizes[formData.productName.toUpperCase()]?.note && (
                   <span className="size-note"> ({productSizes[formData.productName.toUpperCase()].note})</span>
                 )}
               </label>
-              {getSizeOptions().length > 0 ? (
-                <div className="select-wrapper">
-                  <select
-                    value={formData.size}
-                    onChange={(e) => handleInputChange('size', e.target.value)}
-                    className="form-select"
-                  >
-                    <option value="">Select Size</option>
-                    {getSizeOptions().map(size => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="select-icon" />
+              <div className="multi-select-dropdown">
+                <div 
+                  className="select-wrapper"
+                  onClick={toggleSizeDropdown}
+                >
+                  <div className="select-display">
+                    {getSelectedSizesText()}
+                  </div>
+                  <ChevronDown className={`select-icon ${isSizeDropdownOpen ? 'rotated' : ''}`} />
                 </div>
-              ) : (
-                <input
-                  type="text"
-                  value={formData.size}
-                  onChange={(e) => handleInputChange('size', e.target.value)}
-                  className="form-input"
-                  placeholder={`Enter size in ${getSizeUnit()}`}
-                />
-              )}
+                
+                {isSizeDropdownOpen && (
+                  <div className="multi-select-options">
+                    {getSizeOptions().map(size => (
+                      <div 
+                        key={size} 
+                        className={`multi-select-option ${formData.sizes.includes(size) ? 'selected' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSizeSelection(size);
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.sizes.includes(size)}
+                          onChange={() => {}}
+                          className="multi-select-checkbox"
+                        />
+                        <span className="multi-select-label">{size}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

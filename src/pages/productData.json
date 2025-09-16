@@ -31,7 +31,7 @@
   "productSizes": {
     "MANGTIKA": {
       "sizing_unit": "Regular",
-      "options": ["Regular"],
+      "options": ["Regular","oneSize"],
       "note": "Typically adjustable"
     },
     "NATH": {

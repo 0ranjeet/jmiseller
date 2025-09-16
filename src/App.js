@@ -22,6 +22,10 @@ import QCApprovalPage from "./pages/QCApprovalPage";
 import MyCatalogue from "./pages/MyCatalogue";
 import ReadyStockServices from "./pages/ReadyStockServices";
 import Catalogue from "./pages/Catlouge";
+import BuyerRequest from "./pages/BuyerRequest";
+import Assortment from "./pages/Assortment";
+import FinalCorrection from "./pages/FinalCorrection";
+import ReadyToDispatch from "./pages/ReadyToDispatch";
 
 // 🔒 Protected Route Wrapper - Updated to check SellerContext
 // This component must be rendered inside the Router and SellerProvider
@@ -62,9 +66,10 @@ function App() {
             <Route path="/UploadProduct" element={<UploadProduct />} />
             <Route path="/MyCatalogue" element={<MyCatalogue />} />
             <Route path="/catalogue/:type" element={<Catalogue />} />
-
-            {/* Protected Routes */}
-            {/* Each protected route now uses the ProtectedRoute wrapper */}
+            <Route path="/buyerrequset" element={<BuyerRequest/>}/>
+            <Route path="/assortment" element={<Assortment/>}/>
+            <Route path="/finalcorrection" element={<FinalCorrection/>}/>
+            <Route path="/rtd" element={<ReadyToDispatch/>}/>
             <Route
               path="/segmentregistration"
               element={

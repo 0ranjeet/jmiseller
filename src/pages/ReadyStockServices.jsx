@@ -1,86 +1,195 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Menu,
   Users,
   ShoppingCart,
   CheckCircle,
   Truck,
   CreditCard,
-  Package
+  Package,
 } from 'lucide-react';
 import './ReadyStockServices.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useSeller } from '../contexts/SellerContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { useNavigate } from 'react-router-dom';
 
 const ReadyStockServices = () => {
+  const { seller } = useSeller();
+  const sellerId = seller?.sellerId;
+ const navigate=useNavigate();
+  const [orderCounts, setOrderCounts] = useState({
+    requested: 0,
+    assortment: 0,
+    finalCorrection: 0,
+    readyToDispatch: 0,
+    delivery: 0,
+    payment: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+
+
+  // Fetch and count orders by status
+  useEffect(() => {
+    const fetchOrderCounts = async () => {
+      if (!sellerId) return;
+
+      try {
+        setLoading(true);
+        const q = query(collection(db, 'orderList'), where('sellerId', '==', sellerId));
+        const snapshot = await getDocs(q);
+
+        const counts = {
+          requested: 0,
+          assortment: 0,
+          finalCorrection: 0,
+          readyToDispatch: 0,
+          delivery: 0,
+          payment: 0,
+        };
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const status = data.orderStatus;
+
+          switch (status) {
+            case 'Requested':
+              counts.requested += 1;
+              break;
+            case 'Assortment':
+              counts.assortment += 1;
+              break;
+            case 'Assorted':
+              counts.finalCorrection += 1;
+              break;
+            case 'RTD':
+              counts.readyToDispatch += 1;
+              break;
+            case 'Dispatched':
+              counts.delivery += 1;
+              break;
+            case 'Payment':
+              counts.payment += 1;
+              break;
+            default:
+              break;
+          }
+        });
+
+        setOrderCounts(counts);
+      } catch (error) {
+        console.error('Error fetching order counts:', error);
+        // Optionally show toast or fallback counts
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderCounts();
+  }, [sellerId]);
+
+  // Calculate totals
+  const totalOrders = Object.values(orderCounts).reduce((sum, count) => sum + count, 0);
+  const completedStages = ['readyToDispatch', 'delivery', 'payment'];
+  const completedCount = completedStages.reduce(
+    (sum, key) => sum + orderCounts[key],
+    0
+  );
+  const pendingCount = totalOrders - completedCount;
+
+  // Workflow Steps (now dynamic)
   const steps = [
     {
       id: 1,
-      title: "Buyer Requests",
-      subtitle: "New incoming enquiries",
-      count: 24,
-      color: "yellow",
-      icon: Users
+      title: 'Buyer Requests',
+      subtitle: 'New incoming enquiries',
+      count: orderCounts.requested,
+      color: 'yellow',
+      icon: Users,
+      path:'/buyerrequset',
     },
     {
       id: 2,
-      title: "Assortment",
-      subtitle: "Shortlist & curate products",
-      count: 14,
-      color: "blue",
-      icon: ShoppingCart
+      title: 'Assortment',
+      subtitle: 'Shortlist & curate products',
+      count: orderCounts.assortment,
+      color: 'blue',
+      icon: ShoppingCart,
+      path:'/assortment',
     },
     {
       id: 3,
-      title: "Final Correction",
-      subtitle: "Confirm specs & edits",
-      count: 3,
-      color: "orange",
-      icon: CheckCircle
+      title: 'Final Correction',
+      subtitle: 'Confirm specs & edits',
+      count: orderCounts.finalCorrection,
+      color: 'orange',
+      icon: CheckCircle,
+     path:'/finalcorrection',
     },
     {
       id: 4,
-      title: "Ready to Dispatch",
-      subtitle: "Packed & awaiting pickup",
-      count: 21,
-      color: "green",
-      icon: Package
+      title: 'Ready to Dispatch',
+      subtitle: 'Packed & awaiting pickup',
+      count: orderCounts.readyToDispatch,
+      color: 'green',
+      icon: Package,
+      path:'/rtd'
     },
     {
       id: 5,
-      title: "Delivery",
-      subtitle: "In transit to buyer",
-      count: 7,
-      color: "light-blue",
-      icon: Truck
+      title: 'Delivery',
+      subtitle: 'In transit to buyer',
+      count: orderCounts.delivery,
+      color: 'light-blue',
+      icon: Truck,
+      path:'/delivery',
     },
     {
       id: 6,
-      title: "Payment",
-      subtitle: "Invoices & receipts",
-      count: 5,
-      color: "purple",
-      icon: CreditCard
-    }
+      title: 'Payment',
+      subtitle: 'Invoices & receipts',
+      count: orderCounts.payment,
+      color: 'purple',
+      icon: CreditCard,
+      path:'/payment'
+    },
   ];
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Ready Stock Services" />
+        <div className="overview-container">
+          <div className="overview-card">
+            <h2 className="overview-title">Loading...</h2>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
       <Header title="Ready Stock Services" />
-       <div className="overview-container">
+
+      {/* Overview Stats */}
+      <div className="overview-container">
         <div className="overview-card">
           <h2 className="overview-title">Today's Overview</h2>
           <div className="overview-stats">
             <div className="stat-item">
-              <div className="stat-value">59</div>
+              <div className="stat-value">{totalOrders}</div>
               <div className="stat-label">Total Orders</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">42</div>
+              <div className="stat-value">{completedCount}</div>
               <div className="stat-label">Completed</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">17</div>
+              <div className="stat-value">{pendingCount}</div>
               <div className="stat-label">Pending</div>
             </div>
           </div>
@@ -91,7 +200,9 @@ const ReadyStockServices = () => {
       <div className="workflow-container">
         <div className="workflow-steps">
           {steps.map((step, index) => (
-            <div key={step.id} className="step-card">
+            <div key={step.id} className="step-card" onClick={()=>{
+                navigate(step.path)
+            }}>
               <div className={`step-line ${step.color}`} />
               <div className="readystep-content">
                 <div className="step-number">
@@ -110,6 +221,7 @@ const ReadyStockServices = () => {
           ))}
         </div>
       </div>
+
       <Footer />
     </>
   );
