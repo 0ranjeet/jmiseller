@@ -175,16 +175,14 @@ const Assortment = () => {
     <>
       <Header title="Ready Services Order Workflow" />
 
-      <div className="workflow-container">
-        {/* Filters */}
         <div className="filters">
           <div className="filter-group">
             <h3>Category</h3>
-            <div className="filter-buttons">
+            <div className="horizontal-scroll-container">
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  className={`filter-btn ${category === cat ? 'active' : ''}`}
+                  className={`category-button ${category === cat ? 'active' : ''}`}
                   onClick={() => setCategory(cat)}
                   type="button"
                 >
@@ -196,11 +194,11 @@ const Assortment = () => {
 
           <div className="filter-group">
             <h3>Subcategory</h3>
-            <div className="filter-buttons">
+            <div className="horizontal-scroll-container">
               {subCategories.map((sub) => (
                 <button
                   key={sub}
-                  className={`filter-btn ${subCategory === sub ? 'active' : ''}`}
+                  className={`category-button ${subCategory === sub ? 'active' : ''}`}
                   onClick={() => setSubCategory(sub)}
                   type="button"
                 >
@@ -268,7 +266,6 @@ const Assortment = () => {
             })
           )}
         </div>
-      </div>
     </>
   );
 };

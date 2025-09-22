@@ -69,7 +69,7 @@ const ReadyToDispatch = () => {
     };
 
     fetchOrders();
-  }, [sellerId]);
+  }, [sellerId, category, subCategory]);
 
   // Update filtered orders when category or subcategory changes
   useEffect(() => {
@@ -185,16 +185,14 @@ const ReadyToDispatch = () => {
     <>
       <Header title="Ready to Dispatch" />
 
-      <div className="dispatch-container">
-        {/* Filters */}
         <div className="filters">
           <div className="filter-group">
             <h3>Category</h3>
-            <div className="filter-buttons">
+            <div className="horizontal-scroll-container">
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  className={`filter-btn ${category === cat ? 'active' : ''}`}
+                  className={`category-button ${category === cat ? 'active' : ''}`}
                   onClick={() => setCategory(cat)}
                   type="button"
                 >
@@ -206,11 +204,11 @@ const ReadyToDispatch = () => {
 
           <div className="filter-group">
             <h3>Subcategory</h3>
-            <div className="filter-buttons">
+            <div className="horizontal-scroll-container">
               {subCategories.map((sub) => (
                 <button
                   key={sub}
-                  className={`filter-btn ${subCategory === sub ? 'active' : ''}`}
+                  className={`category-button ${subCategory === sub ? 'active' : ''}`}
                   onClick={() => setSubCategory(sub)}
                   type="button"
                 >
@@ -314,7 +312,6 @@ const ReadyToDispatch = () => {
             {dispatching ? 'Dispatching...' : 'Mark as Dispatched'}
           </button>
         </div>
-      </div>
     </>
   );
 };

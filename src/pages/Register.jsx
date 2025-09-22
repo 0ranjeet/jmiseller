@@ -1,50 +1,42 @@
 import React, { useState } from "react";
 import {
-  auth,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-} from "../services/firebase";
-import "./Login.css";
-import { useNavigate } from "react-router-dom";
-import {
   doc,
   setDoc,
   collection,
   query,
   where,
   getDocs,
+  getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { useSeller } from "../contexts/SellerContext";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
+
+// Message templates for different use cases
+const MESSAGE_TEMPLATES = {
+  REGISTER: "Your JMI Seller registration OTP is: {{OTP}}. Valid for 10 minutes.",
+};
 
 const Register = () => {
   const { updateSeller } = useSeller();
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
-  // Setup invisible recaptcha
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: () => {},
-        }
-      );
-    }
+  // Generate 6-digit OTP
+  const generateOtp = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  // Send OTP
+  // Send OTP: Generate + Save in Firestore (no Firebase Auth used)
   const sendOtp = async () => {
     if (mobile.length !== 10 || isNaN(mobile)) {
       alert("Enter a valid 10-digit mobile number");
@@ -52,23 +44,51 @@ const Register = () => {
     }
 
     setLoading(true);
-    setupRecaptcha();
-    const appVerifier = window.recaptchaVerifier;
-    const fullPhone = `+91${mobile}`;
 
     try {
-      const result = await signInWithPhoneNumber(auth, fullPhone, appVerifier);
-      setConfirmationResult(result);
+      // Check if already registered
+      const q = query(collection(db, "sellers"), where("mobile", "==", mobile));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        alert("This mobile number is already registered.");
+        return;
+      }
+
+      // Generate OTP
+      const plainOtp = generateOtp();
+      const hashedOtp = await bcrypt.hash(plainOtp, 10);
+      const otpId = `+91${mobile}_REGISTER`; // Unique ID
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 min expiry
+
+      // Fill template
+      const message = MESSAGE_TEMPLATES.REGISTER.replace("{{OTP}}", plainOtp);
+
+      // Save OTP in Firestore
+      await setDoc(doc(db, "otps", otpId), {
+        mobile: `+91${mobile}`,
+        otp: hashedOtp,
+        useCase: "REGISTER",
+        status: "pending", // Not yet sent — will be triggered externally
+        createdAt: now,
+        expiresAt,
+        message, // Full message ready to send
+        sentByAdmin: false,
+      });
+
+      // Proceed to OTP input step
       setOtpSent(true);
+      alert(`✅ OTP generated for +91 ${mobile}\nAsk support to send it via WhatsApp.`);
     } catch (err) {
-      console.error("Error sending OTP:", err);
-      alert("Failed to send OTP. Please try again.");
+      console.error("Error generating OTP:", err);
+      alert("Failed to generate OTP. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Verify OTP and Register
+  // Verify OTP and Register Seller
   const verifyOtpAndRegister = async () => {
     if (!otp || !password || !confirmPass) {
       alert("Please fill all fields");
@@ -83,24 +103,44 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await confirmationResult.confirm(otp);
+      const otpId = `+91${mobile}_REGISTER`;
+      const otpRef = doc(db, "otps", otpId);
+      const otpSnap = await getDoc(otpRef);
 
-      // Check if mobile already registered
-      const q = query(collection(db, "sellers"), where("mobile", "==", mobile));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        alert("This mobile number is already registered.");
+      if (!otpSnap.exists()) {
+        alert("No OTP found. Request a new one.");
+        setLoading(false);
         return;
       }
 
-      // Generate unique seller ID
-      const sellerId = "SELLER-" + uuidv4().split("-")[0].toUpperCase();
+      const data = otpSnap.data();
+      const now = new Date();
 
-      // Hash password
+      // Check expiry
+      if (now > data.expiresAt.toDate()) {
+        alert("OTP has expired. Please request a new one.");
+        await otpSnap.ref.delete();
+        setOtpSent(false);
+        setLoading(false);
+        return;
+      }
+
+      // Compare OTP
+      const isValid = await bcrypt.compare(otp, data.otp);
+      if (!isValid) {
+        alert("Invalid OTP. Please check and try again.");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ OTP Verified — Mark as used and proceed
+
+      await updateDoc(otpRef, { status: "verified" });
+
+      // Create seller account
+      const sellerId = "SELLER-" + uuidv4().split("-")[0].toUpperCase();
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Save seller to Firestore
       await setDoc(doc(db, "sellers", sellerId), {
         sellerId,
         mobile,
@@ -109,18 +149,18 @@ const Register = () => {
         status: "pending",
       });
 
-      // Update context with seller data
+      // Update context
       updateSeller({
         sellerId,
         mobile,
         registrationStatus: false,
       });
 
-      alert(`Seller registered successfully with ID: ${sellerId}`);
+      alert(`🎉 Seller registered successfully!\nYour ID: ${sellerId}`);
       nav("/sellerregistration");
     } catch (err) {
       console.error("Registration error:", err);
-      alert("OTP verification failed. Please try again.");
+      alert("Something went wrong during verification. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -145,19 +185,15 @@ const Register = () => {
         />
 
         {!otpSent ? (
-          <button
-            className="login-btn"
-            onClick={sendOtp}
-            disabled={loading}
-          >
-            {loading ? "Sending OTP..." : "Send OTP"}
+          <button className="login-btn" onClick={sendOtp} disabled={loading}>
+            {loading ? "Generating OTP..." : "Send OTP"}
           </button>
         ) : (
           <>
             <label>OTP</label>
             <input
               type="text"
-              placeholder="Enter OTP"
+              placeholder="Enter OTP (sent via WhatsApp)"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
             />
@@ -183,7 +219,7 @@ const Register = () => {
               onClick={verifyOtpAndRegister}
               disabled={loading}
             >
-              {loading ? "Registering..." : "Register"}
+              {loading ? "Verifying..." : "Verify & Register"}
             </button>
           </>
         )}
@@ -191,7 +227,12 @@ const Register = () => {
 
       <p className="register-link">
         Already have an account?{" "}
-        <span onClick={() => nav("/login")}>Login</span>
+        <span
+          onClick={() => nav("/login")}
+          style={{ color: "#007bff", cursor: "pointer" }}
+        >
+          Login
+        </span>
       </p>
 
       <p className="support">
@@ -199,6 +240,7 @@ const Register = () => {
         Need help? Contact Seller Support
       </p>
 
+      {/* Hidden container (in case you keep reCAPTCHA for other flows) */}
       <div id="recaptcha-container"></div>
     </div>
   );

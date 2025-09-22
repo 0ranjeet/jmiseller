@@ -1,6 +1,6 @@
 import React from 'react';
 import { Home, List, Plus, Bell, User } from 'lucide-react';
-import './Dashboard.css';
+import './Footer.css';
 import { useNavigate } from 'react-router-dom';
 
 const Footer = () => {

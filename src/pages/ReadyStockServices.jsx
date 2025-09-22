@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users,
-  ShoppingCart,
-  CheckCircle,
-  Truck,
-  CreditCard,
-  Package,
+  ChevronRight,
 } from 'lucide-react';
 import './ReadyStockServices.css';
 import Header from '../components/Header';
@@ -14,6 +9,7 @@ import { useSeller } from '../contexts/SellerContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
+
 
 const ReadyStockServices = () => {
   const { seller } = useSeller();
@@ -38,7 +34,7 @@ const ReadyStockServices = () => {
 
       try {
         setLoading(true);
-        const q = query(collection(db, 'orderList'), where('sellerId', '==', sellerId));
+        const q = query(collection(db, 'orderList'), where('sellerId', '==', sellerId),where ('serviceType','==','ready'));
         const snapshot = await getDocs(q);
 
         const counts = {
@@ -107,7 +103,6 @@ const ReadyStockServices = () => {
       subtitle: 'New incoming enquiries',
       count: orderCounts.requested,
       color: 'yellow',
-      icon: Users,
       path:'/buyerrequset',
     },
     {
@@ -116,7 +111,6 @@ const ReadyStockServices = () => {
       subtitle: 'Shortlist & curate products',
       count: orderCounts.assortment,
       color: 'blue',
-      icon: ShoppingCart,
       path:'/assortment',
     },
     {
@@ -125,7 +119,6 @@ const ReadyStockServices = () => {
       subtitle: 'Confirm specs & edits',
       count: orderCounts.finalCorrection,
       color: 'orange',
-      icon: CheckCircle,
      path:'/finalcorrection',
     },
     {
@@ -134,16 +127,14 @@ const ReadyStockServices = () => {
       subtitle: 'Packed & awaiting pickup',
       count: orderCounts.readyToDispatch,
       color: 'green',
-      icon: Package,
       path:'/rtd'
     },
     {
       id: 5,
-      title: 'Delivery',
+      title: 'Dispatch',
       subtitle: 'In transit to buyer',
       count: orderCounts.delivery,
       color: 'light-blue',
-      icon: Truck,
       path:'/delivery',
     },
     {
@@ -152,7 +143,6 @@ const ReadyStockServices = () => {
       subtitle: 'Invoices & receipts',
       count: orderCounts.payment,
       color: 'purple',
-      icon: CreditCard,
       path:'/payment'
     },
   ];
@@ -205,16 +195,15 @@ const ReadyStockServices = () => {
             }}>
               <div className={`step-line ${step.color}`} />
               <div className="readystep-content">
-                <div className="step-number">
-                  <span className={`number ${step.color}`}>{step.id}</span>
+                <div className={`step-number ${step.color}`}>{step.id}
                 </div>
                 <div className="step-details">
-                  <h3 className="step-title">{step.title}</h3>
+                  <h3 className="workstep-title">{step.title}</h3>
                   <p className="step-subtitle">{step.subtitle}</p>
                 </div>
                 <div className="step-count">
                   <span>{step.count}</span>
-                  <span className="arrow">›</span>
+                  <span className="arrow"><ChevronRight/></span>
                 </div>
               </div>
             </div>

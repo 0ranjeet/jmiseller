@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/splash-screen": "^7.0.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@imagekit/react": "^5.0.1",
@@ -18,7 +22,8 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.7.1",
     "react-scripts": "5.0.1",
-    "recharts": "^3.1.2"
+    "recharts": "^3.1.2",
+    "uuid4": "^2.0.3"
   },
   "scripts": {
     "start": "react-scripts start",

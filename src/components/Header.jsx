@@ -50,7 +50,7 @@ const Header = ({ title = "Dashboard" }) => {
     { label: 'Registered Products', icon: <FileText size={18} />, path: '/myregisteredproducts' },
     { label: 'My Catalogue', icon: <BookImage size={18} />, path: '/MyCatalogue' },
     { label: 'Ready Stock Services', icon: <Truck size={18} />, path: '/readystockservices' },
-    { label: 'Order Serve Services', icon: <BookA size={18} />, path: '/order-serve' },
+    { label: 'Order Serve Services', icon: <BookA size={18} />, path: '/orderserve' },
     { label: 'Open Market Services', icon: <Plus size={18} />, path: '/open-market' },
     { label: 'Offers & Discount', icon: <Bell size={18} />, path: '/offers' },
   ];

@@ -14,12 +14,12 @@ const Catalogue = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('916 HUID');
-  const [selectedSubcategory, setSelectedSubcategory] = useState('MACHINE MADE');
+  const [selectedCategory, setSelectedCategory] = useState('916HUID');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('KATAKI');
 
   // Categories and subcategories data
-  const categories = ['916 HUID', '840 ORNA', '750 HUID', '680'];
-  const subcategories = ['MACHINE MADE', 'CASTING', 'CNC', 'KUNDAN'];
+  const categories = ['916HUID', '840ORNA', '750HUID', '680'];
+  const subcategories = ['KATAKI','MACHINE MADE', 'CASTING', 'CNC', 'KUNDAN'];
 
   // Configure based on type
   const config = {
@@ -130,7 +130,7 @@ const Catalogue = () => {
     });
 
     setProducts(filteredProducts);
-  }, [allProducts, sellerId, type]);
+    }, [allProducts, sellerId, type, currentConfig.filterStatus, currentConfig.serviceType, selectedCategory, selectedSubcategory]);
 
   const handleMarkOutOfStock = async (productId) => {
     try {
@@ -200,7 +200,7 @@ const Catalogue = () => {
       <div className="filters">
         <div className="filter-group">
           <h3>Category</h3>
-          <div className="category-buttons">
+          <div className="horizontal-scroll-container">
             {categories.map((category) => (
               <button
                 key={category}
@@ -215,11 +215,11 @@ const Catalogue = () => {
 
         <div className="filter-group">
           <h3>Subcategory</h3>
-          <div className="subcategory-buttons">
+          <div className="horizontal-scroll-container">
             {subcategories.map((subcategory) => (
               <button
                 key={subcategory}
-                className={`subcategory-btn ${selectedSubcategory === subcategory ? 'active' : ''}`}
+                className={`category-button ${selectedSubcategory === subcategory ? 'active' : ''}`}
                 onClick={() => handleSubcategoryClick(subcategory)}
               >
                 {subcategory}
@@ -251,7 +251,7 @@ const Catalogue = () => {
                     }}
                   />
                 )}
-                {!product.images || product.images.length === 0 && (
+                {product.images.length === 0 && (
                   <div className="no-image-placeholder">No Image</div>
                 )}
                 <div 

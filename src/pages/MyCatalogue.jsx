@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import './MyCatalogue.css'
 import Header from '../components/Header';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { db } from '../services/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useSeller } from '../contexts/SellerContext';
-
+import {
+  ChevronRight,
+} from 'lucide-react';
 const MyCatalogue = () => {
   const nav = useNavigate();
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
-  
+
   const [productCounts, setProductCounts] = useState({
     qcPending: 0,
     qcRejected: 0,
@@ -31,7 +32,7 @@ const MyCatalogue = () => {
 
         const productsRef = collection(db, 'products');
         const querySnapshot = await getDocs(productsRef);
-        
+
         let qcPending = 0;
         let qcRejected = 0;
         let readyStock = 0;
@@ -40,16 +41,16 @@ const MyCatalogue = () => {
 
         querySnapshot.forEach((doc) => {
           const product = doc.data();
-          
+
           // Only count products for current seller
           if (product.sellerId !== sellerId) return;
-          
+
           // Count by status
           if (product.status === 'pending') {
             qcPending++;
           } else if (product.status === 'rejected') {
             qcRejected++;
-          } 
+          }
           // Count by service type for approved products
           else if (product.status === 'approved') {
             if (product.serviceType === 'ready') {
@@ -81,17 +82,7 @@ const MyCatalogue = () => {
     }
   }, [sellerId]);
 
-  // Map catalogue items to their corresponding types
-  const getItemType = (id) => {
-    switch(id) {
-      case 2: return 'qc-pending';
-      case 3: return 'qc-rejected';
-      case 4: return 'ready-stock';
-      case 5: return 'order-serve';
-      case 6: return 'out-of-stock';
-      default: return null;
-    }
-  };
+  
 
   const catalogueItems = [
     {
@@ -99,7 +90,7 @@ const MyCatalogue = () => {
       title: 'Add Products',
       path: '/UploadProduct',
       description: 'Create new listings',
-      color: 'bg-yellow-500',
+      color: 'yellow',
       count: null,
       icon: '+'
     },
@@ -107,45 +98,45 @@ const MyCatalogue = () => {
       id: 2,
       title: 'QC Pending',
       description: 'Awaiting quality check',
-      color: 'bg-yellow-400',
+      color: 'yellow',
       count: loading ? '...' : productCounts.qcPending,
-      icon: '',
+      icon: <ChevronRight />,
       type: 'pending'
     },
     {
       id: 3,
       title: 'QC Rejected',
       description: 'Needs fixes & resubmission',
-      color: 'bg-red-500',
+      color: 'red',
       count: loading ? '...' : productCounts.qcRejected,
-      icon: '',
+      icon: <ChevronRight />,
       type: 'rejected'
     },
     {
       id: 4,
       title: 'Ready Stock Catalogue',
       description: 'Approved & in stock',
-      color: 'bg-green-500',
+      color: 'purple',
       count: loading ? '...' : productCounts.readyStock,
-      icon: '',
+      icon: <ChevronRight />, 
       type: 'ready'
     },
     {
       id: 5,
       title: 'Order Serve Catalogue',
       description: 'Make-to-order items',
-      color: 'bg-blue-500',
+      color: 'light-blue',
       count: loading ? '...' : productCounts.orderServe,
-      icon: '',
+      icon: <ChevronRight />,
       type: 'order'
     },
     {
       id: 6,
       title: 'Out of Stock Catalogue',
       description: 'Temporarily unavailable',
-      color: 'bg-gray-400',
+      color: 'green',
       count: loading ? '...' : productCounts.outOfStock,
-      icon: '',
+      icon: <ChevronRight />,
       type: 'out'
     }
   ];
@@ -162,43 +153,49 @@ const MyCatalogue = () => {
   return (
     <>
       <Header title="My Catalogue" />
-      <div >
-        <div className="catalogue-list">
+      <div className="workflow-container">
+        <div className="workflow-steps">
           {catalogueItems.map((item) => (
-            <div 
-              key={item.id} 
-              className="catalogue-item" 
+            <div
+              key={item.id}
+              className="step-card"
               onClick={() => handleItemClick(item)}
             >
-              <div className={`item-vertical-line ${item.color}`}>
-                <div className={`item-number ${item.color}`}>
+              {/* ✅ Step line on top (same as 1st part) */}
+              <div className={`step-line ${item.color}`} />
+
+              {/* ✅ Main content wrapper */}
+              <div className="readystep-content">
+                {/* Step number */}
+                <div className={`step-number ${item.color}`}>
                   {item.id}
                 </div>
-              </div>
-              
-              <div className="item-content-wrapper">
-                <div className="item-content">
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
+
+                {/* Details */}
+                <div className="step-details">
+                  <h3 className="workstep-title">{item.title}</h3>
+                  <p className="step-subtitle">{item.description}</p>
                 </div>
-                
-                <div className="item-actions">
-                  {item.count !== null && (
-                    <span className="item-count">{item.count}</span>
-                  )}
-                  {item.icon && (
-                    <span className="item-icon" onClick={(e) => {
+
+                {/* Count + Icon (same role as arrow in 1st part) */}
+                <div className="step-count">
+                  <span>{item.count}</span>
+                  <span
+                    className="arrow"
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleItemClick(item);
-                    }}>{item.icon}</span>
-                  )}
-                  <span className="arrow">{'>'}</span>
+                    }}
+                  >
+                    {item.icon}
+                  </span>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
       <Footer />
     </>
   );

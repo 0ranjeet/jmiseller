@@ -26,6 +26,7 @@ import BuyerRequest from "./pages/BuyerRequest";
 import Assortment from "./pages/Assortment";
 import FinalCorrection from "./pages/FinalCorrection";
 import ReadyToDispatch from "./pages/ReadyToDispatch";
+import OrderServe from "./pages/OrderServe";
 
 // 🔒 Protected Route Wrapper - Updated to check SellerContext
 // This component must be rendered inside the Router and SellerProvider
@@ -99,6 +100,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ReadyStockServices />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orderserve"
+              element={
+                <ProtectedRoute>
+                  <OrderServe />
                 </ProtectedRoute>
               }
             />

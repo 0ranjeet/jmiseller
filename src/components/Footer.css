@@ -1,25 +1,59 @@
-.footer {
+
+/* Footer Styles */
+.dashboard-footer {
   position: fixed;
+  z-index: 40;
   bottom: 0;
-  width: 100%;
-  background: #fff;
-  border-top: 1px solid #eee;
-  padding: 10px 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
 }
 
-.footer nav {
+.footer-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.footer-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.footer-btn-active {
+  color: #d97706;
+}
+
+.footer-btn-inactive {
+  color: #9ca3af;
+}
+
+.footer-label {
+  font-size: 12px;
+}
+
+.footer-label-active {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.plus-button {
+  width: 60px;
+  height: 60px;
+  background-color: #eab308;
+  border-radius: 9999px;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-}
-
-.add-btn {
-  background: gold;
-  border-radius: 50%;
+  justify-content: center;
   border: none;
-  width: 40px;
-  height: 40px;
-  font-size: 1.5em;
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  position: absolute;
+  top: -16%;
 }
