@@ -88,7 +88,7 @@ const ReadyStockServices = () => {
 
   // Calculate totals
   const totalOrders = Object.values(orderCounts).reduce((sum, count) => sum + count, 0);
-  const completedStages = ['readyToDispatch', 'delivery', 'payment'];
+  const completedStages = ['readyToDispatch', 'Assigned', 'payment'];
   const completedCount = completedStages.reduce(
     (sum, key) => sum + orderCounts[key],
     0
