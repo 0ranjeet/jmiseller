@@ -27,6 +27,7 @@ import Assortment from "./pages/Assortment";
 import FinalCorrection from "./pages/FinalCorrection";
 import ReadyToDispatch from "./pages/ReadyToDispatch";
 import OrderServe from "./pages/OrderServe";
+import Pickup from "./pages/Pickup";
 
 // 🔒 Protected Route Wrapper - Updated to check SellerContext
 // This component must be rendered inside the Router and SellerProvider
@@ -71,6 +72,7 @@ function App() {
             <Route path="/assortment" element={<Assortment/>}/>
             <Route path="/finalcorrection" element={<FinalCorrection/>}/>
             <Route path="/rtd" element={<ReadyToDispatch/>}/>
+            <Route path="/Assigned" element={<Pickup/>}/>
             <Route
               path="/segmentregistration"
               element={

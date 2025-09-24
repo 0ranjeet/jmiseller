@@ -42,7 +42,7 @@ const ReadyStockServices = () => {
           assortment: 0,
           finalCorrection: 0,
           readyToDispatch: 0,
-          delivery: 0,
+          Assigned: 0,
           payment: 0,
         };
 
@@ -63,8 +63,8 @@ const ReadyStockServices = () => {
             case 'RTD':
               counts.readyToDispatch += 1;
               break;
-            case 'Dispatched':
-              counts.delivery += 1;
+            case 'Assigned':
+              counts.Assigned += 1;
               break;
             case 'Payment':
               counts.payment += 1;
@@ -131,11 +131,11 @@ const ReadyStockServices = () => {
     },
     {
       id: 5,
-      title: 'Dispatch',
+      title: 'Assigned',
       subtitle: 'In transit to buyer',
-      count: orderCounts.delivery,
+      count: orderCounts.Assigned,
       color: 'light-blue',
-      path:'/delivery',
+      path:'/Assigned',
     },
     {
       id: 6,
