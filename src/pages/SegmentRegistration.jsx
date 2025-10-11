@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import bcrypt from 'bcryptjs';
 import { db } from '../services/firebase';
@@ -76,7 +76,7 @@ const SegmentRegistration = () => {
   const [zone, setZone] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupContent, setPopupContent] = useState(null);
-  
+
   // OTP States
   const [sellerOtp, setSellerOtp] = useState(['', '', '', '', '', '']);
   const [operatorOtp, setOperatorOtp] = useState(['', '', '', '', '', '']);
@@ -186,7 +186,7 @@ const SegmentRegistration = () => {
   // Verify Seller OTP - Using exact format from provided example
   const handleVerifySellerOtp = useCallback(async () => {
     const fullOtp = sellerOtp.join('');
-    
+
     if (fullOtp.length !== 6 || isNaN(fullOtp)) {
       alert("Please enter the complete 6-digit OTP.");
       return;
@@ -284,7 +284,7 @@ const SegmentRegistration = () => {
   // Verify Operator OTP - Using exact format from provided example
   const handleVerifyOperatorOtp = useCallback(async () => {
     const fullOtp = operatorOtp.join('');
-    
+
     if (fullOtp.length !== 6 || isNaN(fullOtp)) {
       alert("Please enter the complete 6-digit OTP.");
       return;
@@ -353,7 +353,7 @@ const SegmentRegistration = () => {
           if (!operatorSegmentSnapshot.empty) {
             const operatorSegmentData = operatorSegmentSnapshot.docs[0].data();
             const operatorId = operatorSegmentData.operatorId;
-            
+
             const zoneData = Object.values(operatorSegmentData.zone).flat();
             setZone(zoneData);
 
@@ -387,7 +387,9 @@ const SegmentRegistration = () => {
                   ifscCode: operatorData.ifscCode,
                   accountType: operatorData.accountType
                 },
-                segmentServices: operatorSegmentData.services || {}
+                segmentServices: operatorSegmentData.services || {},
+                // Add seller IDs from OperatorSegmentRegistrations
+                sellerIds: operatorSegmentData.sellerIds || []
               };
 
               setOperatorDetails(formattedDetails);
@@ -420,7 +422,7 @@ const SegmentRegistration = () => {
   const handleOperatorMobileChange = (e) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);
     setOperatorMobile(value);
-    
+
     // Reset operator verification when mobile changes
     if (value !== operatorMobile) {
       setIsOperatorOtpSent(false);
@@ -433,6 +435,24 @@ const SegmentRegistration = () => {
     setIsAccordionOpen(!isAccordionOpen);
   };
 
+  // Add sellerId to OperatorSegmentRegistrations (only ID)
+  const addSellerToOperatorSegment = async (operatorId) => {
+    try {
+      const operatorSegmentRef = doc(db, 'OperatorSegmentRegistrations', operatorId);
+
+      // Add ONLY sellerId to the operator's sellerIds array
+      await updateDoc(operatorSegmentRef, {
+        sellerIds: arrayUnion(seller.sellerId),
+        updatedAt: serverTimestamp()
+      });
+
+      console.log(`Seller ${seller.sellerId} added to operator ${operatorId} in OperatorSegmentRegistrations`);
+    } catch (error) {
+      console.error('Error adding seller to operator segment:', error);
+      throw error;
+    }
+  };
+
   const saveSegmentRegistration = useCallback(async () => {
     try {
       if (!seller || !seller.sellerId) {
@@ -443,7 +463,7 @@ const SegmentRegistration = () => {
 
       // Get existing operators or initialize empty array
       const existingOperators = existingRegistration?.operators || [];
-      
+
       // Check if operator already exists
       const operatorExists = existingOperators.includes(operatorDetails?.operatorId);
 
@@ -452,13 +472,12 @@ const SegmentRegistration = () => {
         return;
       }
 
-      // Prepare registration data - ONLY operatorId in the operators array
+      // Prepare registration data
       const registrationData = {
         sellerId: seller.sellerId,
         segment: segment,
         operatorMobile: operatorMobile,
         operatorId: operatorDetails?.operatorId,
-        operatorDetails: operatorDetails,
         services: {
           readyServices: document.getElementById('ready-services')?.checked || false,
           orderServices: document.getElementById('order-services')?.checked || false,
@@ -477,7 +496,11 @@ const SegmentRegistration = () => {
         registrationData.createdAt = serverTimestamp();
       }
 
+      // 1. Save to SellerSegmentRegistrations (seller has operatorIds list)
       await setDoc(segmentDocRef, registrationData);
+
+      // 2. Add sellerId to OperatorSegmentRegistrations (operator has sellerIds list)
+      await addSellerToOperatorSegment(operatorDetails?.operatorId);
 
       alert("Operator added to segment successfully!");
 
@@ -487,8 +510,18 @@ const SegmentRegistration = () => {
         SegmentRegistration: true,
         segment: segment
       }, { merge: true });
+      const profileSnap = await getDoc(sellerProfileRef);
 
-      nav('/productregistration');
+      let profileData = {};
+      if (profileSnap.exists()) {
+        profileData = profileSnap.data();
+      }
+      if (!profileData.ProductRegistration) {
+        nav("/productregistration");
+      } else {
+        nav('/dashboard');
+      }
+
 
     } catch (error) {
       console.error('Error saving segment registration:', error);
@@ -620,6 +653,14 @@ const SegmentRegistration = () => {
                 <div className='form-group'><span>GST No:</span><span>{operatorDetails.gstinNumber}</span></div>
                 <div className='form-group'><span>PAN No:</span><span>{(operatorDetails.gstinNumber)?.substring(2, 12)}</span></div>
 
+                {/* Display linked sellers count from OperatorSegmentRegistrations */}
+                {operatorDetails.sellerIds && operatorDetails.sellerIds.length > 0 && (
+                  <div className='form-group'>
+                    <span>Linked Sellers:</span>
+                    <span>{operatorDetails.sellerIds.length} seller(s)</span>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <span>Business Documents</span>
                   <div className="file-uploads">
@@ -695,10 +736,10 @@ const SegmentRegistration = () => {
                       ))}
                   </div>
                 )}
-                 <div className="form-group">
-                    <strong><label htmlFor="">Districts:</label></strong>
-                  <span>{zone.map((dist,index)=>(
-                      <span key={index}>{dist}, </span>
+                <div className="form-group">
+                  <strong><label htmlFor="">Districts:</label></strong>
+                  <span>{zone.map((dist, index) => (
+                    <span key={index}>{dist}, </span>
                   ))}</span>
                 </div>
               </>
@@ -755,7 +796,7 @@ const SegmentRegistration = () => {
         {/* Verification Section with Dual OTP */}
         <section className="verification">
           <h2>Verification *</h2>
-          
+
           {/* Seller OTP */}
           <div className="form-group">
             <label>Seller OTP Verification *</label>
@@ -841,8 +882,8 @@ const SegmentRegistration = () => {
       </main>
       <footer className="sticky-footer">
         <button className="draft-btn">Save Draft</button>
-        <button 
-          className="submit-btn" 
+        <button
+          className="submit-btn"
           onClick={handleSubmit}
           disabled={!isSellerVerified || !isOperatorVerified}
         >
