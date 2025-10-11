@@ -1,7 +1,7 @@
 /* UploadProduct.css */
 .add-product-container {
   max-width: 448px;
-  margin: 0 auto;
+  margin: 40px auto;
   padding: 3vw;
   background-color: #ffffff;
   min-height: 100vh;
@@ -47,11 +47,6 @@
 .radio-option input[type="radio"] {
   display: none;
 }
-
-.content {
-  padding: 16px;
-}
-
 .section {
   margin-bottom: 24px;
 }
@@ -573,4 +568,69 @@
 .multi-select-label {
   font-size: 14px;
   color: #374151;
+}
+.productDetails{
+  display:flex ;
+  justify-content: space-between;
+  align-items: center;
+}
+/* Lot Management Styles */
+.lot-summary {
+  margin-bottom: 16px;
+}
+
+.lot-preview {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lot-preview:hover {
+  border-color: #d97706;
+  background-color: #fef3c7;
+}
+
+
+.lot-preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.lot-preview-table th,
+.lot-preview-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.lot-preview-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+  font-size: 10px;
+}
+
+.lot-preview-table tfoot {
+  font-weight: 600;
+  background-color: #fef3c7;
+}
+
+.totals-row td {
+  border-top: 1px solid #d1d5db;
+  border-bottom: none;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.click-to-edit {
+  text-align: center;
+  color: #d97706;
+  font-size: 11px;
+  font-style: italic;
+  margin-top: 4px;
 }

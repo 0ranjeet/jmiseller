@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import bcrypt from 'bcryptjs';
 import { db } from '../services/firebase';
 import './SegmentRegistration.css';
 import readyServicesTerms from './terms/ready-services.json';
@@ -8,16 +9,86 @@ import orderServicesTerms from './terms/order-services.json';
 import openMarketTerms from './terms/open-market.json';
 import { useSeller } from '../contexts/SellerContext';
 
+// Constants
+const OTP_EXPIRY_MINUTES = 10;
+const USE_CASE_SELLER = "SELLER_SEGMENT_REGISTRATION";
+const USE_CASE_OPERATOR = "OPERATOR_SEGMENT_APPROVAL";
+
+// Reusable Digit Input Component
+const DigitInputs = React.memo(({ digits, setDigits, disabled = false, isPasskey = false }) => {
+  const refs = useRef([]);
+  const inputType = isPasskey ? "password" : "text";
+
+  const handleChange = (index, value) => {
+    const numericValue = value.replace(/\D/g, '').slice(0, 1);
+    if (numericValue.length === 0 && value.length > 0) return;
+
+    const newDigits = [...digits];
+    newDigits[index] = numericValue;
+    setDigits(newDigits);
+
+    if (numericValue && index < 5 && refs.current[index + 1]) {
+      refs.current[index + 1].focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !digits[index] && index > 0 && refs.current[index - 1]) {
+      e.preventDefault();
+      refs.current[index - 1].focus();
+      const newDigits = [...digits];
+      newDigits[index - 1] = '';
+      setDigits(newDigits);
+    }
+  };
+
+  return (
+    <div className="digit-inputs" style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+      {digits.map((digit, index) => (
+        <input
+          key={index}
+          type={inputType}
+          maxLength="1"
+          name={`${isPasskey ? 'passkey' : 'otp'}-digit-${index}`}
+          value={digit}
+          onChange={(e) => handleChange(index, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(index, e)}
+          required
+          inputMode="numeric"
+          pattern="\d{1}"
+          disabled={disabled}
+          ref={(el) => (refs.current[index] = el)}
+          style={{ width: '50px', height: '50px', textAlign: 'center', fontSize: '18px', border: '1px solid #ccc', borderRadius: '4px' }}
+        />
+      ))}
+    </div>
+  );
+});
+
 const SegmentRegistration = () => {
-  const [operatorId, setOperatorId] = useState('');
+  const [operatorMobile, setOperatorMobile] = useState('');
   const [operatorDetails, setOperatorDetails] = useState(null);
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [operatorOtp, setOperatorOtp] = useState(['', '', '', '', '', '']);
+  const [segment, setSegment] = useState('');
+  const [existingRegistration, setExistingRegistration] = useState(null);
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(true);
+  const [zone, setZone] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupContent, setPopupContent] = useState(null);
-  const [segment, setSegment] = useState('gold'); // Default segment is 'gold'
+  
+  // OTP States
+  const [sellerOtp, setSellerOtp] = useState(['', '', '', '', '', '']);
+  const [operatorOtp, setOperatorOtp] = useState(['', '', '', '', '', '']);
+  const [isSellerOtpSent, setIsSellerOtpSent] = useState(false);
+  const [isOperatorOtpSent, setIsOperatorOtpSent] = useState(false);
+  const [isSellerVerified, setIsSellerVerified] = useState(false);
+  const [isOperatorVerified, setIsOperatorVerified] = useState(false);
+  const [isSendingSellerOtp, setIsSendingSellerOtp] = useState(false);
+  const [isSendingOperatorOtp, setIsSendingOperatorOtp] = useState(false);
+  const [isVerifyingSellerOtp, setIsVerifyingSellerOtp] = useState(false);
+  const [isVerifyingOperatorOtp, setIsVerifyingOperatorOtp] = useState(false);
+
   const nav = useNavigate();
   const { seller } = useSeller();
 
@@ -26,6 +97,32 @@ const SegmentRegistration = () => {
     'order-services': orderServicesTerms,
     'open-market': openMarketTerms
   };
+
+  // Check for existing segment registration
+  useEffect(() => {
+    const checkExistingRegistration = async () => {
+      if (!seller || !seller.sellerId) {
+        setIsCheckingRegistration(false);
+        return;
+      }
+      try {
+        const segmentDocRef = doc(db, 'SellerSegmentRegistrations', seller.sellerId);
+        const segmentDoc = await getDoc(segmentDocRef);
+
+        if (segmentDoc.exists()) {
+          const registrationData = segmentDoc.data();
+          setExistingRegistration(registrationData);
+          setSegment(registrationData.segment);
+        }
+      } catch (error) {
+        console.error('Error checking existing registration:', error);
+      } finally {
+        setIsCheckingRegistration(false);
+      }
+    };
+
+    checkExistingRegistration();
+  }, [seller]);
 
   const openPopup = (serviceType) => {
     setPopupContent(termsAndConditions[serviceType]);
@@ -39,65 +136,301 @@ const SegmentRegistration = () => {
     document.body.style.overflow = 'auto';
   };
 
-  useEffect(() => {
-    if (operatorId.length === 10) {
-      setIsLoading(true);
-      // Simulate an API call
-      setTimeout(() => {
-        const fetchedDetails = {
-          businessDocuments: ['Document.pdf', 'License.jpg'],
-          organizationPhotos: ['https://placehold.co/80x80/e5e7eb/000000?text=Img1', 'https://placehold.co/80x80/e5e7eb/000000?text=Img2'],
-          orgName: 'Golden Jewelry Pvt. Ltd.',
-          address: '123, Gold Souk Market',
-          city: 'Mumbai',
-          district: 'Mumbai City',
-          state: 'Maharashtra',
-          pincode: '400001',
-          contact: '9876543210'
-        };
-        setOperatorDetails(fetchedDetails);
-        setIsAccordionOpen(true);
-        setIsLoading(false);
-      }, 1500);
-    } else {
-      setOperatorDetails(null);
-      setIsAccordionOpen(false);
-    }
-  }, [operatorId]);
+  // Generate OTP function
+  const generateOtp = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
-  const handleOperatorIdChange = (e) => {
-    setOperatorId(e.target.value);
+  // Send Seller OTP - Using exact format from provided example
+  const handleSendSellerOtp = useCallback(async () => {
+    if (!seller || !seller.mobile) {
+      alert("Seller mobile number not found. Please login again.");
+      return;
+    }
+
+    setIsSendingSellerOtp(true);
+
+    try {
+      const plainOtp = generateOtp();
+      const hashedOtp = await bcrypt.hash(plainOtp, 10);
+      const otpId = `+91${seller.mobile}_${USE_CASE_SELLER}`;
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+      const readableMessage = `Your Seller segment registration OTP is: ${plainOtp}. Valid for ${OTP_EXPIRY_MINUTES} minutes.`;
+
+      // Exact same format as provided example
+      await setDoc(doc(db, "otps", otpId), {
+        mobile: seller.mobile,
+        otp: hashedOtp,
+        plaintextOtp: plainOtp,
+        message: readableMessage,
+        sentByAdmin: false,
+        useCase: USE_CASE_SELLER,
+        status: "pending",
+        createdAt: now,
+        expiresAt,
+      });
+
+      console.log(`[DEV] Seller OTP generated for ${seller.mobile}: ${plainOtp}`);
+      setIsSellerOtpSent(true);
+      setSellerOtp(['', '', '', '', '', '']);
+      alert(`✅ OTP request processed for seller ${seller.mobile}. OTP has been generated.`);
+    } catch (error) {
+      console.error("Error generating seller OTP:", error);
+      alert("Failed to generate OTP. Please try again.");
+    } finally {
+      setIsSendingSellerOtp(false);
+    }
+  }, [seller]);
+
+  // Verify Seller OTP - Using exact format from provided example
+  const handleVerifySellerOtp = useCallback(async () => {
+    const fullOtp = sellerOtp.join('');
+    
+    if (fullOtp.length !== 6 || isNaN(fullOtp)) {
+      alert("Please enter the complete 6-digit OTP.");
+      return;
+    }
+
+    if (!seller || !seller.mobile) {
+      alert("Seller information not found.");
+      return;
+    }
+
+    setIsVerifyingSellerOtp(true);
+
+    try {
+      const otpId = `+91${seller.mobile}_${USE_CASE_SELLER}`;
+      const otpRef = doc(db, "otps", otpId);
+      const otpSnap = await getDoc(otpRef);
+
+      if (!otpSnap.exists()) {
+        alert("No OTP found. Please request a new one.");
+        return;
+      }
+
+      const data = otpSnap.data();
+      const now = new Date();
+
+      // Check for expiration
+      if (now > data.expiresAt.toDate()) {
+        alert("OTP has expired. Please request a new one.");
+        await deleteDoc(otpRef);
+        setIsSellerOtpSent(false);
+        return;
+      }
+
+      // Verify the OTP against the hashed value
+      const isValid = await bcrypt.compare(fullOtp, data.otp);
+      if (!isValid) {
+        alert("Invalid OTP. Please check and try again.");
+        return;
+      }
+
+      // Mark the OTP as verified in the database
+      await setDoc(otpRef, { status: "verified" }, { merge: true });
+      setIsSellerVerified(true);
+      alert("🎉 Seller verified successfully!");
+    } catch (error) {
+      console.error("Seller OTP verification error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsVerifyingSellerOtp(false);
+    }
+  }, [sellerOtp, seller]);
+
+  // Send Operator OTP - Using exact format from provided example
+  const handleSendOperatorOtp = useCallback(async () => {
+    if (!operatorMobile || operatorMobile.length !== 10) {
+      alert("Please enter a valid operator mobile number first.");
+      return;
+    }
+
+    setIsSendingOperatorOtp(true);
+
+    try {
+      const plainOtp = generateOtp();
+      const hashedOtp = await bcrypt.hash(plainOtp, 10);
+      const otpId = `+91${operatorMobile}_${USE_CASE_OPERATOR}`;
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+      const readableMessage = `Your Operator segment approval OTP is: ${plainOtp}. Valid for ${OTP_EXPIRY_MINUTES} minutes.`;
+
+      // Exact same format as provided example
+      await setDoc(doc(db, "otps", otpId), {
+        mobile: operatorMobile,
+        otp: hashedOtp,
+        plaintextOtp: plainOtp,
+        message: readableMessage,
+        sentByAdmin: false,
+        useCase: USE_CASE_OPERATOR,
+        status: "pending",
+        createdAt: now,
+        expiresAt,
+      });
+
+      console.log(`[DEV] Operator OTP generated for ${operatorMobile}: ${plainOtp}`);
+      setIsOperatorOtpSent(true);
+      setOperatorOtp(['', '', '', '', '', '']);
+      alert(`✅ OTP request processed for operator ${operatorMobile}. Ask operator to provide the OTP.`);
+    } catch (error) {
+      console.error("Error generating operator OTP:", error);
+      alert("Failed to generate operator OTP. Please try again.");
+    } finally {
+      setIsSendingOperatorOtp(false);
+    }
+  }, [operatorMobile]);
+
+  // Verify Operator OTP - Using exact format from provided example
+  const handleVerifyOperatorOtp = useCallback(async () => {
+    const fullOtp = operatorOtp.join('');
+    
+    if (fullOtp.length !== 6 || isNaN(fullOtp)) {
+      alert("Please enter the complete 6-digit OTP.");
+      return;
+    }
+
+    if (!operatorMobile) {
+      alert("Operator mobile number not found.");
+      return;
+    }
+
+    setIsVerifyingOperatorOtp(true);
+
+    try {
+      const otpId = `+91${operatorMobile}_${USE_CASE_OPERATOR}`;
+      const otpRef = doc(db, "otps", otpId);
+      const otpSnap = await getDoc(otpRef);
+
+      if (!otpSnap.exists()) {
+        alert("No OTP found. Please request a new one.");
+        return;
+      }
+
+      const data = otpSnap.data();
+      const now = new Date();
+
+      // Check for expiration
+      if (now > data.expiresAt.toDate()) {
+        alert("OTP has expired. Please request a new one.");
+        await deleteDoc(otpRef);
+        setIsOperatorOtpSent(false);
+        return;
+      }
+
+      // Verify the OTP against the hashed value
+      const isValid = await bcrypt.compare(fullOtp, data.otp);
+      if (!isValid) {
+        alert("Invalid OTP. Please check and try again.");
+        return;
+      }
+
+      // Mark the OTP as verified in the database
+      await setDoc(otpRef, { status: "verified" }, { merge: true });
+      setIsOperatorVerified(true);
+      alert("🎉 Operator verified successfully!");
+    } catch (error) {
+      console.error("Operator OTP verification error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsVerifyingOperatorOtp(false);
+    }
+  }, [operatorOtp, operatorMobile]);
+
+  // Fetch operator by mobile number
+  useEffect(() => {
+    const fetchOperatorByMobile = async () => {
+      if (operatorMobile.length === 10) {
+        setIsLoading(true);
+        try {
+          const operatorSegmentQuery = query(
+            collection(db, 'OperatorSegmentRegistrations'),
+            where('mobile', '==', operatorMobile)
+          );
+
+          const operatorSegmentSnapshot = await getDocs(operatorSegmentQuery);
+
+          if (!operatorSegmentSnapshot.empty) {
+            const operatorSegmentData = operatorSegmentSnapshot.docs[0].data();
+            const operatorId = operatorSegmentData.operatorId;
+            
+            const zoneData = Object.values(operatorSegmentData.zone).flat();
+            setZone(zoneData);
+
+            const operatorDocRef = doc(db, 'operatorregistrations', operatorId);
+            const operatorDoc = await getDoc(operatorDocRef);
+
+            if (operatorDoc.exists()) {
+              const operatorData = operatorDoc.data();
+
+              const formattedDetails = {
+                operatorId: operatorId,
+                orgName: operatorData.organizationName,
+                contact: operatorData.organizationContact,
+                email: operatorData.organizationEmail,
+                businessType: operatorData.businessType,
+                gstinNumber: operatorData.gstinNumber,
+                street: operatorData.streetAddress,
+                address: operatorData.buildingName,
+                city: operatorData.contactCity,
+                district: operatorData.contactDistrict,
+                state: operatorData.contactState,
+                pincode: operatorData.contactPinCode,
+                businessDocuments: operatorData.businessDocumentUrls || [],
+                organizationPhotos: operatorData.organizationPhotoUrls || [],
+                dealingPersons: operatorData.dealingPersons || [],
+                logo: operatorData.storeLogoUrl,
+                bankDetails: {
+                  accountHolderName: operatorData.accountHolderName,
+                  accountNumber: operatorData.accountNumber,
+                  bankName: operatorData.bankName,
+                  ifscCode: operatorData.ifscCode,
+                  accountType: operatorData.accountType
+                },
+                segmentServices: operatorSegmentData.services || {}
+              };
+
+              setOperatorDetails(formattedDetails);
+              setIsAccordionOpen(true);
+            } else {
+              setOperatorDetails(null);
+              alert('Operator details not found');
+            }
+          } else {
+            setOperatorDetails(null);
+            alert('Operator not found with this mobile number');
+          }
+        } catch (error) {
+          console.error('Error fetching operator details:', error);
+          alert('Error fetching operator details');
+          setOperatorDetails(null);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setOperatorDetails(null);
+        setIsAccordionOpen(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchOperatorByMobile, 1000);
+    return () => clearTimeout(debounceTimer);
+  }, [operatorMobile]);
+
+  const handleOperatorMobileChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setOperatorMobile(value);
+    
+    // Reset operator verification when mobile changes
+    if (value !== operatorMobile) {
+      setIsOperatorOtpSent(false);
+      setIsOperatorVerified(false);
+      setOperatorOtp(['', '', '', '', '', '']);
+    }
   };
 
   const toggleAccordion = () => {
     setIsAccordionOpen(!isAccordionOpen);
-  };
-
-  const handleOtpChange = (index, value, isOperatorOtp = false) => {
-    if (value.length > 1) return;
-
-    const newOtp = isOperatorOtp ? [...operatorOtp] : [...otp];
-    newOtp[index] = value;
-
-    if (isOperatorOtp) {
-      setOperatorOtp(newOtp);
-    } else {
-      setOtp(newOtp);
-    }
-
-    if (value && index < 5) {
-      const nextInput = document.querySelector(
-        `input[name="${isOperatorOtp ? 'operator-otp' : 'otp'}-${index + 1}"]`
-      );
-      if (nextInput) nextInput.focus();
-    }
-
-    if (!value && index > 0) {
-      const prevInput = document.querySelector(
-        `input[name="${isOperatorOtp ? 'operator-otp' : 'otp'}-${index - 1}"]`
-      );
-      if (prevInput) prevInput.focus();
-    }
   };
 
   const saveSegmentRegistration = useCallback(async () => {
@@ -107,10 +440,24 @@ const SegmentRegistration = () => {
       }
 
       const segmentDocRef = doc(db, 'SellerSegmentRegistrations', seller.sellerId);
-      await setDoc(segmentDocRef, {
+
+      // Get existing operators or initialize empty array
+      const existingOperators = existingRegistration?.operators || [];
+      
+      // Check if operator already exists
+      const operatorExists = existingOperators.includes(operatorDetails?.operatorId);
+
+      if (operatorExists) {
+        alert("This operator is already linked to your account.");
+        return;
+      }
+
+      // Prepare registration data - ONLY operatorId in the operators array
+      const registrationData = {
         sellerId: seller.sellerId,
         segment: segment,
-        operatorId: operatorId,
+        operatorMobile: operatorMobile,
+        operatorId: operatorDetails?.operatorId,
         operatorDetails: operatorDetails,
         services: {
           readyServices: document.getElementById('ready-services')?.checked || false,
@@ -119,46 +466,57 @@ const SegmentRegistration = () => {
         },
         agreedToTerms: document.getElementById('agree')?.checked || false,
         registrationComplete: true,
-        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
 
-      alert("Segment registered successfully!");
+      // Add ONLY operatorId to operators array
+      registrationData.operators = [...existingOperators, operatorDetails?.operatorId];
+
+      // If it's a new registration, add createdAt
+      if (!existingRegistration) {
+        registrationData.createdAt = serverTimestamp();
+      }
+
+      await setDoc(segmentDocRef, registrationData);
+
+      alert("Operator added to segment successfully!");
+
+      // Update seller profile
       const sellerProfileRef = doc(db, 'profile', seller.sellerId);
-
       await setDoc(sellerProfileRef, {
         SegmentRegistration: true,
+        segment: segment
       }, { merge: true });
 
       nav('/productregistration');
 
     } catch (error) {
       console.error('Error saving segment registration:', error);
-      alert("Error registering segment. Please try again.");
+      alert("Error registering operator. Please try again.");
     }
-  }, [segment, operatorId, operatorDetails, nav, seller]);
+  }, [segment, operatorMobile, operatorDetails, nav, seller, existingRegistration]);
 
   const handleSubmit = () => {
-    // --- Validation for Required Fields ---
-    if (!segment) { // Check if segment is selected (though default 'gold' makes this unlikely)
+    // Validation
+    if (!segment) {
       alert("Please select a Segment");
       return;
     }
 
-  
-
-    if (!operatorDetails) {
-      alert("Please fetch operator details first by entering a valid Operator ID");
+    if (!operatorMobile || operatorMobile.length !== 10) {
+      alert("Please enter a valid 10-digit mobile number");
       return;
     }
 
-    
+    if (!operatorDetails) {
+      alert("Please fetch operator details first by entering a valid mobile number");
+      return;
+    }
 
     const readyServicesChecked = document.getElementById('ready-services')?.checked;
     const orderServicesChecked = document.getElementById('order-services')?.checked;
     const openMarketChecked = document.getElementById('open-market')?.checked;
 
-    // Check if at least one service is selected
     if (!readyServicesChecked && !orderServicesChecked && !openMarketChecked) {
       alert("Please select at least one Service");
       return;
@@ -170,47 +528,83 @@ const SegmentRegistration = () => {
       return;
     }
 
-    // Save segment registration and navigate
+    // Check if both OTPs are verified
+    if (!isSellerVerified) {
+      alert("Please complete seller OTP verification");
+      return;
+    }
+
+    if (!isOperatorVerified) {
+      alert("Please complete operator OTP verification");
+      return;
+    }
+
     saveSegmentRegistration();
   };
+
+  if (isCheckingRegistration) {
+    return <div className="loading">Checking registration status...</div>;
+  }
 
   return (
     <div className="segment-registration-container">
       <header className="sticky-header">
         <h1>Segment Registration</h1>
+        {existingRegistration && (
+          <div className="existing-registration-banner">
+            ✓ Already registered in <strong>{existingRegistration.segment}</strong> segment
+            {existingRegistration.operators && (
+              <span> with {existingRegistration.operators.length} operator(s)</span>
+            )}
+          </div>
+        )}
       </header>
       <main className="main-content">
         <section className="segment-information">
           <h2>Segment Information</h2>
           <div className="form-group">
-            <label htmlFor="segment">Segment *</label> {/* Added asterisk */}
-            <select
-              id="segment"
-              name="segment"
-              value={segment}
-              onChange={(e) => setSegment(e.target.value)}
-              required // Added required attribute
-            >
-              <option value="">Select Segment</option> {/* Added default option */}
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-              <option value="platinum">Platinum</option>
-              <option value="diamond">Diamond</option>
-            </select>
+            <label htmlFor="segment">Segment *</label>
+            {existingRegistration ? (
+              <input
+                type="text"
+                id="segment"
+                name="segment"
+                value={segment}
+                readOnly
+                className="read-only-segment"
+              />
+            ) : (
+              <select
+                id="segment"
+                name="segment"
+                value={segment}
+                onChange={(e) => setSegment(e.target.value)}
+                required
+              >
+                <option value="">Select Segment</option>
+                <option value="gold">Gold</option>
+                <option value="silver">Silver</option>
+                <option value="platinum">Platinum</option>
+                <option value="diamond">Diamond</option>
+              </select>
+            )}
           </div>
+
           <div className="form-group">
-            <label htmlFor="operator-id">Operator ID *</label> {/* Added asterisk */}
+            <label htmlFor="operator-mobile">Operator Mobile Number *</label>
             <input
               type="text"
-              id="operator-id"
-              name="operator-id"
-              placeholder="e.g. 22AAAAA0000A1Z5"
-              value={operatorId}
-              onChange={handleOperatorIdChange}
-              maxLength="15"
-              required // Added required attribute
+              id="operator-mobile"
+              name="operator-mobile"
+              placeholder="e.g. 9876543210"
+              value={operatorMobile}
+              onChange={handleOperatorMobileChange}
+              maxLength="10"
+              inputMode="numeric"
+              required
             />
             {isLoading && <div className="loading-spinner"></div>}
+            <p className="helper-text">Enter operator's registered mobile number to fetch details</p>
           </div>
         </section>
 
@@ -222,18 +616,23 @@ const SegmentRegistration = () => {
           <div className={`accordion-content ${isAccordionOpen ? 'open' : ''}`}>
             {operatorDetails ? (
               <>
-                {/* Operator Details fields are read-only, so they don't need 'required' */}
+                <div className='form-group'><span>Operator ID:</span><span>{operatorDetails.operatorId}</span></div>
+                <div className='form-group'><span>GST No:</span><span>{operatorDetails.gstinNumber}</span></div>
+                <div className='form-group'><span>PAN No:</span><span>{(operatorDetails.gstinNumber)?.substring(2, 12)}</span></div>
+
                 <div className="form-group">
-                  <label>Business Documents</label>
+                  <span>Business Documents</span>
                   <div className="file-uploads">
                     {operatorDetails.businessDocuments.map((doc, index) => (
                       <div className="file-preview" key={index}>
-                        <span>{doc}</span>
-                        <button className="delete-btn">x</button>
+                        <a href={doc} target="_blank" rel="noopener noreferrer">
+                          Document {index + 1}
+                        </a>
                       </div>
                     ))}
                   </div>
                 </div>
+
                 <div className="form-group">
                   <label>Organization Photos</label>
                   <div className="image-uploads">
@@ -242,61 +641,80 @@ const SegmentRegistration = () => {
                     ))}
                   </div>
                 </div>
+
                 <div className="form-group">
-                  <label htmlFor="org-name">Organization Name</label>
-                  <input
-                    type="text"
-                    id="org-name"
-                    name="org-name"
-                    placeholder="Enter Org. Name"
-                    defaultValue={operatorDetails.orgName}
-                    readOnly
-                  />
+                  <span>Organization Name:</span>
+                  <span>{operatorDetails.orgName}</span>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="address">Address</label>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    placeholder="Street/Building"
-                    defaultValue={operatorDetails.address}
-                    readOnly
-                  />
-                  <div className="address-details">
-                    <input type="text" placeholder="City" defaultValue={operatorDetails.city} readOnly />
-                    <input type="text" placeholder="District" defaultValue={operatorDetails.district} readOnly />
-                  </div>
-                  <div className="address-details">
-                    <select defaultValue={operatorDetails.state} disabled>
-                      <option>{operatorDetails.state}</option>
-                      <option>Another State</option>
-                    </select>
-                    <input type="text" placeholder="Pincode" defaultValue={operatorDetails.pincode} readOnly />
-                  </div>
+                  <span>Organization Contact:</span>
+                  <span>{operatorDetails.contact}</span>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="org-contact">Organization Contact</label>
-                  <input
-                    type="text"
-                    id="org-contact"
-                    name="org-contact"
-                    placeholder="Enter Org. Contact No."
-                    defaultValue={operatorDetails.contact}
-                    readOnly
-                  />
+                  <span>Organization Mail:</span>
+                  <span>{operatorDetails.email}</span>
+                </div>
+                <div className="form-group">
+                  <span>Team Size:</span>
+                  <span>{operatorDetails?.dealingPersons.length || 0}</span>
+                </div>
+                <div className="form-group">
+                  <span>Logo:</span>
+                  <span>
+                    <img className='opertorLogo' src={operatorDetails.logo} alt="Operator Logo" />
+                  </span>
+                </div>
+                <div>
+                  <label>Business Address</label>
+                  <span>{operatorDetails.street}</span>,
+                  <span>{operatorDetails.address}</span>,
+                  <span>{operatorDetails.city}</span>,
+                  <span>{operatorDetails.district} </span>,
+                  <span>{operatorDetails.state} </span>,
+                  <span>{operatorDetails.pincode}</span>
+                </div>
+
+                {operatorDetails.dealingPersons && operatorDetails.dealingPersons.length > 0 && (
+                  <div className="form-group">
+                    <label>Dealing Persons</label>
+                    {operatorDetails?.dealingPersons
+                      ?.filter((person) => person.role === "CEO")
+                      .slice(0, 1)
+                      .map((person, index) => (
+                        <div key={index} className="dealing-person">
+                          <div>
+                            <strong><span>Department:</span>{person.department}</strong>
+                            <br />
+                            <strong><span>Designation:</span></strong> {person.role} <br />
+                            <strong><span>Name:</span></strong> {person.fullName}<br />
+                            <strong><span>{person.role} Contact:</span></strong> {person.contactNumber}
+                            <br />
+                          </div>
+                          <div><img className='delingPersonPic' src={person.photoUrl} alt="Dealing Person" /></div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                 <div className="form-group">
+                    <strong><label htmlFor="">Districts:</label></strong>
+                  <span>{zone.map((dist,index)=>(
+                      <span key={index}>{dist}, </span>
+                  ))}</span>
                 </div>
               </>
             ) : (
-              <p style={{ padding: '0 16px 16px', margin: 0, color: '#6B7280' }}>Enter an Operator ID to fetch details.</p>
+              <p style={{ padding: '0 16px 16px', margin: 0, color: '#6B7280' }}>
+                Enter operator's mobile number to fetch details.
+              </p>
             )}
           </div>
         </section>
 
+        {/* Service Selection Section */}
         <section className="service-selection">
-          <h2>Service Selection *</h2> {/* Added asterisk to section title */}
+          <h2>Service Selection *</h2>
           <div className="checkbox-group">
-            <input type="checkbox" id="ready-services" name="services" /> {/* Added name for grouping */}
+            <input type="checkbox" id="ready-services" name="services" />
             <label htmlFor="ready-services">Ready Services</label>
             <button
               type="button"
@@ -307,7 +725,7 @@ const SegmentRegistration = () => {
             </button>
           </div>
           <div className="checkbox-group">
-            <input type="checkbox" id="order-services" name="services" /> {/* Added name for grouping */}
+            <input type="checkbox" id="order-services" name="services" />
             <label htmlFor="order-services">Order Services</label>
             <button
               type="button"
@@ -318,7 +736,7 @@ const SegmentRegistration = () => {
             </button>
           </div>
           <div className="checkbox-group">
-            <input type="checkbox" id="open-market" name="services" /> {/* Added name for grouping */}
+            <input type="checkbox" id="open-market" name="services" />
             <label htmlFor="open-market">Open Market</label>
             <button
               type="button"
@@ -329,68 +747,107 @@ const SegmentRegistration = () => {
             </button>
           </div>
           <div className="checkbox-group agreement">
-            <input type="checkbox" id="agree" required /> {/* Added required attribute */}
-            <label htmlFor="agree">I agree to all availing services with Terms & Conditions *</label> {/* Added asterisk */}
+            <input type="checkbox" id="agree" required />
+            <label htmlFor="agree">I agree to all availing services with Terms & Conditions *</label>
           </div>
         </section>
 
+        {/* Verification Section with Dual OTP */}
         <section className="verification">
-          <h2>Verification *</h2> {/* Added asterisk to section title */}
+          <h2>Verification *</h2>
+          
+          {/* Seller OTP */}
           <div className="form-group">
-            <label>OTP *</label> {/* Added asterisk */}
-            <div className="otp-inputs">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  type="text"
-                  maxLength="1"
-                  name={`otp-${index}`}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Backspace' && !digit && index > 0) {
-                      const prevInput = document.querySelector(`input[name="otp-${index - 1}"]`);
-                      if (prevInput) prevInput.focus();
-                    }
-                  }}
-                  required // Added required attribute to each OTP input
-                  inputMode="numeric" // Suggest numeric keyboard on mobile
-                  pattern="[0-9]*"    // Suggest numeric keyboard on mobile
-                />
-              ))}
+            <label>Seller OTP Verification *</label>
+            <div className="otp-section">
+              <DigitInputs
+                digits={sellerOtp}
+                setDigits={setSellerOtp}
+                disabled={isVerifyingSellerOtp || isSellerVerified}
+                isPasskey={false}
+              />
+              <div className="otp-actions">
+                <button
+                  type="button"
+                  className="send-otp-btn"
+                  onClick={handleSendSellerOtp}
+                  disabled={isSendingSellerOtp || isSellerVerified}
+                  style={{ padding: '10px', cursor: 'pointer', backgroundColor: isSellerVerified ? '#4CAF50' : '#007BFF', color: 'white', border: 'none', borderRadius: '4px' }}
+                >
+                  {isSendingSellerOtp ? 'Processing...' : (isSellerOtpSent ? 'Resend Request' : 'Request OTP')}
+                </button>
+                {isSellerOtpSent && !isSellerVerified && (
+                  <button
+                    type="button"
+                    className="verify-otp-btn"
+                    onClick={handleVerifySellerOtp}
+                    disabled={sellerOtp.join('').length !== 6 || isVerifyingSellerOtp}
+                    style={{ marginTop: '10px', padding: '10px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}
+                  >
+                    {isVerifyingSellerOtp ? 'Verifying...' : 'Verify Seller'}
+                  </button>
+                )}
+              </div>
             </div>
-            <p>OTP sent to your registered mobile number</p>
+            {isSellerVerified && (
+              <p style={{ color: 'green', fontWeight: 'bold', marginTop: '10px' }}>
+                ✅ Seller verified successfully
+              </p>
+            )}
+            <p>OTP will be sent to your registered mobile: {seller?.mobile}</p>
           </div>
+
+          {/* Operator OTP */}
           <div className="form-group">
-            <label>Operator OTP *</label> {/* Added asterisk */}
-            <div className="otp-inputs">
-              {operatorOtp.map((digit, index) => (
-                <input
-                  key={index}
-                  type="text"
-                  maxLength="1"
-                  name={`operator-otp-${index}`}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value, true)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Backspace' && !digit && index > 0) {
-                      const prevInput = document.querySelector(`input[name="operator-otp-${index - 1}"]`);
-                      if (prevInput) prevInput.focus();
-                    }
-                  }}
-                  required // Added required attribute to each Operator OTP input
-                  inputMode="numeric" // Suggest numeric keyboard on mobile
-                  pattern="[0-9]*"    // Suggest numeric keyboard on mobile
-                />
-              ))}
+            <label>Operator OTP Verification *</label>
+            <div className="otp-section">
+              <DigitInputs
+                digits={operatorOtp}
+                setDigits={setOperatorOtp}
+                disabled={isVerifyingOperatorOtp || isOperatorVerified || !operatorDetails}
+                isPasskey={false}
+              />
+              <div className="otp-actions">
+                <button
+                  type="button"
+                  className="send-otp-btn"
+                  onClick={handleSendOperatorOtp}
+                  disabled={isSendingOperatorOtp || isOperatorVerified || !operatorDetails}
+                  style={{ padding: '10px', cursor: 'pointer', backgroundColor: isOperatorVerified ? '#4CAF50' : '#007BFF', color: 'white', border: 'none', borderRadius: '4px' }}
+                >
+                  {isSendingOperatorOtp ? 'Processing...' : (isOperatorOtpSent ? 'Resend Request' : 'Request OTP')}
+                </button>
+                {isOperatorOtpSent && !isOperatorVerified && (
+                  <button
+                    type="button"
+                    className="verify-otp-btn"
+                    onClick={handleVerifyOperatorOtp}
+                    disabled={operatorOtp.join('').length !== 6 || isVerifyingOperatorOtp}
+                    style={{ marginTop: '10px', padding: '10px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}
+                  >
+                    {isVerifyingOperatorOtp ? 'Verifying...' : 'Verify Operator'}
+                  </button>
+                )}
+              </div>
             </div>
-            <span href="#" className="resend-otp">Resend OTP</span>
+            {isOperatorVerified && (
+              <p style={{ color: 'green', fontWeight: 'bold', marginTop: '10px' }}>
+                ✅ Operator verified successfully
+              </p>
+            )}
+            <p>OTP will be sent to operator's mobile: {operatorMobile}</p>
           </div>
         </section>
       </main>
       <footer className="sticky-footer">
         <button className="draft-btn">Save Draft</button>
-        <button className="submit-btn" onClick={handleSubmit}>Submit</button>
+        <button 
+          className="submit-btn" 
+          onClick={handleSubmit}
+          disabled={!isSellerVerified || !isOperatorVerified}
+        >
+          {existingRegistration ? 'Add Operator' : 'Register Segment'}
+        </button>
       </footer>
 
       {/* Terms & Conditions Popup */}

@@ -4,22 +4,24 @@ const config: CapacitorConfig = {
   appId: 'com.jmi.jmseller',
   appName: 'JMI Seller',
   webDir: 'build',
+  server: {
+    androidScheme: 'https',
+    cleartext: true
+  },
   plugins: {
+    StatusBar: {
+      style: 'DARK',
+      overlaysWebView: false,
+      backgroundColor: '#B8860B',
+    },
     SplashScreen: {
-      launchShowDuration: 3000,
+      launchShowDuration: 2000,
       launchAutoHide: true,
       backgroundColor: "#ffffff",
-      androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
-      showSpinner: true,
-      androidSpinnerStyle: "large",
-      iosSpinnerStyle: "small",
-      spinnerColor: "#999999",
       splashFullScreen: true,
-      splashImmersive: true,
-      layoutName: "launch_screen",
-      useDialog: true,
-    }
+      splashImmersive: true, // This helps with fullscreen
+    },
   }
 };
 

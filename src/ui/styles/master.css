@@ -1,0 +1,209 @@
+/* src/ui/styles/master.css
+   Master design system: tokens, utilities, and common UI patterns
+   This file centralizes visual styling to match the reference design.
+*/
+
+/* 1) Design Tokens (extends existing variables) */
+:root {
+  /* Brand */
+  --brand-primary: #D4AF37;   /* gold */
+  --brand-primary-600: #B8860B;
+  --brand-primary-100: #F7EECF;
+  --brand-secondary: #E67E22; /* orange */
+
+  /* System semantics */
+  --success-600: #10b981;
+  --danger-600: #ef4444;
+  --warning-600: #f59e0b;
+  --info-600: #3b82f6;
+
+  /* Grays */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Shadow set */
+  --shadow-card: 0 1px 2px rgba(16,24,40,0.05);
+  --shadow-card-lg: 0 8px 18px rgba(16,24,40,0.08);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 18px;
+  --fs-2xl: 20px;
+  --fs-3xl: 24px;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
+
+/* 2) Base Typography */
+.h1 { font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: 1.2; }
+.h2 { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: 1.25; }
+.h3 { font-size: var(--fs-xl);  font-weight: var(--fw-semibold); line-height: 1.3; }
+.h4 { font-size: var(--fs-lg);  font-weight: var(--fw-medium);   line-height: 1.3; }
+.text-md { font-size: var(--fs-md); }
+.text-sm { font-size: var(--fs-sm); }
+.text-xs { font-size: var(--fs-xs); }
+.mono   { font-family: var(--font-mono); }
+.muted  { color: var(--gray-500); }
+
+/* 3) Layout utilities */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-4); }
+.card {
+  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-card);
+}
+.card.padded { padding: var(--space-4); }
+
+.row { display: flex; gap: var(--space-3); align-items: center; }
+.col { display: flex; flex-direction: column; gap: var(--space-2); }
+
+/* 4) Buttons */
+.btn { 
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 10px 14px;
+  border-radius: 10px; border: 1px solid transparent;
+  font-size: var(--fs-md); font-weight: var(--fw-semibold);
+  cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--brand-primary); color: #fff; }
+.btn-primary:hover { background: var(--brand-primary-600); }
+.btn-secondary { background: #fff; color: var(--gray-700); border-color: var(--gray-300); }
+.btn-secondary:hover { box-shadow: var(--shadow-card-lg); }
+.btn-ghost { background: transparent; color: var(--gray-700); }
+
+/* 5) Badges/Tags */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px; border-radius: 999px; font-size: var(--fs-xs);
+  border: 1px solid var(--gray-200); color: var(--gray-700); background: #fff;
+}
+.badge.success { color: var(--success-600); border-color: rgba(16,185,129,.25); background: rgba(16,185,129,.06); }
+.badge.danger  { color: var(--danger-600);  border-color: rgba(239,68,68,.25);  background: rgba(239,68,68,.06); }
+.badge.warning { color: var(--warning-600); border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.06); }
+.badge.info    { color: var(--info-600);    border-color: rgba(59,130,246,.25);  background: rgba(59,130,246,.06); }
+
+/* 6) Inputs (compact) */
+.input {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--gray-300);
+  color: var(--gray-800); font-size: var(--fs-md);
+}
+.input:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 4px rgba(212,175,55,.15); }
+.select {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--gray-300);
+  color: var(--gray-800); font-size: var(--fs-md);
+}
+.select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 4px rgba(212,175,55,.15); }
+
+/* Aliases for existing markup (no JSX change needed). Mirror styles explicitly */
+.form-input { width: 100%; padding: 10px 12px; border-radius: 10px; background: #fff; border: 1px solid var(--gray-300); color: var(--gray-800); font-size: var(--fs-md); }
+.form-input:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 4px rgba(212,175,55,.15); }
+.form-select { width: 100%; padding: 10px 12px; border-radius: 10px; background: #fff; border: 1px solid var(--gray-300); color: var(--gray-800); font-size: var(--fs-md); appearance: none; }
+.form-select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 4px rgba(212,175,55,.15); }
+.select-wrapper { position: relative; }
+.select-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--gray-500); pointer-events: none; }
+
+/* Radios and toggles */
+.radio-group { display: flex; gap: var(--space-3); }
+.radio-group-horizontal { display: flex; gap: var(--space-4); align-items: center; }
+.radio-option { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--gray-300); background: #fff; cursor: pointer; }
+.radio-option input { accent-color: var(--brand-primary); }
+.radio-option.active { border-color: var(--brand-primary); box-shadow: 0 0 0 4px rgba(212,175,55,.12); }
+
+/* Alerts */
+.alert-message { position: sticky; top: 12px; z-index: 20; }
+.alert-content { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 12px; background: #fff; box-shadow: var(--shadow-card); }
+.alert-text { font-size: var(--fs-sm); color: var(--gray-700); }
+.alert-close { border: none; background: transparent; cursor: pointer; color: var(--gray-500); font-size: var(--fs-lg); }
+.alert-close:hover { color: var(--gray-700); }
+
+/* Upload buttons mapping */
+.upload-button { 
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--gray-300); background: #fff; color: var(--gray-800);
+  font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.upload-button:hover { box-shadow: var(--shadow-card-lg); transform: translateY(-1px); }
+.upload-button.loading { opacity: .7; pointer-events: none; }
+
+/* Multi-select dropdown */
+.multi-select-dropdown { position: relative; }
+.multi-select-dropdown .select-wrapper { border: 1px solid var(--gray-300); border-radius: 10px; padding: 8px 10px; background: #fff; }
+.size-note { color: var(--gray-500); font-size: var(--fs-sm); }
+
+/* 7) Cards specific to Dashboard */
+.dashboard-card { border-radius: 14px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-card); background: #fff; }
+.dashboard-card .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: var(--space-3); }
+
+/* Live Rate compact list */
+.rate-container { display: flex; flex-direction: column; gap: 10px; }
+.rate-item { align-items: center; justify-content: space-between; padding: 6px 4px; }
+.rate-left { display: inline-flex; align-items: center; gap: 10px; }
+.rate-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gray-300); }
+.rate-dot.gold { background: var(--brand-primary); }
+.rate-dot.silver { background: var(--gray-400); }
+.gold-dot { background: var(--brand-primary); width: 12px; height: 12px; border-radius: 50%; }
+.silver-dot { background: var(--gray-400); width: 12px; height: 12px; border-radius: 50%; }
+.rate-label { font-size: var(--fs-md); color: var(--gray-800); font-weight: var(--fw-medium); }
+.rate-right { display: inline-flex; align-items: center; gap: 8px; }
+.rate-value { font-weight: var(--fw-semibold); color: var(--gray-900); }
+.trend-up { color: var(--success-600); font-size: var(--fs-sm); }
+.trend-down { color: var(--danger-600); font-size: var(--fs-sm); }
+.view-details { color: var(--gray-500); font-size: var(--fs-sm); }
+.view-details:hover { color: var(--gray-700); }
+
+/* 8) Spacing helpers */
+.mt-2{ margin-top: var(--space-2);} .mt-3{ margin-top: var(--space-3);} .mt-4{ margin-top: var(--space-4);} .mt-6{ margin-top: var(--space-6);} .mt-8{ margin-top: var(--space-8);} 
+.mb-2{ margin-bottom: var(--space-2);} .mb-3{ margin-bottom: var(--space-3);} .mb-4{ margin-bottom: var(--space-4);} .mb-6{ margin-bottom: var(--space-6);} .mb-8{ margin-bottom: var(--space-8);} 
+.p-2{ padding: var(--space-2);} .p-3{ padding: var(--space-3);} .p-4{ padding: var(--space-4);} .p-6{ padding: var(--space-6);} .p-8{ padding: var(--space-8);} 
+
+/* 9) Elevated interactive cards */
+.card-interactive { transition: box-shadow .2s ease, transform .2s ease; cursor: pointer; }
+.card-interactive:hover { box-shadow: var(--shadow-card-lg); transform: translateY(-2px); }
+
+/* 10) Mobile responsiveness tweaks */
+@media (max-width: 480px) {
+  .h1 { font-size: var(--fs-2xl); }
+  .h2 { font-size: var(--fs-xl); }
+  .h3 { font-size: var(--fs-lg); }
+  .rate-label { font-size: var(--fs-sm); }
+  .rate-value { font-size: var(--fs-md); }
+}

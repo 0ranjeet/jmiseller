@@ -10,8 +10,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useSeller } from '../contexts/SellerContext';
-import Header from '../components/Header';
 import './Pickup.css';
+import PageHeader from '../components/PageHeader';
 
 const Pickup = () => {
   const { seller } = useSeller();
@@ -97,7 +97,7 @@ const Pickup = () => {
   if (loading) {
     return (
       <>
-        <Header title="Assigned Orders" />
+        <PageHeader title="Assigned Orders" />
         <div className="assigned-container">Loading...</div>
       </>
     );
@@ -106,7 +106,7 @@ const Pickup = () => {
   if (error) {
     return (
       <>
-        <Header title="Assigned Orders" />
+        <PageHeader title="Assigned Orders" />
         <div className="assigned-container">
           <p className="error">{error}</p>
         </div>
@@ -116,7 +116,7 @@ const Pickup = () => {
 
   return (
     <>
-      <Header title="Assigned Orders" />
+      <PageHeader title="Assigned Orders" />
 
       <div className="assigned-container">
         {orders.length === 0 ? (

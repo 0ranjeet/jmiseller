@@ -3,9 +3,13 @@ import { Star, TrendingUp, TrendingDown, Package } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 import './Dashboard.css';
+import { useNavigate } from 'react-router-dom';
+import { useSeller } from '../contexts/SellerContext';
 
 const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('Today');
+  const navigate = useNavigate();
+  const { seller } = useSeller();
 
   // Data for different time periods
   const businessData = {
@@ -42,7 +46,7 @@ const Dashboard = () => {
                 <Star size={24} color="white" />
               </div>
               <div>
-                <h2 className="profile-title">M/S Lachland Jewellers Store</h2>
+                <h2 className="profile-title">{seller.organizationName}</h2>
                 <p className="profile-subtitle">View profile & settings</p>
               </div>
             </div>
@@ -171,7 +175,7 @@ const Dashboard = () => {
           </div>
 
           {/* Live Rate */}
-          <div className="card">
+          <div className="card" onClick={() => navigate('/liverates')}>
             <div className="live-rate-header">
               <h3 className="overview-title">Live Rate</h3>
               <span className="view-details">View details</span>
@@ -207,7 +211,7 @@ const Dashboard = () => {
           {/* Service Cards */}
           <div>
             {/* My Catalogue */}
-            <div className="service-card catalogue-card">
+            <div className="service-card catalogue-card" onClick={() => navigate('/MyCatalogue')}>
               <div className="service-overlay"></div>
               <div className="service-content">
                 <h3 className="service-title">My Catalogue</h3>
@@ -220,7 +224,7 @@ const Dashboard = () => {
             </div>
 
             {/* Ready-Stock Services */}
-            <div className="service-card ready-stock-card">
+            <div className="service-card ready-stock-card" onClick={() => navigate('/readystockservices')}>
               <div className="service-overlay"></div>
               <div className="service-content">
                 <h3 className="service-title">Ready-Stock Services</h3>
@@ -229,7 +233,7 @@ const Dashboard = () => {
             </div>
 
             {/* Order Services */}
-            <div className="service-card order-card">
+            <div className="service-card order-service" onClick={()=>navigate('/orderserve')}>
               <div className="service-overlay"></div>
               <div className="service-content">
                 <h3 className="service-title">Order Services</h3>

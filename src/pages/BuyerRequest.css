@@ -1,16 +1,7 @@
 .workflow-container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: #f9f9f9;
-  padding: 1rem;
-}
-
-.filters {
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-}
-
-.filter-group {
-  margin-bottom: 1rem;
+  padding: 70px 0;
 }
 
 .filter-group h3 {
@@ -44,14 +35,15 @@
 
 .results-count {
   color: #666;
-  margin-bottom: 1rem;
+  padding: 2px;
   font-size: 0.9rem;
 }
 
 .orders-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  gap: 10px;
+  padding: 5px;
 }
 
 .order-card {

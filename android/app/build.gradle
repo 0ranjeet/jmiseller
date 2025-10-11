@@ -1,16 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.jmi.jmseller"
+    namespace "com.jmi.jmiseller"
     compileSdk rootProject.ext.compileSdkVersion
-    
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-    }
-    
     defaultConfig {
-        applicationId "com.jmi.jmseller"
+        applicationId "com.jmi.jmiseller"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -22,6 +16,20 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    applicationVariants.all { variant ->
+    variant.outputs.all { output ->
+        // Change this to your app’s name
+        def appName = "JMI Seller"
+
+        // Use versionName + buildType for dynamic filenames
+        def versionName = variant.versionName
+        def buildType = variant.buildType.name
+
+        // Example output: JmiSeller-v1.0-release.apk or JmiSeller-v1.0-debug.apk
+        outputFileName = "${appName}-v${versionName}.apk"
+    }
+}
+
     buildTypes {
         release {
             minifyEnabled false

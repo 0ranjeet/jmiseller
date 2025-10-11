@@ -6,6 +6,7 @@ import './ProductRegistration.css';
 import { useNavigate } from 'react-router-dom';
 import { useSeller } from '../contexts/SellerContext';
 import PageHeader from '../components/PageHeader';
+import ProductData from './productData.json';
 
 const ProductRegistration = () => {
   const nav = useNavigate();
@@ -32,6 +33,7 @@ const ProductRegistration = () => {
   const [showCategoryAlert, setShowCategoryAlert] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [registeredProducts, setRegisteredProducts] = useState([]);
+  const [uploading,setUploading]=useState(true);
   
   const purityLimits = {
     GOLD: {
@@ -74,30 +76,14 @@ const ProductRegistration = () => {
     }
   };
   
-  const segments = ["GOLD", "SILVER", "PLATINUM", "DIAMOND", "GEMS", "PEARLS"];
-  const categoriesBySegment = {
-    GOLD: ['916HUID', '750HUID', '840', '650', '480'],
-    SILVER: ['925', '999', '800', '900'],
-    PLATINUM: ['950', '900', '850'],
-    DIAMOND: ['VS1', 'VS2', 'VVS1', 'VVS2', 'SI1', 'SI2'],
-    GEMS: ['Emerald', 'Ruby', 'Sapphire', 'Topaz'],
-    PEARLS: ['Freshwater', 'Akoya', 'Tahitian', 'SouthSea']
-  };
-  
-  const subcategories = [
-    'KATAKI', 'RAJKOT', 'BOMBAY', 'COIMBATORE', 'KOLKATA', 'CASTING',
-    'MACHINE MADE', 'SOUTH', 'TURKEY', 'CNC', 'ITALIAN', 'SANKHAPOLA',
-    'NAKASHI', 'DIECE THUKAI', 'ACCESORIES', 'MARWAD'
-  ];
-  
-  const productNames = [
-    'MANGTIKA', 'NATH', 'NOSEPIN', 'MANGALSUTRA', 'CHAINS', 'DOKIA',
-    'SHORTNECKLACE', 'LONGNECKLACE', 'CHOKKAR', 'CHEEK', 'PENDENTS',
-    'BABYLOCKET', 'GODLOCKET', 'BAJUBANDH', 'BANGLE', 'SANKHAPOLA',
-    'BRASLET&KADA', 'LADIESRING', 'GENTSRING', 'BABYRING',
-    'KAMARBANDH', 'PAYAL', 'BICHHIYA', 'ACCESORIES'
-  ];
-  
+  const segments = ProductData.segments;
+  console.log(segments);
+  const categoriesBySegment = ProductData.categoriesBySegment;
+  console.log(categoriesBySegment);
+  const subcategories = ProductData.productSources;
+  console.log(subcategories);
+  const productNames = Object.keys(ProductData.productSizes);
+  console.log(productNames);  
   const styleTypes = ['regular', 'highFancy', 'highFinish', 'lightWeight'];
   const specifications = ['PLANE', 'MEENAWORK', 'STONEWORK', 'OTHERWORK'];
   
@@ -159,18 +145,6 @@ const ProductRegistration = () => {
     };
     fetchRegisteredProducts();
   }, [sellerId]);
-
-  useEffect(() => {
-    if (productDetails.setMC && productDetails.setMC !== '0' && productDetails.setMC !== '') {
-      if (productDetails.netGramMC !== '0') {
-        setProductDetails(prev => ({ ...prev, netGramMC: '0' }));
-      }
-    } else if (productDetails.netGramMC && productDetails.netGramMC !== '0' && productDetails.netGramMC !== '') {
-      if (productDetails.setMC !== '0') {
-        setProductDetails(prev => ({ ...prev, setMC: '0' }));
-      }
-    }
-  }, [productDetails.setMC, productDetails.netGramMC]);
 
   const [productData, setProductData] = useState(() => {
     const initialProductData = {};
@@ -311,8 +285,14 @@ const ProductRegistration = () => {
   };
 
   const calculateTotalWastage = (details) => {
-    const baseWastage = parseFloat(details.wastage) || 0;
-    return baseWastage;
+    if(details.specification === 'PLANE'){
+      const baseWastage = parseFloat(details.wastage) || 0;
+      return baseWastage;
+    }else{
+      const baseWastage = parseFloat(details.wastage) + (details?.specificationMC>0?parseFloat(details.specificationMC):0);
+      return baseWastage;
+    }
+    
   };
 
   const calculateTotalMakingCharges = (details) => {
@@ -321,9 +301,9 @@ const ProductRegistration = () => {
       const netGramMC = parseFloat(details.netGramMC) || 0;
       return setMC + netGramMC;
     } else {
-      const specMC = parseFloat(details.specificationMC) || 0;
-      const specGramRate = parseFloat(details.specificationGramRate) || 0;
-      return specMC + specGramRate;
+      const setMC = parseFloat(details.setMC) || 0;
+      const netGramMC = parseFloat(details.netGramMC) || 0;
+      return setMC + netGramMC;
     }
   };
 
@@ -504,129 +484,138 @@ const ProductRegistration = () => {
   };
 
   const handleSendToQC = async () => {
-    if (!sellerId) {
-      alert('Seller ID not found. Please log in again.');
-      return;
-    }
-    
-    if (!isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)) {
-      setShowCategoryAlert(true);
-      return;
-    }
-    
-    if (selectedProducts.length === 0) {
-      alert('Please select at least one product with details before submitting.');
-      return;
-    }
-    
-    try {
-      const timestamp = Date.now();
-      const docRef = doc(db, 'ProductRegistrations', sellerId);
+  if (!sellerId) {
+    alert('Seller ID not found. Please log in again.');
+    return;
+  }
+    setUploading(false);
+  if (!isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)) {
+    setShowCategoryAlert(true);
+    return;
+  }
+  
+  if (selectedProducts.length === 0) {
+    alert('Please select at least one product with details before submitting.');
+    return;
+  }
+  
+  try {
+    const timestamp = Date.now();
+    const docRef = doc(db, 'ProductRegistrations', sellerId);
 
-      // Create the new registration entry
-      const newRegistration = {
-        registrationId: `${sellerId}_${timestamp}`,
-        status: 'pending_approval',
-        approved: false,
-        requestTimestamp: new Date(),
-        products: {}
-      };
+    // Check if document exists first
+    const docSnap = await getDoc(docRef);
+    let existingRegistrations = docSnap.exists() ? docSnap.data().registrations || [] : [];
 
-      // Process each selected product
-      selectedProducts.forEach(({ productId, styleType, productName }) => {
-        const product = allProducts.find(p => p.id === productId);
-        const styleData = productData[productId][styleType];
+    const newRegistrations = [];
+
+    // Process each selected product as a separate registration
+    selectedProducts.forEach(({ productId, styleType, productName }) => {
+      const product = allProducts.find(p => p.id === productId);
+      const styleData = productData[productId][styleType];
+      
+      if (styleData.selected && styleData.details.purity) {
+        // Create a separate registration for each product
+        const newRegistration = {
+          registrationId: `${sellerId}_${productId}_${styleType}_${timestamp}`,
+          status: 'pending_approval',
+          approved: false,
+          requestTimestamp: new Date(),
+          segment: selectedSegment,
+          category: selectedCategory,
+          productSource: selectedSubcategory,
+          products: {
+            [productName]: {
+              productId: productId,
+              segment: selectedSegment,
+              category: selectedCategory,
+              productSource: selectedSubcategory,
+              purity: styleData.details.purity,
+              wastage: styleData.details.wastage,
+              setMC: styleData.details.setMC,
+              netGramMC: styleData.details.netGramMC,
+              specification: styleData.details.specification,
+              specificationMC: styleData.details.specificationMC || "",
+              specificationGramRate: styleData.details.specificationGramRate || "",
+              image: styleData.image || "",
+              selectedStyleType: styleType
+            }
+          }
+        };
         
-        if (styleData.selected && styleData.details.purity) {
-          newRegistration.products[productName] = {
-            productId: productId,
-            segment: selectedSegment,
-            category: selectedCategory,
-            productSource: selectedSubcategory,
-            purity: styleData.details.purity,
-            wastage: styleData.details.wastage,
-            setMC: styleData.details.setMC,
-            netGramMC: styleData.details.netGramMC,
-            specification: styleData.details.specification,
-            specificationMC: styleData.details.specificationMC || "",
-            specificationGramRate: styleData.details.specificationGramRate || "",
-            image: styleData.image || "",
-            selectedStyleType: styleType
-          };
-        }
+        newRegistrations.push(newRegistration);
+      }
+    });
+
+    if (newRegistrations.length === 0) {
+      alert('No valid products with complete details selected.');
+      return;
+    }
+
+    // Check for existing registrations and update/append accordingly
+    const updatedRegistrations = [...existingRegistrations];
+    
+    newRegistrations.forEach(newReg => {
+      const productName = Object.keys(newReg.products)[0];
+      const productData = newReg.products[productName];
+      
+      // Create a unique key for this product registration
+      const registrationKey = `${selectedSegment}_${selectedCategory}_${selectedSubcategory}_${productName}_${productData.selectedStyleType}_${productData.specification}`;
+      
+      // Find if this exact product configuration already exists
+      const existingIndex = updatedRegistrations.findIndex(existingReg => {
+        const existingProductName = Object.keys(existingReg.products || {})[0];
+        const existingProductData = existingReg.products[existingProductName];
+        
+        if (!existingProductData) return false;
+        
+        const existingKey = `${existingReg.segment}_${existingReg.category}_${existingReg.productSource}_${existingProductName}_${existingProductData.selectedStyleType}_${existingProductData.specification}`;
+        return existingKey === registrationKey;
       });
 
-      if (Object.keys(newRegistration.products).length === 0) {
-        alert('No valid products with complete details selected.');
-        return;
-      }
-      
-      const newRegistrationKey = getProductFormatKey(newRegistration);
-
-      // Check if document exists first
-      const docSnap = await getDoc(docRef);
-      let updatedRegistrations = [];
-
-      if (docSnap.exists()) {
-        const currentData = docSnap.data();
-        const existingRegistrations = currentData.registrations || [];
-
-        // MODIFIED: Find an existing registration with the same format regardless of status
-        const existingIndex = existingRegistrations.findIndex(reg =>
-          getProductFormatKey(reg) === newRegistrationKey
-        );
-
-        if (existingIndex !== -1) {
-          // Update the existing registration regardless of status
-          console.log("Updating existing registration:", existingRegistrations[existingIndex].registrationId);
-          updatedRegistrations = [...existingRegistrations];
-          
-          updatedRegistrations[existingIndex] = {
-            ...updatedRegistrations[existingIndex],
-            ...newRegistration,
-            registrationId: updatedRegistrations[existingIndex].registrationId,
-            requestTimestamp: new Date(),
-            status: 'pending_approval'
-          };
-        } else {
-          // No matching registration found, add as new
-          console.log("Adding new registration");
-          updatedRegistrations = [...existingRegistrations, newRegistration];
-        }
+      if (existingIndex !== -1) {
+        // Update existing registration
+        console.log("Updating existing registration:", updatedRegistrations[existingIndex].registrationId);
+        updatedRegistrations[existingIndex] = {
+          ...updatedRegistrations[existingIndex],
+          ...newReg,
+          registrationId: updatedRegistrations[existingIndex].registrationId, // Keep original ID
+          requestTimestamp: new Date(),
+          status: 'pending_approval'
+        };
       } else {
-        // Document doesn't exist, create new one with this registration
-        console.log("Creating new document with registration");
-        updatedRegistrations = [newRegistration];
+        // Add new registration
+        console.log("Adding new registration:", newReg.registrationId);
+        updatedRegistrations.push(newReg);
       }
+    });
 
-      // Save the updated registrations array back to Firestore
-      const saveData = {
-        sellerId: sellerId,
-        registrations: updatedRegistrations,
-        ...(docSnap.exists() ? { lastUpdated: new Date() } : {
-          createdAt: new Date(),
-          lastUpdated: new Date()
-        })
-      };
+    // Save the updated registrations array back to Firestore
+    const saveData = {
+      sellerId: sellerId,
+      registrations: updatedRegistrations,
+      ...(docSnap.exists() ? { lastUpdated: new Date() } : {
+        createdAt: new Date(),
+        lastUpdated: new Date()
+      })
+    };
 
-      await setDoc(docRef, saveData);
+    await setDoc(docRef, saveData);
 
-      const sellerProfileRef = doc(db, 'profile', sellerId);
-      await setDoc(sellerProfileRef, {
-        ProductRegistration: true,
-      }, { merge: true });
+    const sellerProfileRef = doc(db, 'profile', sellerId);
+    await setDoc(sellerProfileRef, {
+      ProductRegistration: true,
+    }, { merge: true });
+    setUploading(true)
+    nav("/QCApprovalPage", { state: { totalSelected: selectedProducts.length } });
 
-      console.log('Product registration submitted/updated:', newRegistration);
-      alert('Product registration submitted for approval!');
-      nav("/QCApprovalPage");
-
-      // Reset form
-      setSelectedProducts([]);
-    } catch (error) {
-      console.error('Error sending data for approval:', error);
-      alert('Error submitting product registration. Please try again.');
-    }
-  };
+    // Reset form
+    setSelectedProducts([]);
+  } catch (error) {
+    console.error('Error sending data for approval:', error);
+    alert('Error submitting product registration. Please try again.');
+  }
+};
 
   const handleSaveProductDetails = () => {
     const currentProduct = allProducts.find(p => p.id === currentProductForDetails);
@@ -649,7 +638,7 @@ const ProductRegistration = () => {
     
     if (categoryLimits) {
       const totalWastage = calculateTotalWastage(productDetails);
-      if (totalWastage > parseFloat(categoryLimits.maxWastageSeller)) {
+      if (totalWastage > (parseFloat(categoryLimits.maxWastageSeller)+(parseFloat(categoryLimits.specificationMC)))) {
         errors.totalWastage = `Total wastage (${totalWastage.toFixed(2)}%) cannot exceed ${categoryLimits.maxWastageSeller}%`;
       }
       
@@ -735,7 +724,6 @@ const ProductRegistration = () => {
     const segmentPurityLimits = purityLimits[selectedSegment] || {};
     const categoryPurityLimits = segmentPurityLimits[selectedCategory] || { min: 0, max: 100 };
     const totalWastage = calculateTotalWastage(productDetails);
-    const totalMakingCharges = calculateTotalMakingCharges(productDetails);
 
     const handleSpecificationChange = (e) => {
       const newSpec = e.target.value;
@@ -747,19 +735,6 @@ const ProductRegistration = () => {
           specificationGramRate: ''
         } : {})
       }));
-    };
-
-    const handleMCChange = (field, value) => {
-      let updatedDetails = { ...productDetails };
-      updatedDetails[field] = value;
-      
-      if (field === 'setMC' && value !== '' && value !== '0') {
-        updatedDetails.netGramMC = '0';
-      } else if (field === 'netGramMC' && value !== '' && value !== '0') {
-        updatedDetails.setMC = '0';
-      }
-      
-      setProductDetails(updatedDetails);
     };
 
     return (
@@ -827,7 +802,7 @@ const ProductRegistration = () => {
                   step="0.1"
                   placeholder={`Max: ${categoryLimits?.maxSetMakingSeller || 'N/A'}`}
                   value={productDetails.setMC}
-                  onChange={(e) => handleMCChange('setMC', e.target.value)}
+                  onChange={(e) => setProductDetails({ ...productDetails, setMC: e.target.value })}
                   className="form-input"
                   required
                 />
@@ -841,7 +816,7 @@ const ProductRegistration = () => {
                   step="0.1"
                   placeholder={`Max: ${categoryLimits?.maxGramMakingSeller || 'N/A'}`}
                   value={productDetails.netGramMC}
-                  onChange={(e) => handleMCChange('netGramMC', e.target.value)}
+                  onChange={(e) => setProductDetails({ ...productDetails, netGramMC: e.target.value })}
                   className="form-input"
                   required
                 />
@@ -901,9 +876,17 @@ const ProductRegistration = () => {
                 <span className="total-value">{totalWastage.toFixed(2)}%</span>
               </div>
               <div className="total-row">
-                <span className="total-label">Total Making Charges:</span>
-                <span className="total-value">{totalMakingCharges.toFixed(2)}</span>
+                <span className="total-label">Set Making Charges:</span>
+                <span className="total-value">{productDetails?.setMC}</span>
               </div>
+              <div className="total-row">
+                <span className="total-label">Gram Making Charges:</span>
+                <span className="total-value">{productDetails?.netGramMC}</span>
+              </div>
+              {productDetails.specification !== 'PLANE' && <div className="total-row">
+                <span className="total-label">{productDetails.specification} Gram rate:</span>
+                <span className="total-value">{productDetails?.specificationGramRate}</span>
+              </div>}
               {validationErrors.totalWastage && (
                 <div className="error-message total-error">{validationErrors.totalWastage}</div>
               )}
@@ -1115,7 +1098,7 @@ const ProductRegistration = () => {
                               )}
                             </div>
                             <div className="total-metrics">
-                              <div>Total Wastage: <span className="metric-value">{totalWastage.toFixed(2)}%</span></div>
+                              <div>Total Wastage: <span className="metric-value">{totalWastage.toFixed(3)}%</span></div>
                               <div>Total Making: <span className="metric-value">{totalMakingCharges.toFixed(2)}</span></div>
                             </div>
                           </div>
@@ -1141,7 +1124,7 @@ const ProductRegistration = () => {
           <button
             className="send-to-qc-button"
             onClick={handleSendToQC}
-            disabled={selectedProducts.length === 0 || !isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)}
+            disabled={!uploading ||selectedProducts.length === 0 || !isCategoryConfigured(selectedSegment, selectedCategory, selectedSubcategory)}
           >
             Send to QC
           </button>

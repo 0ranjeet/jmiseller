@@ -7,6 +7,7 @@ import {
   Navigate,
   useLocation, // Import useLocation
 } from "react-router-dom";
+import './App.css';
 import { useSeller } from "./contexts/SellerContext"; // Import the hook to access context
 import { AuthProvider } from "./contexts/AuthContext";
 import { SellerProvider } from "./contexts/SellerContext";
@@ -21,13 +22,15 @@ import MyRegisteredProducts from "./pages/MyregisteredProducts";
 import QCApprovalPage from "./pages/QCApprovalPage";
 import MyCatalogue from "./pages/MyCatalogue";
 import ReadyStockServices from "./pages/ReadyStockServices";
-import Catalogue from "./pages/Catlouge";
+import Catalogue from "./pages/Catalogue";
 import BuyerRequest from "./pages/BuyerRequest";
 import Assortment from "./pages/Assortment";
 import FinalCorrection from "./pages/FinalCorrection";
 import ReadyToDispatch from "./pages/ReadyToDispatch";
 import OrderServe from "./pages/OrderServe";
 import Pickup from "./pages/Pickup";
+import LiveRatesPage from "./pages/LiveRatesPage";
+import ForgotPassword from "./pages/ForgetPassword";
 
 // 🔒 Protected Route Wrapper - Updated to check SellerContext
 // This component must be rendered inside the Router and SellerProvider
@@ -65,6 +68,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgetpassword" element={<ForgotPassword/>}/>
             <Route path="/UploadProduct" element={<UploadProduct />} />
             <Route path="/MyCatalogue" element={<MyCatalogue />} />
             <Route path="/catalogue/:type" element={<Catalogue />} />
@@ -134,6 +138,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <QCApprovalPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/liverates"
+              element={
+                <ProtectedRoute>
+                  <LiveRatesPage />
                 </ProtectedRoute>
               }
             />

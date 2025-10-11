@@ -42,7 +42,7 @@ const MyRegisteredProducts = () => {
                     const dateB = new Date(b.requestTimestamp);
                     return dateB - dateA;
                 });
-
+                console.log(sortedRegistrations);
                 setRegistrations(sortedRegistrations);
             } else {
                 setRegistrations([]);
@@ -144,11 +144,17 @@ const MyRegisteredProducts = () => {
         if (product.wastage && product.wastage !== '0' && product.wastage !== '') {
             details.push(`Wastage: ${product.wastage}%`);
         }
+        if (product.setMC && product.setMC !== '0' && product.setMC !== '') {
+            details.push(`Set MC: ${product.setMC}`);
+        }
+        if (product.netGramMC && product.netGramMC !== '0' && product.netGramMC !== '') {
+            details.push(`Net Gram MC: ${product.netGramMC}`);
+        }
         if (product.specificationMC && product.specificationMC !== '0' && product.specificationMC !== '') {
-            details.push(`Spec MC: ${product.specificationMC}`);
+            details.push(`${product.specification} MC: ${product.specificationMC}`);
         }
         if (product.specificationGramRate && product.specificationGramRate !== '0' && product.specificationGramRate !== '') {
-            details.push(`Gram Rate: ${product.specificationGramRate}`);
+            details.push(`${product.specification}Gram Rate: ${product.specificationGramRate}`);
         }
         return details.join(' | ') || 'No specifications';
     };
@@ -283,7 +289,7 @@ const MyRegisteredProducts = () => {
                                 onClick={() => registration.status === 'rejected' && handleEditClick(registration)}
                                 style={{ cursor: registration.status === 'rejected' ? 'pointer' : 'default' }}
                             >
-                                <div className="product-image">
+                                <div className="product-image" onClick={()=>console.log(registration.registrationId)}>
                                     {imageUrl ?
                                         <img src={imageUrl} alt={mainProductName} className="product-image-placeholder" /> :
                                         <div className="product-image-placeholder"></div>
@@ -292,7 +298,7 @@ const MyRegisteredProducts = () => {
                                 <div className="product-info">
                                     <h3 className="product-title">{mainProductName}</h3>
                                     <p className="product-category">{categoryPath} / {productData?.selectedStyleType || 'N/A'} / {productData?.specification || 'N/A'}</p>
-                                    <p className="product-specs">{specificationDetails}</p>
+                                    <p className="registered-product-specs">{specificationDetails}</p>
                                     <span className={`status-badge ${statusClass}`}>
                                         {statusLabel}
                                         {registration.status === 'rejected' && (

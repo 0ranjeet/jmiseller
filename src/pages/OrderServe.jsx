@@ -179,7 +179,7 @@ const OrderServe = () => {
       </div>
 
       {/* Workflow Steps */}
-      <div className="workflow-container">
+      <div className="serve-container">
         <div className="workflow-steps">
           {steps.map((step, index) => (
             <div key={step.id} className="step-card" onClick={()=>{

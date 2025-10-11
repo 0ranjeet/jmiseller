@@ -32,6 +32,10 @@
   display: flex;
   background-color: #FFFFFF;
   border-bottom: 1px solid #E0E0E0;
+  position: fixed;
+  top: 70px;
+  z-index: 100;
+  width: 100%;
 }
 
 .registertab-button {
@@ -69,9 +73,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  position: fixed;
+  top: 70px;
+  padding: 40px 10px 0;
   background-color: #FFFFFF;
   border-bottom: 1px solid #E0E0E0;
+  z-index: 99;
 }
 
 .search-container {
@@ -82,7 +89,7 @@
 .search-icon {
   position: absolute;
   top: 50%;
-  left:5px;
+  left: 5px;
   transform: translateY(-50%);
   color: #ADAEBC;
 }
@@ -131,10 +138,10 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
+  margin-top: 160px;
+  padding: 0 16px 75px;
   overflow-y: auto;
   flex-grow: 1;
-  background-color: #f7f7f7;
 }
 
 .product-card {
@@ -164,7 +171,9 @@
   flex-grow: 1;
   gap: 4px;
 }
-
+.registered-product-specs{
+  font-size: 10px;
+}
 .product-title {
   font-size: 14px;
   font-weight: 600;
@@ -252,6 +261,7 @@
   color: #666666;
   font-size: 14px;
 }
+
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -267,7 +277,8 @@
 
 /* Ensure main content has bottom padding to prevent overlap */
 .main-content {
-  padding-bottom: 80px; /* Height of bottom bar + some spacing */
+  padding-bottom: 80px;
+  /* Height of bottom bar + some spacing */
 }
 
 /* For mobile responsiveness */
@@ -276,6 +287,7 @@
     padding: 12px;
   }
 }
+
 /* Loading state */
 .loading-state {
   display: flex;
@@ -293,7 +305,9 @@
   z-index: 100;
   background-color: #FFFFFF;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}/* Modal Styles */
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;

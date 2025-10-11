@@ -5,7 +5,6 @@ import {
   query,
   where,
   getDocs,
-  updateDoc,
   doc,
   writeBatch,
 } from 'firebase/firestore';
@@ -13,6 +12,8 @@ import { db } from '../services/firebase';
 import { useSeller } from '../contexts/SellerContext';
 import Header from '../components/Header';
 import './ReadyToDispatch.css';
+import productData from '../pages/productData.json';
+import PageHeader from '../components/PageHeader';
 
 const ReadyToDispatch = () => {
   const { seller } = useSeller();
@@ -28,8 +29,8 @@ const ReadyToDispatch = () => {
   const [error, setError] = useState(null);
   const [dispatching, setDispatching] = useState(false);
 
-  const categories = ['916HUID', '840ORNA', '750HUID', '680'];
-  const subCategories = ['KATAKI', 'MACHINE MADE', 'CASTING', 'CNC'];
+  const categories = productData?.categoriesBySegment["GOLD"];
+  const subCategories = productData?.productSources;
 
   // Fetch orders with RTD status
   useEffect(() => {
@@ -225,8 +226,8 @@ const ReadyToDispatch = () => {
 
   return (
     <>
-      <Header title="Ready to Dispatch" />
-
+      <PageHeader title="Ready to Dispatch" />
+      <div className="catlouge-container">
       <div className="filters">
         <div className="filter-group">
           <h3>Category</h3>
@@ -298,7 +299,7 @@ const ReadyToDispatch = () => {
           })
         )}
       </div>
-
+      </div>
       {/* Selection Summary */}
       <div className="selection-section">
         <div className="selection-header">
@@ -355,6 +356,7 @@ const ReadyToDispatch = () => {
           {dispatching ? 'Assigning...' : 'Request To Pickup'}
         </button>
       </div>
+
     </>
   );
 };

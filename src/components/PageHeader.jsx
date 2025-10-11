@@ -11,7 +11,7 @@ const PageHeader = ({ title = 'Dashboard' }) => {
   };
 
   return (
-    <header className="pageheader">
+    <header className="dashboard-header">
       <div className="pageheader-content">
         <div className="pageheader-left">
           <button

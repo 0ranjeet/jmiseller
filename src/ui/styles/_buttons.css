@@ -1,0 +1,44 @@
+/* Centralized button styles (maps to existing class names) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: none; }
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.btn-primary:hover { filter: brightness(0.98); }
+
+.btn-secondary {
+  background: #f5f7fa;
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: #fff;
+  border-color: var(--color-error);
+}
+
+/* Sizes */
+.btn-sm { padding: 6px 10px; font-size: 0.875rem; }
+.btn-md { padding: 10px 16px; font-size: 1rem; }
+.btn-lg { padding: 12px 18px; font-size: 1.0625rem; }
+
+/* Block */
+.btn-block { width: 100%; }

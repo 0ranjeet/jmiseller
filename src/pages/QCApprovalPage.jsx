@@ -1,7 +1,10 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
 const QCApprovalPage = () => {
   const nav = useNavigate();
+  const location = useLocation();
+  const { totalSelected = 0 } = location.state || {};
   
   return (
     <div
@@ -57,7 +60,6 @@ const QCApprovalPage = () => {
             </span>
           </div>
         </div>
-
         {/* Message */}
         <p
           style={{
@@ -67,14 +69,10 @@ const QCApprovalPage = () => {
             marginBottom: "30px",
           }}
         >
-          3 Products are sent to QC for Approval.
+          Your product registration for {totalSelected} {totalSelected === 1 ? 'item' : 'items'} has been submitted for quality check.
         </p>
-
-        {/* Buttons */}
-        <button
+        <p
           style={{
-            width: "100%",
-            padding: "12px",
             border: "none",
             borderRadius: "6px",
             backgroundColor: "#B8860B", // golden brown
@@ -88,7 +86,7 @@ const QCApprovalPage = () => {
 
         >
           Register More Products
-        </button>
+        </p>
 
         <button
           style={{

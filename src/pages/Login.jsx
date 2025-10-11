@@ -4,7 +4,7 @@ import { collection, query, where, getDoc, doc, getDocs } from "firebase/firesto
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
 import bcrypt from "bcryptjs";
-import { useSeller } from "../contexts/SellerContext"; // Import the context hook
+import { useSeller } from "../contexts/SellerContext"; 
 
 const Login = () => {
   const [mobile, setMobile] = useState("");
@@ -39,9 +39,14 @@ const Login = () => {
       }
 
       const sellerId = data.sellerId;
+      // organizationName
+      const sellerRegistrationDoc = doc(db, "sellerregistrations",sellerId);
+      const sellerRegistrationSnap = await getDoc(sellerRegistrationDoc);
+      const sellerRegistrationData = sellerRegistrationSnap.data();
       updateSeller({
         sellerId,
         mobile,
+        organizationName: sellerRegistrationData.organizationName,
       })
 
       const sellerProfileRef = doc(db, "profile", sellerId);
@@ -104,7 +109,7 @@ const Login = () => {
         <button className="login-btn" onClick={handleLogin}>
           Login
         </button>
-        <p className="forgot">Forgot Password?</p>
+        <p className="forgot" onClick={()=>nav('/forgetpassword')}>Forgot Password?</p>
       </div>
 
       <p className="register-link">

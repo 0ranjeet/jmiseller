@@ -81,6 +81,7 @@
 
 /* Sidebar - Drawer */
 .sidebar {
+  padding-top: 30px;
   position: fixed;
   top: 0;
   left: 0;

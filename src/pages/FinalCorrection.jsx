@@ -9,8 +9,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useSeller } from '../contexts/SellerContext';
-import Header from '../components/Header';
 import './FinalCorrection.css';
+import PageHeader from '../components/PageHeader';
 
 const FinalCorrection = () => {
   const { seller } = useSeller();
@@ -118,7 +118,7 @@ const FinalCorrection = () => {
   if (loading) {
     return (
       <>
-        <Header title="Final Correction" />
+        <PageHeader title="Final Correction" />
         <div className="final-correction-container">Loading...</div>
       </>
     );
@@ -127,7 +127,7 @@ const FinalCorrection = () => {
   if (error) {
     return (
       <>
-        <Header title="Final Correction" />
+        <PageHeader title="Final Correction" />
         <div className="final-correction-container">
           <p className="error">{error}</p>
         </div>
@@ -137,7 +137,7 @@ const FinalCorrection = () => {
 
   return (
     <>
-      <Header title="Final Correction" />
+      <PageHeader title="Final Correction" />
       
       <div className="final-correction-container">
         <div className="instruction">

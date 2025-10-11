@@ -10,8 +10,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useSeller } from '../contexts/SellerContext';
-import Header from '../components/Header';
 import './BuyerRequest.css';
+import PageHeader from '../components/PageHeader';
 
 const BuyerRequest = () => {
   const { seller } = useSeller();
@@ -155,7 +155,7 @@ const BuyerRequest = () => {
   if (loading) {
     return (
       <>
-        <Header title="Ready Services Order Workflow" />
+        <PageHeader title="Ready Services Order Workflow" />
         <div className="workflow-container">Loading...</div>
       </>
     );
@@ -164,7 +164,7 @@ const BuyerRequest = () => {
   if (error) {
     return (
       <>
-        <Header title="Ready Services Order Workflow" />
+        <PageHeader title="Ready Services Order Workflow" />
         <div className="workflow-container">
           <p className="error">{error}</p>
         </div>
@@ -174,7 +174,7 @@ const BuyerRequest = () => {
 
   return (
     <>
-      <Header title="Buyer Request" />
+      <PageHeader title="Buyer Request" />
         <div className="filters">
           <div className="filter-group">
             <h3>Category</h3>

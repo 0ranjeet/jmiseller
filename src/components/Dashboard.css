@@ -5,17 +5,20 @@
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 50px 0;
 }
 
 /* Header Styles */
 .dashboard-header {
-  position: sticky;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e0e0e0;
+  position: fixed;
   top: 0;
-  z-index: 40;
-  background-color: white;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid #e5e7eb;
-  padding: 3px ;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  padding: 30px 0 0;
 }
 
 .header-content {
@@ -77,11 +80,12 @@
 
 /* Main Content Styles */
 .dashboard-main {
-  flex: 1;
+  flex: 1 1;
   padding: 16px;
   gap: 24px;
   display: flex;
   flex-direction: column;
+  padding-bottom: 60px;
 }
 
 .card {

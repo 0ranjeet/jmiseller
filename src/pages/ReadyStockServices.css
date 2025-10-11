@@ -1,6 +1,6 @@
 
 .overview-container {
-  padding: 1.5rem 1rem 0.5rem;
+  padding: 70px 0 5px;
 }
 
 .overview-card {
@@ -48,3 +48,6 @@
   color: #7b8794;
 }
 
+.serve-container {
+    padding: 0px 0 50px;
+}

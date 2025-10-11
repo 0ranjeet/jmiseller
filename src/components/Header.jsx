@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, MoreVertical, Home, FileText, BookImage, BookA, Bell, Plus, Truck, TrendingUpDown } from 'lucide-react';
+import { Menu, MoreVertical, Home, FileText, BookImage, BookA, Bell, Plus, Truck, TrendingUpDown ,Handshake } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Header.css';
 import Logo from '../JMIlogo.png';
@@ -46,9 +46,10 @@ const Header = ({ title = "Dashboard" }) => {
 
   const menuItems = [
     { label: 'Home', icon: <Home size={18} />, path: '/dashboard' },
-    { label: 'Live Rate', icon: <TrendingUpDown size={18} />, path: '/live-rate' },
+    { label: 'Live Rate', icon: <TrendingUpDown size={18} />, path: '/liverates' },
     { label: 'Registered Products', icon: <FileText size={18} />, path: '/myregisteredproducts' },
     { label: 'My Catalogue', icon: <BookImage size={18} />, path: '/MyCatalogue' },
+    { label: 'My Segment',icon:<Handshake size={18}/>,path:'/segmentregistration'},
     { label: 'Ready Stock Services', icon: <Truck size={18} />, path: '/readystockservices' },
     { label: 'Order Serve Services', icon: <BookA size={18} />, path: '/orderserve' },
     { label: 'Open Market Services', icon: <Plus size={18} />, path: '/open-market' },

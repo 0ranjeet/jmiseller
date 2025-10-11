@@ -1,0 +1,74 @@
+/* src/components/LiveRates.css */
+.live-rates {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 12px;
+    max-width: 428px;
+    margin: 0 auto;
+  }
+  .live-rates__table{
+    width: 100%;
+  }
+  .live-rates__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .live-rates__title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .live-rates__updated {
+    font-size: 11px;
+    color: var(--text-color-medium, #6b7280);
+  }
+  
+  .live-rates__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .live-rates__cell {
+    background: var(--light-bg-color, #f9fafb);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .live-rates__cell h4 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .live-rates__cell .value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color-dark, #111827);
+  }
+  
+  .live-rates__cell .sub {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-color-medium, #6b7280);
+  }
+  
+  .live-rates__rowlabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  
+  @media (max-width: 420px) {
+    .live-rates__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  

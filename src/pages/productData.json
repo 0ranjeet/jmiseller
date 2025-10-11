@@ -16,14 +16,6 @@
     "NAKASHI", "DIECE THUKAI", "ACCESORIES", "MARWAD"
   ],
 
-  "productNames": [
-    "MANGTIKA", "NATH", "NOSEPIN", "MANGALSUTRA", "CHAINS", "DOKIA",
-    "SHORTNECKLACE", "LONGNECKLACE", "CHOKKAR", "CHEEK", "PENDENTS",
-    "BABYLOCKET", "GODLOCKET", "BAJUBANDH", "BANGLE", "SANKHAPOLA",
-    "BRASLETKADA", "LADIESRING", "GENTSRING", "BABYRING",
-    "KAMARBANDH", "PAYAL", "BICHHIYA", "ACCESORIES"
-  ],
-
   "styleTypes": ["regular", "highFancy", "highFinish", "lightWeight"],
 
   "specifications": ["PLANE", "MEENAWORK", "STONEWORK", "OTHERWORK"],
@@ -32,121 +24,145 @@
     "MANGTIKA": {
       "sizing_unit": "Regular",
       "options": ["Regular","oneSize"],
-      "note": "Typically adjustable"
+      "note": "Typically adjustable",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
     },
     "NATH": {
       "sizing_unit": "Regular",
       "options": ["Regular"],
-      "note": "Typically adjustable"
+      "note": "Typically adjustable",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&fit=crop"
     },
     "NOSEPIN": {
       "sizing_unit": "Regular",
-      "options": ["Regular"]
+      "options": ["Regular"],
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     },
-    "MANGAL SUTRA": {
+    "MANGALSUTRA": {
       "sizing_unit": "Inches",
       "options": ["16\"", "18\"", "20\"", "22\"", "24\"", "26\"", "28\"", "30\"", "32\"", "34\"", "36\""],
-      "note": "Length of the chain"
+      "note": "Length of the chain",
+      "image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&fit=crop"
     },
     "CHAINS": {
       "sizing_unit": "Inches",
       "options": ["16\"", "18\"", "20\"", "22\"", "24\"", "26\"", "28\"", "30\"", "32\"", "34\"", "36\""],
-      "note": "Length of the chain"
+      "note": "Length of the chain",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
     },
     "DOKIA": {
       "sizing_unit": "Inches",
       "options": ["18\"", "20\"", "22\"", "24\"", "26\"", "28\"", "30\""],
-      "note": "Length of the chain"
+      "note": "Length of the chain",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&fit=crop"
     },
-    "SHORT NECKLACE": {
+    "SHORTNECKLACE": {
       "sizing_unit": "Inches",
       "options": ["16\"", "18\"", "20\""],
-      "note": "Length of the necklace"
+      "note": "Length of the necklace",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
     },
-    "LONG NECKLACE": {
+    "LONGNECKLACE": {
       "sizing_unit": "Inches",
       "options": ["22\"", "24\"", "26\"", "28\"", "30\"", "32\"", "34\"", "36\""],
-      "note": "Length of the necklace"
+      "note": "Length of the necklace",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&fit=crop"
     },
     "CHOKKAR": {
       "sizing_unit": "Regular",
       "options": ["Regular"],
-      "note": "Typically fits closely around the neck, often adjustable"
+      "note": "Typically fits closely around the neck, often adjustable",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
     },
     "CHEEK": {
       "sizing_unit": "Regular",
       "options": ["Regular"],
-      "note": "Can be adjustable"
+      "note": "Can be adjustable",
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     },
     "PENDENTS": {
-      "sizing_unit": "Dimensions (mm)",
-      "options": [],
-      "note": "Specify Height and Width in millimeters (mm)"
-    },
-    "BABY LOCKET": {
-      "sizing_unit": "Dimensions (mm)",
-      "options": [],
-      "note": "Specify Height and Width in millimeters (mm)"
-    },
-    "GOD LOCKET": {
-      "sizing_unit": "Dimensions (mm)",
-      "options": [],
-      "note": "Specify Height and Width in millimeters (mm)"
-    },
-    "BAJU BANDH": {
       "sizing_unit": "Regular",
       "options": ["Regular"],
-      "note": "Typically adjustable"
+      "note": "Specify Height and Width in millimeters (mm)",
+      "image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&fit=crop"
+    },
+    "BABYLOCKET": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Specify Height and Width in millimeters (mm)",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
+    },
+    "GODLOCKET": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Specify Height and Width in millimeters (mm)",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&fit=crop"
+    },
+    "BAJUBANDH": {
+      "sizing_unit": "Regular",
+      "options": ["Regular"],
+      "note": "Typically adjustable",
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     },
     "BANGLE": {
       "sizing_unit": "Indian Bangle Size",
       "options": ["2.2", "2.4", "2.6", "2.8", "2.10", "2.12"],
-      "note": "Diameter of the bangle in inches"
+      "note": "Diameter of the bangle in inches",
+      "image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&fit=crop"
     },
-    "SANKHA POLA": {
+    "SANKHAPOLA": {
       "sizing_unit": "Indian Bangle Size",
       "options": ["2.2", "2.4", "2.6", "2.8", "2.10", "2.12"],
-      "note": "Diameter of the Sankha Pola in inches"
+      "note": "Diameter of the Sankha Pola in inches",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
     },
-    "BRASLET & KADA": {
+    "BRASLETKADA": {
       "sizing_unit": "Regular",
       "options": ["Regular"],
-      "note": "Typically adjustable"
+      "note": "Typically adjustable",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&fit=crop"
     },
-    "LADIES RING": {
+    "LADIESRING": {
       "sizing_unit": "US Ring Size",
       "options": ["4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
-      "note": "Commonly used sizes for ladies rings"
+      "note": "Commonly used sizes for ladies rings",
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     },
-    "GENTS RING": {
+    "GENTSRING": {
       "sizing_unit": "US Ring Size",
       "options": ["8", "9", "10", "11", "12", "13", "14"],
-      "note": "Commonly used sizes for gents rings"
+      "note": "Commonly used sizes for gents rings",
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     },
-    "BABY RING": {
+    "BABYRING": {
       "sizing_unit": "US Ring Size",
       "options": ["0", "1", "2", "3", "4"],
-      "note": "Commonly used sizes for baby rings"
+      "note": "Commonly used sizes for baby rings",
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     },
-    "KAMAR BANDH": {
+    "KAMARBANDH": {
       "sizing_unit": "Inches",
       "options": ["28\"", "30\"", "32\"", "34\"", "36\"", "38\"", "40\""],
-      "note": "Waist size"
+      "note": "Waist size",
+      "image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&fit=crop"
     },
     "PAYAL": {
       "sizing_unit": "Inches",
       "options": ["9\"", "9.5\"", "10\"", "10.5\"", "11\""],
-      "note": "Ankle length"
+      "note": "Ankle length",
+      "image": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&fit=crop"
     },
     "BICHHIYA": {
       "sizing_unit": "Regular",
       "options": ["Regular"],
-      "note": "Can be adjustable"
+      "note": "Can be adjustable",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&fit=crop"
     },
     "ACCESORIES": {
       "sizing_unit": "Not Applicable",
       "options": [],
-      "note": "Provide a description of the size or dimensions in the product details."
+      "note": "Provide a description of the size or dimensions in the product details.",
+      "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&fit=crop"
     }
   }
 }

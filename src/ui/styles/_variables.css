@@ -1,0 +1,31 @@
+:root {
+  /* Brand Colors */
+  --color-primary: #c19720; /* matches existing palette */
+  --color-primary-dark: #b8860b;
+  --color-text: #1a1f36;
+  --color-text-muted: #7b8794;
+  --color-border: #e4e7eb;
+  --color-bg: #ffffff;
+  --color-error: #d32f2f;
+  --color-success: #2e7d32;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+}
