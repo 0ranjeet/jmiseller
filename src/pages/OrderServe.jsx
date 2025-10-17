@@ -15,6 +15,7 @@ const OrderServe = () => {
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
  const navigate=useNavigate();
+ const serviceType = 'order';
   const [orderCounts, setOrderCounts] = useState({
     requested: 0,
     assortment: 0,
@@ -183,7 +184,7 @@ const OrderServe = () => {
         <div className="workflow-steps">
           {steps.map((step, index) => (
             <div key={step.id} className="step-card" onClick={()=>{
-                navigate(step.path)
+                navigate(step.path , {state:{serviceType}})
             }}>
               <div className={`step-line ${step.color}`} />
               <div className="readystep-content">

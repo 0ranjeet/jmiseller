@@ -5,6 +5,7 @@ import "./Login.css";
 import { useNavigate } from "react-router-dom";
 import bcrypt from "bcryptjs";
 import { useSeller } from "../contexts/SellerContext"; 
+import { saveData } from "../utils/storage";
 
 const Login = () => {
   const [mobile, setMobile] = useState("");
@@ -17,52 +18,56 @@ const Login = () => {
       alert("Please enter both fields correctly");
       return;
     }
-
+  
     try {
-      // 🔍 search seller by mobile (since sellerId is random)
       const q = query(collection(db, "sellers"), where("mobile", "==", mobile));
       const snap = await getDocs(q);
-
+  
       if (snap.empty) {
         alert("Seller not found");
         return;
       }
-
+  
       const sellerDoc = snap.docs[0];
       const data = sellerDoc.data();
-
-      // ✅ bcrypt password verification
+  
       const isMatch = await bcrypt.compare(password, data.passwordHash);
       if (!isMatch) {
         alert("Incorrect password");
         return;
       }
-
+  
       const sellerId = data.sellerId;
-      // organizationName
-      const sellerRegistrationDoc = doc(db, "sellerregistrations",sellerId);
+  
+      // Fetch registration data
+      const sellerRegistrationDoc = doc(db, "sellerregistrations", sellerId);
       const sellerRegistrationSnap = await getDoc(sellerRegistrationDoc);
-      const sellerRegistrationData = sellerRegistrationSnap.data();
-      updateSeller({
+      const sellerRegistrationData = sellerRegistrationSnap.exists()
+        ? sellerRegistrationSnap.data()
+        : {};
+  
+      // ✅ Prepare seller data
+      const sellerData = {
         sellerId,
         mobile,
-        organizationName: sellerRegistrationData.organizationName,
-      })
-
+        organizationName: sellerRegistrationData.organizationName || '',
+        lastUpdated: Date.now(),
+      };
+  
+      // ✅ Persist to storage (for auto-login after app kill)
+      await saveData("sellerData", sellerData);
+  
+      // ✅ Update context
+      updateSeller(sellerData);
+  
+      // Fetch profile for redirect logic
       const sellerProfileRef = doc(db, "profile", sellerId);
       const profileSnap = await getDoc(sellerProfileRef);
-
-      let profileData = {};
-      if (profileSnap.exists()) {
-        profileData = profileSnap.data();
-      }
-
-      
-
+      const profileData = profileSnap.exists() ? profileSnap.data() : {};
+  
       alert("Login successful");
-      console.log(profileData);
-
-      // Redirect to the first incomplete registration step
+  
+      // Redirect based on registration progress
       if (!profileData.SellerRegistration) {
         nav("/sellerregistration");
       } else if (!profileData.SegmentRegistration) {
@@ -72,7 +77,6 @@ const Login = () => {
       } else {
         nav("/dashboard");
       }
-
     } catch (err) {
       console.error(err);
       alert("Login failed");
@@ -121,7 +125,8 @@ const Login = () => {
 
       <p className="support">
         <img src="/whatsapp.svg" alt="whatsapp" className="whatsapp-icon" />
-        Need help? Contact Seller Support
+        <span onClick={() => window.open("https://wa.me/918917412728", "_blank")}> Need help? </span>Contact Support
+      
       </p>
     </div>
   );

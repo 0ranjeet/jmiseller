@@ -12,14 +12,14 @@
   color: #666;
   margin-bottom: 15px;
 }
+
 .order-card {
-  padding: 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   background-color: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .order-card:hover {
@@ -56,7 +56,11 @@
 
 .selection-section {
   border-top: 2px solid #ddd;
-  padding-top: 20px;
+  padding: 10px;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  background: white;
 }
 
 .selection-header {

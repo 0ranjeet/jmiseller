@@ -10,13 +10,16 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useSeller } from '../contexts/SellerContext';
+import { useNavigate ,useLocation} from 'react-router-dom';
 import './BuyerRequest.css';
 import PageHeader from '../components/PageHeader';
 
 const BuyerRequest = () => {
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
-
+  const navigate = useNavigate();
+  const location = useLocation();
+  const serviceType = location.state?.serviceType;
   const [category, setCategory] = useState('916HUID');
   const [subCategory, setSubCategory] = useState('KATAKI');
   const [orders, setOrders] = useState([]);
@@ -38,7 +41,8 @@ const BuyerRequest = () => {
         const q = query(
           collection(db, 'orderList'),
           where('sellerId', '==', sellerId),
-          where('orderStatus', '==', 'Requested')
+          where('orderStatus', '==', 'Requested'),
+          where('serviceType', '==', serviceType)
         );
         const snapshot = await getDocs(q);
 
@@ -49,6 +53,7 @@ const BuyerRequest = () => {
             ...docSnap.data(),
           });
         });
+        console.log(fetchedOrders);
 
         setOrders(fetchedOrders);
       } catch (err) {
@@ -139,7 +144,9 @@ const BuyerRequest = () => {
       setPendingAction(null);
     }
   };
-
+  const handleProductClick = (product) => {
+    navigate(`/product/${product.id}`, { state: { product } });
+  };
   // Helper: total quantity
   const getTotalQuantity = (variants) =>
     Array.isArray(variants)
@@ -175,97 +182,103 @@ const BuyerRequest = () => {
   return (
     <>
       <PageHeader title="Buyer Request" />
-        <div className="filters">
-          <div className="filter-group">
-            <h3>Category</h3>
-            <div className="horizontal-scroll-container">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  className={`category-button ${category === cat ? 'active' : ''}`}
-                  onClick={() => setCategory(cat)}
-                  type="button"
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <h3>Subcategory</h3>
-            <div className="horizontal-scroll-container">
-              {subCategories.map((sub) => (
-                <button
-                  key={sub}
-                  className={`category-button ${subCategory === sub ? 'active' : ''}`}
-                  onClick={() => setSubCategory(sub)}
-                  type="button"
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
+      <div className="filters">
+        <div className="filter-group">
+          <h3>Category</h3>
+          <div className="horizontal-scroll-container">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                className={`category-button ${category === cat ? 'active' : ''}`}
+                onClick={() => setCategory(cat)}
+                type="button"
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Results */}
-        <p className="results-count">
-          {filteredOrders.length} request{filteredOrders.length !== 1 ? 's' : ''} found
-        </p>
+        <div className="filter-group">
+          <h3>Subcategory</h3>
+          <div className="horizontal-scroll-container">
+            {subCategories.map((sub) => (
+              <button
+                key={sub}
+                className={`category-button ${subCategory === sub ? 'active' : ''}`}
+                onClick={() => setSubCategory(sub)}
+                type="button"
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-        {/* Orders Grid */}
-        <div className="orders-grid">
-          {filteredOrders.length === 0 ? (
-            <p className="no-results">No matching requests.</p>
-          ) : (
-            filteredOrders.map((order) => {
-              const qty = getTotalQuantity(order.selectedVariants);
-              const imageUrl = order.images?.[0]?.url?.trim();
+      {/* Results */}
+      <p className="results-count">
+        {filteredOrders.length} request{filteredOrders.length !== 1 ? 's' : ''} found
+      </p>
 
-              return (
-                <div key={order.firestoreId} className="order-card">
-                  <div className="order-image">
-                    {imageUrl ? (
-                      <img src={imageUrl} alt={order.productName} />
-                    ) : (
-                      <div className="image-placeholder">No Image</div>
-                    )}
-                  </div>
+      {/* Orders Grid */}
+      <div className="orders-grid">
+        {filteredOrders.length === 0 ? (
+          <p className="no-results">No matching requests.</p>
+        ) : (
+          filteredOrders.map((order) => {
+            const qty = getTotalQuantity(order.selectedVariants);
+            const imageUrl = order.images?.[0]?.url?.trim();
 
-                  <div className="order-info">
-                    <h3>{order.productName}</h3>
-                    <p>
-                      {order.category} • {order.grossWt}g • Qty: {qty}
+            return (
+              <div key={order.firestoreId} className="order-card">
+                <div className="order-image">
+                  {imageUrl ? (
+                    <img src={imageUrl} alt={order.productName} onClick={() => handleProductClick(order)} />
+                  ) : (
+                    <div className="image-placeholder">No Image</div>
+                  )}
+                </div>
+
+                <div className="order-info">
+                  <h5 >{order.category}/{order.productName}</h5>
+                  <p>
+                    {order.specification}/{order.styleType}
+                  </p>
+                  {order.selectedVariants?.length > 0 && (
+                    <p className="spec-label" >
+                      {order.selectedVariants.map((variant, index) => (
+                        <span key={variant.size} >
+                          {variant.size} x {variant.quantity}
+                          {index < order.selectedVariants.length - 1 ? ", " : ""}
+                        </span>
+                      ))}
                     </p>
-                    {order.specification && (
-                      <p className="spec-label">Spec: {order.specification}</p>
-                    )}
-
-                    <div className="action-btn">
-                      <button
-                        className="reject-btn"
-                        disabled={pendingAction}
-                        onClick={() => handleReject(order.firestoreId)}
-                        type="button"
-                      >
-                        {pendingAction === 'reject' ? 'Rejecting...' : 'Reject'}
-                      </button>
-                      <button
-                        className="accept-btn"
-                        disabled={pendingAction}
-                        onClick={() => handleAccept(order.firestoreId)}
-                        type="button"
-                      >
-                        {pendingAction === 'accept' ? 'Accepting...' : 'Accept'}
-                      </button>
-                    </div>
+                  )}
+                  <div className="action-btn">
+                    <button
+                      className="reject-btn"
+                      disabled={pendingAction}
+                      onClick={() => handleReject(order.firestoreId)}
+                      type="button"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      className="accept-btn"
+                      disabled={pendingAction}
+                      onClick={() => handleAccept(order.firestoreId)}
+                      type="button"
+                    >
+                      Accept
+                    </button>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              </div>
+            );
+          })
+        )}
+      </div>
     </>
   );
 };

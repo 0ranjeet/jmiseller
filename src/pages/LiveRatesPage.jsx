@@ -7,11 +7,8 @@ export default function LiveRatesPage() {
   return (
     <>
       <PageHeader title="Live Rates" />
-      <div className="app-container">
-        <div className="main-content">
-          <LiveRates marketLabel="Local Market" />
-        </div>
-      </div>
+      <LiveRates marketLabel="Local Market" />
+
     </>
   );
 }

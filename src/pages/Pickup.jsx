@@ -29,7 +29,6 @@ const Pickup = () => {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
         const q = query(
@@ -38,10 +37,8 @@ const Pickup = () => {
           where('orderStatus', '==', 'Assigned')
         );
         const snapshot = await getDocs(q);
-
         const fetchedOrders = [];
         const jreIds = new Set();
-
         snapshot.forEach((docSnap) => {
           const orderData = docSnap.data();
           fetchedOrders.push({
@@ -52,8 +49,6 @@ const Pickup = () => {
             jreIds.add(orderData.jreId);
           }
         });
-
-        // Fetch JRE details in batch
         const jreDetails = {};
         for (const jreId of jreIds) {
           const jreDoc = await getDoc(doc(db, 'jreStatus', jreId));

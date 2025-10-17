@@ -10,11 +10,11 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
 
-
 const ReadyStockServices = () => {
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
- const navigate=useNavigate();
+  const navigate = useNavigate();
+  const serviceType = 'ready';
   const [orderCounts, setOrderCounts] = useState({
     requested: 0,
     assortment: 0,
@@ -23,10 +23,7 @@ const ReadyStockServices = () => {
     delivery: 0,
     payment: 0,
   });
-
   const [loading, setLoading] = useState(true);
-
-
   // Fetch and count orders by status
   useEffect(() => {
     const fetchOrderCounts = async () => {
@@ -34,9 +31,9 @@ const ReadyStockServices = () => {
 
       try {
         setLoading(true);
-        const q = query(collection(db, 'orderList'), where('sellerId', '==', sellerId),where ('serviceType','==','ready'));
+        const q = query(collection(db, 'orderList'), where('sellerId', '==', sellerId), where('serviceType', '==', 'ready'));
         const snapshot = await getDocs(q);
-
+         console.log(snapshot);
         const counts = {
           requested: 0,
           assortment: 0,
@@ -73,8 +70,8 @@ const ReadyStockServices = () => {
               break;
           }
         });
-
         setOrderCounts(counts);
+        console.log(counts);
       } catch (error) {
         console.error('Error fetching order counts:', error);
         // Optionally show toast or fallback counts
@@ -94,7 +91,6 @@ const ReadyStockServices = () => {
     0
   );
   const pendingCount = totalOrders - completedCount;
-
   // Workflow Steps (now dynamic)
   const steps = [
     {
@@ -103,7 +99,7 @@ const ReadyStockServices = () => {
       subtitle: 'New incoming enquiries',
       count: orderCounts.requested,
       color: 'yellow',
-      path:'/buyerrequset',
+      path: '/buyerrequset',
     },
     {
       id: 2,
@@ -111,7 +107,7 @@ const ReadyStockServices = () => {
       subtitle: 'Shortlist & curate products',
       count: orderCounts.assortment,
       color: 'blue',
-      path:'/assortment',
+      path: '/assortment',
     },
     {
       id: 3,
@@ -119,7 +115,7 @@ const ReadyStockServices = () => {
       subtitle: 'Confirm specs & edits',
       count: orderCounts.finalCorrection,
       color: 'orange',
-     path:'/finalcorrection',
+      path: '/finalcorrection',
     },
     {
       id: 4,
@@ -127,7 +123,7 @@ const ReadyStockServices = () => {
       subtitle: 'Packed & awaiting pickup',
       count: orderCounts.readyToDispatch,
       color: 'green',
-      path:'/rtd'
+      path: '/rtd'
     },
     {
       id: 5,
@@ -135,7 +131,7 @@ const ReadyStockServices = () => {
       subtitle: 'In transit to buyer',
       count: orderCounts.Assigned,
       color: 'light-blue',
-      path:'/Assigned',
+      path: '/Assigned',
     },
     {
       id: 6,
@@ -143,7 +139,7 @@ const ReadyStockServices = () => {
       subtitle: 'Invoices & receipts',
       count: orderCounts.payment,
       color: 'purple',
-      path:'/payment'
+      path: '/payment'
     },
   ];
 
@@ -190,8 +186,8 @@ const ReadyStockServices = () => {
       <div className="serve-container">
         <div className="workflow-steps">
           {steps.map((step, index) => (
-            <div key={step.id} className="step-card" onClick={()=>{
-                navigate(step.path)
+            <div key={step.id} className="step-card" onClick={() => {
+              navigate(step.path, { state: {  serviceType } })
             }}>
               <div className={`step-line ${step.color}`} />
               <div className="readystep-content">
@@ -203,7 +199,7 @@ const ReadyStockServices = () => {
                 </div>
                 <div className="step-count">
                   <span>{step.count}</span>
-                  <span className="arrow"><ChevronRight/></span>
+                  <span className="arrow"><ChevronRight /></span>
                 </div>
               </div>
             </div>

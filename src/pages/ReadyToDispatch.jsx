@@ -54,7 +54,7 @@ const ReadyToDispatch = () => {
             ...orderData,
           });
         });
-
+        console.log(fetchedOrders);
         setOrders(fetchedOrders);
         setFilteredOrders(
           fetchedOrders.filter(
@@ -73,7 +73,6 @@ const ReadyToDispatch = () => {
     fetchOrders();
   }, [sellerId, category, subCategory]);
 
-  // Update filtered orders when category or subcategory changes
   useEffect(() => {
     setFilteredOrders(
       orders.filter(
@@ -142,7 +141,6 @@ const ReadyToDispatch = () => {
         onlineJres.push({ id: doc.id, ...doc.data() });
       });
 
-      // 2. Find first JRE with enough capacity
       let assignedJre = null;
       for (const jre of onlineJres) {
         const current = jre.currentValue || 0;

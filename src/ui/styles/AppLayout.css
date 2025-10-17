@@ -1,0 +1,71 @@
+/* App Layout with Safe Area Support */
+
+/* Base app layout */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background-color: var(--jmi-white, #ffffff);
+  margin: 0;
+  padding: 0;
+}
+
+/* Main content area */
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;}
+
+/* Safe area adjustments for iOS */
+@supports (padding: max(0px)) {
+  .app-layout {
+    /* Use safe-area-inset-* for iOS 11+ */
+    padding-left: max(env(safe-area-inset-left, 0px), 0px);
+    padding-right: max(env(safe-area-inset-right, 0px), 0px);
+  }
+  
+  /* Adjust for devices with notches */
+  .app-content {
+    padding-top: calc(var(--header-height, 60px) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--footer-height, 0) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Fix for mobile viewport height */
+@supports (--css: variables) {
+  .app-layout {
+    min-height: calc(100 * var(--vh, 1vh));
+  }
+}
+
+/* Fix for iOS 15+ viewport height issues */
+@supports (min-height: -webkit-fill-available) {
+  .app-layout {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Fix for Safari 15+ viewport height issues */
+@supports not (min-height: -webkit-fill-available) {
+  @media (max-width: 1024px) and (orientation: portrait) {
+    .app-layout {
+      min-height: -webkit-fill-available;
+    }
+  }
+}
+
+/* Ensure inputs and buttons don't zoom on focus in mobile Safari */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px !important;
+  }
+}

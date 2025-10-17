@@ -755,7 +755,7 @@ const Catalogue = () => {
                   key={`${product.id}-${index}`}
                   onClick={() => handleProductClick(product)}
                 >
-                  <div className="product-image">
+                  <div className="product-image" >
                     {product.images && product.images.length > 0 && (
                       <img
                         src={product.images[0].url?.trim()}
