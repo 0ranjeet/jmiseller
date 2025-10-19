@@ -10,10 +10,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useSeller } from '../contexts/SellerContext';
-import Header from '../components/Header';
+import PageHeader from '../components/PageHeader';
 import './ReadyToDispatch.css';
 import productData from '../pages/productData.json';
-import PageHeader from '../components/PageHeader';
 
 const ReadyToDispatch = () => {
   const { seller } = useSeller();
@@ -29,14 +28,151 @@ const ReadyToDispatch = () => {
   const [error, setError] = useState(null);
   const [dispatching, setDispatching] = useState(false);
 
-  const categories = productData?.categoriesBySegment["GOLD"];
-  const subCategories = productData?.productSources;
+  const categories = productData?.categoriesBySegment?.["GOLD"] || [];
+  const subCategories = productData?.productSources || [];
 
-  // Fetch orders with RTD status
+  // --- 🔁 Helper: Calculate totals from orderDetail ---
+  const calculateOrderTotals = (order) => {
+    let totalGross = 0;
+    let totalSets = 0;
+    let totalnetWt = 0;
+
+    if (order.orderDetail && typeof order.orderDetail === 'object') {
+      Object.values(order.orderDetail).forEach((variant) => {
+        totalGross += parseFloat(variant.grossWt) || 0;
+        totalSets += parseInt(variant.set) || 0;
+        totalnetWt += parseFloat(variant.netWt) || 0;
+      });
+    }
+
+    return { totalGross, totalSets, totalnetWt };
+  };
+
+  // --- 📊 Helper: Calculate financial summary ---
+  const calculateSummary = () => {
+    const selectedItems = orders.filter((order) =>
+      selectedOrders.includes(order.firestoreId)
+    );
+    const num = (v) => parseFloat(v) || 0;
+    let totalSets = 0;
+    let totalWeight = 0;
+    let totalnetWt = 0;
+    let totalWestage = 0;
+    selectedItems.forEach((order) => {
+      totalWestage += num(order.purity) +
+      num(order.wastage) +
+      num(order.specificationMC) +
+      (order.specification && order.specification !== "Plane"
+        ? 0
+        : 0);
+      const { totalGross, totalSets: sets, totalnetWt: netWt } = calculateOrderTotals(order);
+      totalWeight += totalGross;
+      totalSets += sets;
+      totalnetWt += netWt;
+    });
+
+    const fineWeight = totalnetWt * totalWestage / 100;
+    const goldRate = 6345;
+    const amount = fineWeight * goldRate;
+    const gst = amount * 0.03;
+    const totalAmount = amount + gst;
+
+    return {
+      sets: totalSets,
+      weight: totalWeight.toFixed(3),
+      fineWeight: fineWeight.toFixed(2),
+      totalnetWt: totalnetWt.toFixed(3),
+      amount: amount.toFixed(2),
+      gst: gst.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+      totalAmountRaw: totalAmount,
+    };
+  };
+
+  // --- 🔍 Helper: Find online sellerside JRE by operatorId ---
+  const findSellersideJre = async (operatorId) => {
+    try {
+      const jreQuery = query(
+        collection(db, 'jreStatus'),
+        where('role', '==', 'sellerside'),
+        where('operatorId', '==', operatorId),
+        where('isOnline', '==', true)
+      );
+      const snapshot = await getDocs(jreQuery);
+      if (snapshot.empty) return null;
+      const docSnap = snapshot.docs[0];
+      return { id: docSnap.id, ...docSnap.data() };
+    } catch (err) {
+      console.error('Error fetching JRE:', err);
+      return null;
+    }
+  };
+
+  // --- 🚚 Dispatch Logic (shared for both actions) ---
+  const dispatchOrders = async (dispatchType) => {
+    if (selectedOrders.length === 0) return;
+
+    const selectedOrderObjects = orders.filter((order) =>
+      selectedOrders.includes(order.firestoreId)
+    );
+
+    const operatorId = selectedOrderObjects[0]?.operatorId;
+    if (!operatorId) {
+      alert('Operator ID missing on selected order(s).');
+      return;
+    }
+
+    setDispatching(true);
+
+    try {
+      const jre = await findSellersideJre(operatorId);
+      if (!jre) {
+        alert(
+          `❌ No active sellerside JRE found for your operator (ID: ${operatorId}).`
+        );
+        return;
+      }
+
+      const batch = writeBatch(db);
+      selectedOrderObjects.forEach((order) => {
+        batch.update(doc(db, 'orderList', order.firestoreId), {
+          orderStatus: 'Assigned',
+          jreId: jre.id,
+          assignedAt: new Date(),
+          dispatchedAt: new Date(),
+          dispatchType,
+        });
+      });
+
+      await batch.commit();
+
+      // Update local state
+      const remainingOrders = orders.filter(
+        (order) => !selectedOrders.includes(order.firestoreId)
+      );
+      setOrders(remainingOrders);
+      setFilteredOrders(
+        remainingOrders.filter(
+          (o) => o.category === category && o.productSource === subCategory
+        )
+      );
+      setSelectedOrders([]);
+
+      alert(`✅ Orders assigned to JRE ${jre.id} via ${dispatchType}!`);
+
+    } catch (err) {
+      console.error('Dispatch error:', err);
+      alert(`❌ Failed to dispatch: ${err.message}`);
+    } finally {
+      setDispatching(false);
+    }
+  };
+
+  // --- 📥 Fetch RTD Orders ---
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!sellerId) return;
+    if (!sellerId) return;
 
+    const fetchOrders = async () => {
       try {
         setLoading(true);
         const q = query(
@@ -48,10 +184,9 @@ const ReadyToDispatch = () => {
 
         const fetchedOrders = [];
         snapshot.forEach((docSnap) => {
-          const orderData = docSnap.data();
           fetchedOrders.push({
             firestoreId: docSnap.id,
-            ...orderData,
+            ...docSnap.data(),
           });
         });
         console.log(fetchedOrders);
@@ -63,8 +198,8 @@ const ReadyToDispatch = () => {
           )
         );
       } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError('Failed to load ready to dispatch orders.');
+        console.error('Fetch orders error:', err);
+        setError('Failed to load ready-to-dispatch orders.');
       } finally {
         setLoading(false);
       }
@@ -82,128 +217,18 @@ const ReadyToDispatch = () => {
     );
   }, [category, subCategory, orders]);
 
-  // Toggle order selection
   const toggleOrderSelection = (orderId) => {
-    if (selectedOrders.includes(orderId)) {
-      setSelectedOrders(selectedOrders.filter(id => id !== orderId));
-    } else {
-      setSelectedOrders([...selectedOrders, orderId]);
-    }
-  };
-
-  // Calculate summary data
-  const calculateSummary = () => {
-    const selectedItems = orders.filter(order => selectedOrders.includes(order.firestoreId));
-
-    const totalSets = selectedItems.reduce((sum, order) => {
-      return sum + (parseInt(order.orderPiece) || 1);
-    }, 0);
-
-    const totalWeight = selectedItems.reduce((sum, order) => {
-      return sum + (parseFloat(order.orderWeight) || parseFloat(order.grossWt) || 0);
-    }, 0);
-
-    const fineWeight = totalWeight * 0.916;
-    const goldRate = 6345;
-    const amount = fineWeight * goldRate;
-    const gst = amount * 0.03;
-    const totalAmount = amount + gst;
-
-    return {
-      sets: totalSets,
-      weight: totalWeight.toFixed(3),
-      fineWeight: fineWeight.toFixed(2),
-      amount: amount.toFixed(2),
-      gst: gst.toFixed(2),
-      totalAmount: totalAmount.toFixed(2),
-      totalAmountRaw: totalAmount // raw number for comparison
-    };
-  };
-
-  // 🔑 NEW: Find available JRE and assign orders
-  const markAsDispatched = async () => {
-    if (selectedOrders.length === 0) return;
-
-    const summary = calculateSummary();
-    const requiredAmount = summary.totalAmountRaw;
-
-    setDispatching(true);
-
-    try {
-      // 1. Fetch all online JREs
-      const jreQuery = query(
-        collection(db, 'jreStatus'),
-        where('isOnline', '==', true)
-      );
-      const jreSnapshot = await getDocs(jreQuery);
-      const onlineJres = [];
-      jreSnapshot.forEach(doc => {
-        onlineJres.push({ id: doc.id, ...doc.data() });
-      });
-
-      let assignedJre = null;
-      for (const jre of onlineJres) {
-        const current = jre.currentValue || 0;
-        const max = jre.maxValue || 0;
-        if (max - current >= requiredAmount) {
-          assignedJre = jre;
-          break;
-        }
-      }
-
-      if (!assignedJre) {
-        alert('❌ No available JRE with sufficient capacity. Please try again later.');
-        return;
-      }
-
-      // 3. Use batch write for atomic updates
-      const batch = writeBatch(db);
-
-      // Update JRE's currentValue
-      const newCurrentValue = (assignedJre.currentValue || 0) + requiredAmount;
-      const jreRef = doc(db, 'jreStatus', assignedJre.id);
-      batch.update(jreRef, {
-        currentValue: newCurrentValue,
-        updatedAt: new Date()
-      });
-
-      // Update each order
-      const selectedOrderObjects = orders.filter(order => 
-        selectedOrders.includes(order.firestoreId)
-      );
-
-      selectedOrderObjects.forEach(order => {
-        const orderRef = doc(db, 'orderList', order.firestoreId);
-        batch.update(orderRef, {
-          orderStatus: 'Assigned',
-          jreId: assignedJre.id,
-          assignedAt: new Date(),
-          dispatchedAt: new Date()
-        });
-      });
-
-      // Commit all changes atomically
-      await batch.commit();
-
-      // 4. Update local state
-      setOrders(orders.filter(order => !selectedOrders.includes(order.firestoreId)));
-      setFilteredOrders(filteredOrders.filter(order => !selectedOrders.includes(order.firestoreId)));
-      setSelectedOrders([]);
-
-      alert(`✅ Orders assigned to JRE ${assignedJre.id} successfully!`);
-
-    } catch (err) {
-      console.error('Error assigning orders to JRE:', err);
-      alert(`❌ Failed to assign orders: ${err.message}`);
-    } finally {
-      setDispatching(false);
-    }
+    setSelectedOrders((prev) =>
+      prev.includes(orderId)
+        ? prev.filter((id) => id !== orderId)
+        : [...prev, orderId]
+    );
   };
 
   if (loading) {
     return (
       <>
-        <Header title="Ready to Dispatch" />
+        <PageHeader title="Ready to Dispatch" />
         <div className="dispatch-container">Loading...</div>
       </>
     );
@@ -212,7 +237,7 @@ const ReadyToDispatch = () => {
   if (error) {
     return (
       <>
-        <Header title="Ready to Dispatch" />
+        <PageHeader title="Ready to Dispatch" />
         <div className="dispatch-container">
           <p className="error">{error}</p>
         </div>
@@ -225,80 +250,91 @@ const ReadyToDispatch = () => {
   return (
     <>
       <PageHeader title="Ready to Dispatch" />
-      <div className="catlouge-container">
-      <div className="filters">
-        <div className="filter-group">
-          <h3>Category</h3>
-          <div className="horizontal-scroll-container">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                className={`category-button ${category === cat ? 'active' : ''}`}
-                onClick={() => setCategory(cat)}
-                type="button"
-              >
-                {cat}
-              </button>
-            ))}
+      <div className="dispatch-container">
+        <div className="filters">
+          <div className="filter-group">
+            <h3>Category</h3>
+            <div className="horizontal-scroll-container">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  className={`category-button ${category === cat ? 'active' : ''
+                    }`}
+                  onClick={() => setCategory(cat)}
+                  type="button"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <h3>Subcategory</h3>
+            <div className="horizontal-scroll-container">
+              {subCategories.map((sub) => (
+                <button
+                  key={sub}
+                  className={`category-button ${subCategory === sub ? 'active' : ''
+                    }`}
+                  onClick={() => setSubCategory(sub)}
+                  type="button"
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="filter-group">
-          <h3>Subcategory</h3>
-          <div className="horizontal-scroll-container">
-            {subCategories.map((sub) => (
-              <button
-                key={sub}
-                className={`category-button ${subCategory === sub ? 'active' : ''}`}
-                onClick={() => setSubCategory(sub)}
-                type="button"
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+        <p className="results-count">
+          {filteredOrders.length} request
+          {filteredOrders.length !== 1 ? 's' : ''} found
+        </p>
 
-      {/* Results count */}
-      <p className="results-count">
-        {filteredOrders.length} request{filteredOrders.length !== 1 ? 's' : ''} found
-      </p>
+        <div className="dispatch-grid">
+          {filteredOrders.length === 0 ? (
+            <p className="no-results">No orders ready to dispatch.</p>
+          ) : (
+            filteredOrders.map((order) => {
+              const { totalGross, totalSets, totalnetWt } = calculateOrderTotals(order);
+              const isSelected = selectedOrders.includes(order.firestoreId);
+              const imageUrl = order.images?.[0]?.url?.trim();
 
-      {/* Orders Grid */}
-      <div className="orders-grid">
-        {filteredOrders.length === 0 ? (
-          <p className="no-results">No orders ready to dispatch.</p>
-        ) : (
-          filteredOrders.map((order) => {
-            const isSelected = selectedOrders.includes(order.firestoreId);
-            const weight = order.orderWeight || order.grossWt || '0';
-            const setInfo = order.moqSet ? `Set ${order.moqSet}/${order.moqSet}` : 'Set 1/1';
-            const imageUrl = order.images?.[0]?.url?.trim();
-            return (
-              <div
-                key={order.firestoreId}
-                className={`order-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => toggleOrderSelection(order.firestoreId)}
-              >
-                <div className="order-image">
-                  {imageUrl ? (
-                    <img src={imageUrl} alt={order.productName} />
-                  ) : (
-                    <div className="image-placeholder">No Image</div>
-                  )}
+              return (
+                <div
+                  key={order.firestoreId}
+                  className={`order-card ${isSelected ? 'selected' : ''}`}
+
+                >
+                  {/* ✅ Tick Checkbox in Top-Right */}
+                  <div className="selection-checkbox" onClick={() => toggleOrderSelection(order.firestoreId)}>
+                    {isSelected ? (
+                      <span className="tick-icon">✔</span>
+                    ) : (
+                      <span className="empty-box">○</span>
+                    )}
+                  </div>
+
+                  <div className="order-image">
+                    {imageUrl ? (
+                      <img src={imageUrl.trim()} alt={order.productName} />
+                    ) : (
+                      <div className="image-placeholder">No Image</div>
+                    )}
+                  </div>
+                  <h3>{order.productName}</h3>
+                  <p>
+                    {order.category} •{totalGross.toFixed(3)}g {totalnetWt.toFixed(3)}g • Set {totalSets}
+                  </p>
                 </div>
-                <h3>{order.productName}</h3>
-                <p>
-                  {order.category} • {weight}g • {setInfo}
-                </p>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
       </div>
-      </div>
-      {/* Selection Summary */}
+
+      {/* Selection Summary & Actions */}
       <div className="selection-section">
         <div className="selection-header">
           <span>Selected: {selectedOrders.length}</span>
@@ -313,7 +349,6 @@ const ReadyToDispatch = () => {
         {showSelection && selectedOrders.length > 0 && (
           <div className="selection-summary">
             <h2>Selection Summary ({selectedOrders.length} items)</h2>
-
             <div className="summary-section">
               <h3>{category}</h3>
               <div className="summary-table">
@@ -324,6 +359,10 @@ const ReadyToDispatch = () => {
                 <div className="summary-row">
                   <span>GR. WEIGHT</span>
                   <span>{summary.weight}</span>
+                </div>
+                <div className="summary-row">
+                  <span>NET. WEIGHT</span>
+                  <span>{summary.totalnetWt}</span>
                 </div>
                 <div className="summary-row">
                   <span>FINE WEIGHT</span>
@@ -346,15 +385,23 @@ const ReadyToDispatch = () => {
           </div>
         )}
 
-        <button
-          className="dispatch-btn"
-          onClick={markAsDispatched}
-          disabled={selectedOrders.length === 0 || dispatching}
-        >
-          {dispatching ? 'Assigning...' : 'Request To Pickup'}
-        </button>
+        <div className="rtd-action-buttons">
+          <button
+            className="courier-btn"
+            onClick={() => dispatchOrders('courier')}
+            disabled={selectedOrders.length === 0 || dispatching}
+          >
+            {dispatching ? 'Processing...' : 'Send By Courier'}
+          </button>
+          <button
+            className="dispatch-btn"
+            onClick={() => dispatchOrders('pickup')}
+            disabled={selectedOrders.length === 0 || dispatching}
+          >
+            {dispatching ? 'Processing...' : 'Request To Pickup'}
+          </button>
+        </div>
       </div>
-
     </>
   );
 };

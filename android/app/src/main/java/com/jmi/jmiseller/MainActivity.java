@@ -23,8 +23,8 @@ public class MainActivity extends BridgeActivity {
             }
         }, 100);
         
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-                WindowManager.LayoutParams.FLAG_SECURE);
+        // getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+        //         WindowManager.LayoutParams.FLAG_SECURE);
 
     }
 

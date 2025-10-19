@@ -52,7 +52,8 @@ const PublicRoute = ({ children }) => {
   const { seller, loading } = useSeller();
 
   if (loading) return <div className="splash-screen">Loading...</div>;
-  if (seller?.sellerId) return <Navigate to="/dashboard" replace />;
+  if (seller?.registrationStatus === false && seller?.sellerId) return <Navigate to="/sellerregistration" replace />;
+  if (seller?.registrationStatus === true && seller?.sellerId) return <Navigate to="/dashboard" replace />;
 
   return children;
 };
@@ -80,8 +81,8 @@ const AppContent = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={seller?.sellerId ? "/dashboard" : "/login"} replace />} />
-
+      <Route path="/" element={<Navigate to="/login" replace />
+      } />
       {/* Public routes */}
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
@@ -107,8 +108,8 @@ const AppContent = () => {
       <Route path="/productregistration" element={<ProtectedRoute><ProductRegistration /></ProtectedRoute>} />
       <Route path="/QCApprovalPage" element={<ProtectedRoute><QCApprovalPage /></ProtectedRoute>} />
       <Route path="/liverates" element={<ProtectedRoute><LiveRatesPage /></ProtectedRoute>} />
- <Route path="/product/:productId" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
-     
+      <Route path="/product/:productId" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
+
       {/* Fallback */}
       <Route path="*" element={<Navigate to={seller?.sellerId ? "/dashboard" : "/login"} replace />} />
     </Routes>
@@ -121,7 +122,9 @@ function App() {
     <AuthProvider>
       <SellerProvider>
         <Router>
+          <AppLayout>
           <AppContent />
+          </AppLayout>
         </Router>
       </SellerProvider>
     </AuthProvider>

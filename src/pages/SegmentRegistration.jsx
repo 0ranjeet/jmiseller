@@ -66,6 +66,10 @@ const DigitInputs = React.memo(({ digits, setDigits, disabled = false, isPasskey
 });
 
 const SegmentRegistration = () => {
+  const navigate = useNavigate();
+  const handleGoBack = () => {
+        navigate(-1);
+    };
   const [operatorMobile, setOperatorMobile] = useState('');
   const [operatorDetails, setOperatorDetails] = useState(null);
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
@@ -581,6 +585,28 @@ const SegmentRegistration = () => {
 
   return (
     <div className="segment-registration-container">
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {existingRegistration ? <button
+          onClick={handleGoBack}
+          className="back-button"
+          aria-label="Go back"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15 19L9 13L15 7"
+              stroke="currentColor"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button> : ""}</div>
       <header className="sticky-header">
         <h1>Segment Registration</h1>
         {existingRegistration && (

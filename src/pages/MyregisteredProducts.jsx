@@ -24,7 +24,7 @@ const MyRegisteredProducts = () => {
 
     useEffect(() => {
         fetchRegisteredProducts();
-        }, []);
+    }, []);
 
     const fetchRegisteredProducts = async () => {
         if (!sellerId) return;
@@ -98,7 +98,7 @@ const MyRegisteredProducts = () => {
                 const productNames = Object.keys(reg.products || {}).join(' ').toLowerCase();
                 const searchLower = searchTerm.toLowerCase();
                 return productNames.includes(searchLower) ||
-                    Object.values(reg.products || {}).some(product => 
+                    Object.values(reg.products || {}).some(product =>
                         product.segment?.toLowerCase().includes(searchLower) ||
                         product.category?.toLowerCase().includes(searchLower) ||
                         product.subcategory?.toLowerCase().includes(searchLower)
@@ -241,80 +241,80 @@ const MyRegisteredProducts = () => {
                         </button>
                     ))}
                 </div>
-            </div>
 
-            <div className="controls-container">
-                <div className="search-container">
-                    <Search className="search-icon" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search products..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="registersearch-input"
-                    />
-                </div>
-                <div className="sort-container">
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="sort-select"
-                    >
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="name">Name A-Z</option>
-                    </select>
-                </div>
-            </div>
 
-            <div className="products-list">
-                {filteredRegistrations.length === 0 ? (
-                    <div className="empty-state">
-                        <p>No products found</p>
+                <div className="controls-container">
+                    <div className="search-container">
+                        <Search className="search-icon" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="registersearch-input"
+                        />
                     </div>
-                ) : (
-                    filteredRegistrations.map((registration) => {
-                        const mainProductName = getMainProductName(registration.products);
-                        const productData = registration.products[mainProductName];
-                        const categoryPath = getCategoryPath(productData); // Fixed: pass productData instead of registration.products
-                        const statusLabel = getStatusLabel(registration.status);
-                        const statusClass = getStatusClass(registration.status);
-                        const imageUrl = getFirstProductImage(registration.products);
-                        const specificationDetails = getSpecificationDetails(productData);
+                    <div className="sort-container">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="sort-select"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="name">Name A-Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="products-list">
+                    {filteredRegistrations.length === 0 ? (
+                        <div className="empty-state">
+                            <p>No products found</p>
+                        </div>
+                    ) : (
+                        filteredRegistrations.map((registration) => {
+                            const mainProductName = getMainProductName(registration.products);
+                            const productData = registration.products[mainProductName];
+                            const categoryPath = getCategoryPath(productData); // Fixed: pass productData instead of registration.products
+                            const statusLabel = getStatusLabel(registration.status);
+                            const statusClass = getStatusClass(registration.status);
+                            const imageUrl = getFirstProductImage(registration.products);
+                            const specificationDetails = getSpecificationDetails(productData);
 
-                        return (
-                            <div
-                                key={registration.registrationId}
-                                className="product-card"
-                                onClick={() => registration.status === 'rejected' && handleEditClick(registration)}
-                                style={{ cursor: registration.status === 'rejected' ? 'pointer' : 'default' }}
-                            >
-                                <div className="product-image" onClick={()=>console.log(registration.registrationId)}>
-                                    {imageUrl ?
-                                        <img src={imageUrl} alt={mainProductName} className="product-image-placeholder" /> :
-                                        <div className="product-image-placeholder"></div>
-                                    }
+                            return (
+                                <div
+                                    key={registration.registrationId}
+                                    className="product-card"
+                                    onClick={() => registration.status === 'rejected' && handleEditClick(registration)}
+                                    style={{ cursor: registration.status === 'rejected' ? 'pointer' : 'default' }}
+                                >
+                                    <div className="product-image" onClick={() => console.log(registration.registrationId)}>
+                                        {imageUrl ?
+                                            <img src={imageUrl} alt={mainProductName} className="product-image-placeholder" /> :
+                                            <div className="product-image-placeholder"></div>
+                                        }
+                                    </div>
+                                    <div className="product-info">
+                                        <h3 className="product-title">{mainProductName}</h3>
+                                        <p className="product-category">{categoryPath} / {productData?.selectedStyleType || 'N/A'} / {productData?.specification || 'N/A'}</p>
+                                        <p className="registered-product-specs">{specificationDetails}</p>
+                                        <span className={`status-badge ${statusClass}`}>
+                                            {statusLabel}
+                                            {registration.status === 'rejected' && (
+                                                <span style={{ marginLeft: '8px', textDecoration: 'underline' }}>
+                                                    (Click to Edit)
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <ChevronRight className="chevron-icon" size={20} />
                                 </div>
-                                <div className="product-info">
-                                    <h3 className="product-title">{mainProductName}</h3>
-                                    <p className="product-category">{categoryPath} / {productData?.selectedStyleType || 'N/A'} / {productData?.specification || 'N/A'}</p>
-                                    <p className="registered-product-specs">{specificationDetails}</p>
-                                    <span className={`status-badge ${statusClass}`}>
-                                        {statusLabel}
-                                        {registration.status === 'rejected' && (
-                                            <span style={{ marginLeft: '8px', textDecoration: 'underline' }}>
-                                                (Click to Edit)
-                                            </span>
-                                        )}
-                                    </span>
-                                </div>
-                                <ChevronRight className="chevron-icon" size={20} />
-                            </div>
-                        );
-                    })
-                )}
+                            );
+                        })
+                    )}
+                </div>
+
             </div>
-
             <div className="bottom-bar">
                 <button
                     onClick={() => navigate("/productregistration")}
@@ -372,7 +372,7 @@ const MyRegisteredProducts = () => {
                                     className="form-input"
                                 />
                             </div>
-                            
+
                             {editFormData.category !== 'PLANE' && (
                                 <>
                                     <div className="form-group">
