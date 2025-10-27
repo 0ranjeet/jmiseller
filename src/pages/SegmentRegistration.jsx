@@ -357,7 +357,8 @@ const SegmentRegistration = () => {
           if (!operatorSegmentSnapshot.empty) {
             const operatorSegmentData = operatorSegmentSnapshot.docs[0].data();
             const operatorId = operatorSegmentData.operatorId;
-
+            
+            console.log(operatorSegmentData)
             const zoneData = Object.values(operatorSegmentData.zone).flat();
             setZone(zoneData);
 

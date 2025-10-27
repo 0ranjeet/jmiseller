@@ -46,26 +46,26 @@ const Login = () => {
         ? sellerRegistrationSnap.data()
         : {};
   
-      // ✅ Prepare seller data
-      const sellerData = {
-        sellerId,
-        mobile,
-        organizationName: sellerRegistrationData.organizationName || '',
-        lastUpdated: Date.now(),
-      };
-  
-      // ✅ Persist to storage (for auto-login after app kill)
-      await saveData("sellerData", sellerData);
-  
-      // ✅ Update context
-      updateSeller(sellerData);
+     
   
       // Fetch profile for redirect logic
       const sellerProfileRef = doc(db, "profile", sellerId);
       const profileSnap = await getDoc(sellerProfileRef);
       const profileData = profileSnap.exists() ? profileSnap.data() : {};
+      console.log()
+       // ✅ Prepare seller data
+      const sellerData = {
+        sellerId,
+        mobile,
+        organizationName: sellerRegistrationData.organizationName || '',
+        segment:profileData.segment,
+        lastUpdated: Date.now(),
+      };
   
-      alert("Login successful");
+      // ✅ Persist to storage (for auto-login after app kill)
+      await saveData("sellerData", sellerData);
+      // ✅ Update context
+      updateSeller(sellerData);
   
       // Redirect based on registration progress
       if (!profileData.SellerRegistration) {

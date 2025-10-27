@@ -28,10 +28,10 @@ const ReadyToDispatch = () => {
   const [error, setError] = useState(null);
   const [dispatching, setDispatching] = useState(false);
 
-  const categories = productData?.categoriesBySegment?.["GOLD"] || [];
+  const categories = productData?.categoriesBySegment?.['GOLD'] || [];
   const subCategories = productData?.productSources || [];
 
-  // --- 🔁 Helper: Calculate totals from orderDetail ---
+  // --- 🔁 Helper: Calculate physical totals from orderDetail ---
   const calculateOrderTotals = (order) => {
     let totalGross = 0;
     let totalSets = 0;
@@ -48,44 +48,61 @@ const ReadyToDispatch = () => {
     return { totalGross, totalSets, totalnetWt };
   };
 
-  // --- 📊 Helper: Calculate financial summary ---
+  // --- 💰 Helper: Calculate financial total for a SINGLE order ---
+  const getOrderTotalAmount = (order) => {
+    const num = (v) => parseFloat(v) || 0;
+
+    const westage =
+      num(order.purity) +
+      num(order.wastage) +
+      num(order.specificationMC);
+
+    let totalnetWt = 0;
+    if (order.orderDetail && typeof order.orderDetail === 'object') {
+      Object.values(order.orderDetail).forEach((variant) => {
+        totalnetWt += parseFloat(variant.netWt) || 0;
+      });
+    }
+
+    const fineWeight = totalnetWt * (westage / 100);
+    const goldRate = 6345; // Consider making dynamic later
+    const amount = fineWeight * goldRate;
+    const gst = amount * 0.03;
+    const totalAmount = amount + gst;
+
+    return totalAmount; // raw number
+  };
+
+  // --- 📊 Helper: Calculate financial summary for selected orders ---
   const calculateSummary = () => {
     const selectedItems = orders.filter((order) =>
       selectedOrders.includes(order.firestoreId)
     );
-    const num = (v) => parseFloat(v) || 0;
+
     let totalSets = 0;
     let totalWeight = 0;
     let totalnetWt = 0;
-    let totalWestage = 0;
+
     selectedItems.forEach((order) => {
-      totalWestage += num(order.purity) +
-      num(order.wastage) +
-      num(order.specificationMC) +
-      (order.specification && order.specification !== "Plane"
-        ? 0
-        : 0);
       const { totalGross, totalSets: sets, totalnetWt: netWt } = calculateOrderTotals(order);
       totalWeight += totalGross;
       totalSets += sets;
       totalnetWt += netWt;
     });
 
-    const fineWeight = totalnetWt * totalWestage / 100;
-    const goldRate = 6345;
-    const amount = fineWeight * goldRate;
-    const gst = amount * 0.03;
-    const totalAmount = amount + gst;
+    const totalAmountRaw = selectedItems.reduce(
+      (sum, order) => sum + getOrderTotalAmount(order),
+      0
+    );
 
     return {
       sets: totalSets,
       weight: totalWeight.toFixed(3),
-      fineWeight: fineWeight.toFixed(2),
       totalnetWt: totalnetWt.toFixed(3),
-      amount: amount.toFixed(2),
-      gst: gst.toFixed(2),
-      totalAmount: totalAmount.toFixed(2),
-      totalAmountRaw: totalAmount,
+      amount: (totalAmountRaw / 1.03).toFixed(2),
+      gst: (totalAmountRaw * 0.03 / 1.03).toFixed(2),
+      totalAmount: totalAmountRaw.toFixed(2),
+      totalAmountRaw,
     };
   };
 
@@ -108,7 +125,7 @@ const ReadyToDispatch = () => {
     }
   };
 
-  // --- 🚚 Dispatch Logic (shared for both actions) ---
+  // --- 🚚 Main dispatch function ---
   const dispatchOrders = async (dispatchType) => {
     if (selectedOrders.length === 0) return;
 
@@ -126,14 +143,44 @@ const ReadyToDispatch = () => {
 
     try {
       const jre = await findSellersideJre(operatorId);
-      if (!jre) {
-        alert(
-          `❌ No active sellerside JRE found for your operator (ID: ${operatorId}).`
-        );
+      if (!jre || !jre.id) {
+        alert(`❌ No active JRE found for operator: ${operatorId}`);
         return;
       }
 
+      // --- Courier: must have courior === true ---
+      if (dispatchType === 'courier') {
+        if (jre.courior !== true) {
+          alert('❌ Courier dispatch blocked: JRE has courier disabled.');
+          return;
+        }
+      }
+
+      let totalOrderValue = 0;
+      // --- Pickup: validate against maxValue/currentValue ---
+      if (dispatchType === 'pickup') {
+        totalOrderValue = selectedOrderObjects.reduce(
+          (sum, order) => sum + getOrderTotalAmount(order),
+          0
+        );
+
+        const currentValue = jre.currentValue ?? 0;
+        const maxValue = jre.maxValue ?? 0;
+
+        if (currentValue + totalOrderValue > maxValue) {
+          alert(
+            `❌ Pickup limit exceeded!\n` +
+            `Assigned: ₹${currentValue.toFixed(2)}, Max: ₹${maxValue}\n` +
+            `Your selection: ₹${totalOrderValue.toFixed(2)}`
+          );
+          return;
+        }
+      }
+
+      // --- Batch update ---
       const batch = writeBatch(db);
+
+      // Update orders
       selectedOrderObjects.forEach((order) => {
         batch.update(doc(db, 'orderList', order.firestoreId), {
           orderStatus: 'Assigned',
@@ -144,9 +191,16 @@ const ReadyToDispatch = () => {
         });
       });
 
+      // Update JRE currentValue for pickup
+      if (dispatchType === 'pickup') {
+        const jreRef = doc(db, 'jreStatus', jre.id);
+        const newCurrentValue = (jre.currentValue ?? 0) + totalOrderValue;
+        batch.update(jreRef, { currentValue: newCurrentValue });
+      }
+
       await batch.commit();
 
-      // Update local state
+      // Update UI
       const remainingOrders = orders.filter(
         (order) => !selectedOrders.includes(order.firestoreId)
       );
@@ -158,17 +212,17 @@ const ReadyToDispatch = () => {
       );
       setSelectedOrders([]);
 
-      alert(`✅ Orders assigned to JRE ${jre.id} via ${dispatchType}!`);
+      alert(`✅ Successfully dispatched via ${dispatchType} to JRE ${jre.id}!`);
 
     } catch (err) {
       console.error('Dispatch error:', err);
-      alert(`❌ Failed to dispatch: ${err.message}`);
+      alert(`❌ Dispatch failed: ${err.message}`);
     } finally {
       setDispatching(false);
     }
   };
 
-  // --- 📥 Fetch RTD Orders ---
+  // --- 📥 Fetch orders ---
   useEffect(() => {
     if (!sellerId) return;
 
@@ -189,7 +243,7 @@ const ReadyToDispatch = () => {
             ...docSnap.data(),
           });
         });
-        console.log(fetchedOrders);
+
         setOrders(fetchedOrders);
         setFilteredOrders(
           fetchedOrders.filter(
@@ -250,46 +304,42 @@ const ReadyToDispatch = () => {
   return (
     <>
       <PageHeader title="Ready to Dispatch" />
-      <div className="dispatch-container">
-        <div className="filters">
-          <div className="filter-group">
-            <h3>Category</h3>
-            <div className="horizontal-scroll-container">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  className={`category-button ${category === cat ? 'active' : ''
-                    }`}
-                  onClick={() => setCategory(cat)}
-                  type="button"
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <h3>Subcategory</h3>
-            <div className="horizontal-scroll-container">
-              {subCategories.map((sub) => (
-                <button
-                  key={sub}
-                  className={`category-button ${subCategory === sub ? 'active' : ''
-                    }`}
-                  onClick={() => setSubCategory(sub)}
-                  type="button"
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
+      <div className="filters">
+        <div className="filter-group">
+          <h3>Category</h3>
+          <div className="horizontal-scroll-container">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                className={`category-button ${category === cat ? 'active' : ''}`}
+                onClick={() => setCategory(cat)}
+                type="button"
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
 
+        <div className="filter-group">
+          <h3>Subcategory</h3>
+          <div className="horizontal-scroll-container">
+            {subCategories.map((sub) => (
+              <button
+                key={sub}
+                className={`category-button ${subCategory === sub ? 'active' : ''}`}
+                onClick={() => setSubCategory(sub)}
+                type="button"
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="dispatch-container">
         <p className="results-count">
-          {filteredOrders.length} request
-          {filteredOrders.length !== 1 ? 's' : ''} found
+          {filteredOrders.length} request{filteredOrders.length !== 1 ? 's' : ''} found
         </p>
 
         <div className="dispatch-grid">
@@ -305,16 +355,17 @@ const ReadyToDispatch = () => {
                 <div
                   key={order.firestoreId}
                   className={`order-card ${isSelected ? 'selected' : ''}`}
-
                 >
-                  {/* ✅ Tick Checkbox in Top-Right */}
-                  <div className="selection-checkbox" onClick={() => toggleOrderSelection(order.firestoreId)}>
+                  {order.buyerConfirmation ? <div
+                    className="selection-checkbox"
+                    onClick={() => toggleOrderSelection(order.firestoreId)}
+                  >
                     {isSelected ? (
                       <span className="tick-icon">✔</span>
                     ) : (
                       <span className="empty-box">○</span>
                     )}
-                  </div>
+                  </div> : ""}
 
                   <div className="order-image">
                     {imageUrl ? (
@@ -325,81 +376,76 @@ const ReadyToDispatch = () => {
                   </div>
                   <h3>{order.productName}</h3>
                   <p>
-                    {order.category} •{totalGross.toFixed(3)}g {totalnetWt.toFixed(3)}g • Set {totalSets}
+                    {order.category} • {totalGross.toFixed(3)}g • Net {totalnetWt.toFixed(3)}g • Set {totalSets}
                   </p>
                 </div>
               );
             })
           )}
         </div>
-      </div>
 
-      {/* Selection Summary & Actions */}
-      <div className="selection-section">
-        <div className="selection-header">
-          <span>Selected: {selectedOrders.length}</span>
-          <button
-            className="toggle-selection"
-            onClick={() => setShowSelection(!showSelection)}
-          >
-            {showSelection ? 'Hide Selection' : 'Show Selection'} ✔
-          </button>
-        </div>
+        <div className="selection-section">
+          <div className="selection-header">
+            <span>Selected: {selectedOrders.length}</span>
+            <button
+              className="toggle-selection"
+              onClick={() => setShowSelection(!showSelection)}
+            >
+              {showSelection ? 'Hide Selection' : 'Show Selection'} ✔
+            </button>
+          </div>
 
-        {showSelection && selectedOrders.length > 0 && (
-          <div className="selection-summary">
-            <h2>Selection Summary ({selectedOrders.length} items)</h2>
-            <div className="summary-section">
-              <h3>{category}</h3>
-              <div className="summary-table">
-                <div className="summary-row">
-                  <span>SETS</span>
-                  <span>{summary.sets}</span>
-                </div>
-                <div className="summary-row">
-                  <span>GR. WEIGHT</span>
-                  <span>{summary.weight}</span>
-                </div>
-                <div className="summary-row">
-                  <span>NET. WEIGHT</span>
-                  <span>{summary.totalnetWt}</span>
-                </div>
-                <div className="summary-row">
-                  <span>FINE WEIGHT</span>
-                  <span>{summary.fineWeight}</span>
-                </div>
-                <div className="summary-row">
-                  <span>AMOUNT</span>
-                  <span>₹{summary.amount}</span>
-                </div>
-                <div className="summary-row">
-                  <span>GST</span>
-                  <span>₹{summary.gst}</span>
-                </div>
-                <div className="summary-row total">
-                  <span>TOTAL AMOUNT</span>
-                  <span>₹{summary.totalAmount}</span>
+          {showSelection && selectedOrders.length > 0 && (
+            <div className="selection-summary">
+              <h2>Selection Summary ({selectedOrders.length} items)</h2>
+              <div className="summary-section">
+                <h3>{category}</h3>
+                <div className="summary-table">
+                  <div className="summary-row">
+                    <span>SETS</span>
+                    <span>{summary.sets}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>GR. WEIGHT</span>
+                    <span>{summary.weight}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>NET. WEIGHT</span>
+                    <span>{summary.totalnetWt}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>AMOUNT</span>
+                    <span>₹{summary.amount}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>GST</span>
+                    <span>₹{summary.gst}</span>
+                  </div>
+                  <div className="summary-row total">
+                    <span>TOTAL AMOUNT</span>
+                    <span>₹{summary.totalAmount}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="rtd-action-buttons">
-          <button
-            className="courier-btn"
-            onClick={() => dispatchOrders('courier')}
-            disabled={selectedOrders.length === 0 || dispatching}
-          >
-            {dispatching ? 'Processing...' : 'Send By Courier'}
-          </button>
-          <button
-            className="dispatch-btn"
-            onClick={() => dispatchOrders('pickup')}
-            disabled={selectedOrders.length === 0 || dispatching}
-          >
-            {dispatching ? 'Processing...' : 'Request To Pickup'}
-          </button>
+          <div className="rtd-action-buttons">
+            <button
+              className="courier-btn"
+              onClick={() => dispatchOrders('courier')}
+              disabled={selectedOrders.length === 0 || dispatching}
+            >
+              {dispatching ? 'Processing...' : 'Send By Courier'}
+            </button>
+            <button
+              className="dispatch-btn"
+              onClick={() => dispatchOrders('pickup')}
+              disabled={selectedOrders.length === 0 || dispatching}
+            >
+              {dispatching ? 'Processing...' : 'Request To Pickup'}
+            </button>
+          </div>
         </div>
       </div>
     </>

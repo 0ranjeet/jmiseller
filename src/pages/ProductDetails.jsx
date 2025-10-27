@@ -95,8 +95,8 @@ const ProductDetails = () => {
   // 🖱️ Event Handlers
   // ==========================
 
- 
-console.log(product);
+
+  console.log(product);
 
 
   const renderImageGallery = () => (
@@ -178,46 +178,48 @@ console.log(product);
   };
 
   const renderSpecifications = () => {
-  // Add safety check for selectedLot
-  if (isLotBased && !selectedLot) {
-    return <div className="error">Lot details not available</div>;
-  }
+    // Add safety check for selectedLot
+    if (isLotBased && !selectedLot) {
+      return <div className="error">Lot details not available</div>;
+    }
 
-  return (
-    <div className="specifications-card">
-      <h2>Specifications</h2>
-      <div className="spec-grid">
-        <div>
-          <SpecRow label="Status" value={product.serviceType === "ready" ? "Ready Serve" : "Order Serve"} />
-          <SpecRow label="Segment" value={product.segment} />
-          <SpecRow label="Category" value={product.category} />
-          <SpecRow label="Purity" value={`${parseFloat(product.purity || 0).toFixed(2)}%`} />
-          <SpecRow label="Product" value={`${product.productSource} ${product.productName}`} />
-          <SpecRow label="Specification" value={product.specification} />
-          <SpecRow label="Finish Type" value={product.finishType || product.styleType || "Regular"} />
-          <SpecRow label="Settlement" value={product.paymentMethod} />
+    return (
+      <div className="specifications-card">
+        <h2>Specifications</h2>
+        <div className="spec-grid">
+          <div>
+            <SpecRow label="Status" value={product.serviceType === "ready" ? "Ready Serve" : "Order Serve"} />
+            <SpecRow label="Segment" value={product.segment} />
+            <SpecRow label="Category" value={product.category} />
+            <SpecRow label="Purity" value={`${parseFloat(product.purity || 0).toFixed(2)}%`} />
+            <SpecRow label="Product" value={`${product.productSource} ${product.productName}`} />
+            <SpecRow label="Specification" value={product.specification} />
+            <SpecRow label="Finish Type" value={product.finishType || product.styleType || "Regular"} />
+            <SpecRow label="Settlement" value={product.paymentMethod} />
+          </div>
+          <div>
+            <SpecRow label="Set" value={isLotBased ? (selectedLot?.set || "N/A") : (product.instockSet || "N/A")} />
+            <SpecRow label="Gross Wt." value={isLotBased ? `~${parseFloat(selectedLot?.avgGrossWt || 0).toFixed(3)} g` : `~${parseFloat(product.grossWt || 0).toFixed(3)} g`} />
+            {product.specification !== "PLANE" ? 
+            <SpecRow label={`${product.specification || 'Spec'} Wt.`} value={isLotBased ? `~${parseFloat(selectedLot?.avgSpecWt || 0).toFixed(3)} g` : `~${parseFloat(product.specificationWt || 0).toFixed(3)} g`} /> : ""}
+            <SpecRow label="Net Wt." value={isLotBased ? `~${parseFloat(selectedLot?.avgNetWt || 0).toFixed(3)} g` : `~${parseFloat(product.netWt || 0).toFixed(3)} g`} />
+            <SpecRow label="Wastage" value={`${parseFloat(wastage || 0).toFixed(2)}%`} />
+            <SpecRow label="Set Mc." value={`~₹${setMc.toFixed(2)}`} />
+            <SpecRow label="Net Gram Mc." value={`~₹${gramMcPerGram.toFixed(2)}/g`} />
+            {product.specification !== "PLANE" ? 
+            <SpecRow label={`${product.specification || 'Spec'} Wt. Per gm`} value={`~₹${specMcPerGram.toFixed(2)}/g`} /> :"" }
+          </div>
         </div>
-        <div>
-          <SpecRow label="Set" value={isLotBased ? (selectedLot?.set || "N/A") : (product.instockSet || "N/A")} />
-          <SpecRow label="Gross Wt." value={isLotBased ? `~${parseFloat(selectedLot?.avgGrossWt || 0).toFixed(3)} g` : `~${parseFloat(product.grossWt || 0).toFixed(3)} g`} />
-          <SpecRow label={`${product.specification || 'Spec'} Wt.`} value={isLotBased ? `~${parseFloat(selectedLot?.avgSpecWt || 0).toFixed(3)} g` : `~${parseFloat(product.specificationWt || 0).toFixed(3)} g`} />
-          <SpecRow label="Net Wt." value={isLotBased ? `~${parseFloat(selectedLot?.avgNetWt || 0).toFixed(3)} g` : `~${parseFloat(product.netWt || 0).toFixed(3)} g`} />
-          <SpecRow label="Wastage" value={`${parseFloat(wastage || 0).toFixed(2)}%`} />
-          <SpecRow label="Set Mc." value={`~₹${setMc.toFixed(2)}`} />
-          <SpecRow label="Net Gram Mc." value={`~₹${gramMcPerGram.toFixed(2)}/g`} />
-          <SpecRow label={`${product.specification || 'Spec'} Wt. Per gm`} value={`~₹${specMcPerGram.toFixed(2)}/g`} />
+
+        <div className="rtgs-section">
+          <div><strong>Total Fine</strong><div className="price">~ {calculateFineWeight()} g</div></div>
+          <div><strong>Total Amount</strong><div className="price">~₹{TotalAmount.toFixed(2)}</div></div>
         </div>
-      </div>
 
-      <div className="rtgs-section">
-        <div><strong>Total Fine</strong><div className="price">~ {calculateFineWeight()} g</div></div>
-        <div><strong>Total Amount</strong><div className="price">~₹{TotalAmount.toFixed(2)}</div></div>
-      </div>
 
-      
-    </div>
-  );
-};
+      </div>
+    );
+  };
 
   // ==========================
   // 🧩 JSX
@@ -244,7 +246,7 @@ console.log(product);
         </div>
       </div>
 
-      
+
 
       <Footer />
     </>

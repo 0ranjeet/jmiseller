@@ -34,6 +34,7 @@ import Pickup from "./pages/Pickup";
 import LiveRatesPage from "./pages/LiveRatesPage";
 import ForgotPassword from "./pages/ForgetPassword";
 import ProductDetails from "./pages/ProductDetails";
+import Payment from "./pages/Payment";
 
 // 🔒 Protected Route (must be inside Router & SellerProvider)
 const ProtectedRoute = ({ children }) => {
@@ -97,6 +98,7 @@ const AppContent = () => {
       <Route path="/finalcorrection" element={<FinalCorrection />} />
       <Route path="/rtd" element={<ReadyToDispatch />} />
       <Route path="/Assigned" element={<Pickup />} />
+      <Route path="/payment" element={<Payment/>}/>
 
       {/* Protected routes */}
       <Route path="/segmentregistration" element={<ProtectedRoute><SegmentRegistration /></ProtectedRoute>} />

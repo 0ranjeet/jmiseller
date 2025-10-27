@@ -191,6 +191,7 @@
   display: flex;
   gap: 8px;
 }
+
 .action-btn {
   border-radius: 8px;
   border: none;
@@ -425,6 +426,7 @@
 
   .action-btn {
     width: 100%;
+    padding: 10px !important;
     justify-content: center;
   }
 

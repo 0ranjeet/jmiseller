@@ -14,6 +14,7 @@ export const SellerProvider = ({ children }) => {
   const [seller, setSeller] = useState({
     sellerId: null,
     mobile: null,
+    segment:null,
     registrationStatus: null,
   });
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,7 @@ export const SellerProvider = ({ children }) => {
     setSeller({
       sellerId: null,
       mobile: null,
+      segment:null,
       registrationStatus: null,
     });
     await removeData(SELLER_STORAGE_KEY);

@@ -40,7 +40,7 @@ const parseNumber = (value) => {
   return isNaN(parsed) ? 0 : parsed;
 };
 
-const Pickup = () => {
+const Payment = () => {
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
 
@@ -81,47 +81,10 @@ const Pickup = () => {
     totalPackets: group.orders.length,
   }), []);
 
-  // Fetch JRE data
-  const fetchJREData = useCallback(async (jreId) => {
-    if (!jreId || jreId === 'No JRE' || jreMap[jreId]) return;
-
-    try {
-      const jreDoc = await getDoc(doc(db, 'jreregistrations', jreId));
-      if (jreDoc.exists()) {
-        const data = jreDoc.data();
-        setJreMap(prev => ({
-          ...prev,
-          [jreId]: {
-            primaryMobile: data.primaryMobile?.toString().trim() || null,
-            operatorNumber: data.OpertorNumber?.toString().trim() || null,
-          }
-        }));
-      } else {
-        setJreMap(prev => ({
-          ...prev,
-          [jreId]: { primaryMobile: null, operatorNumber: null }
-        }));
-      }
-    } catch (err) {
-      console.error('Error fetching JRE:', jreId, err);
-      setJreMap(prev => ({
-        ...prev,
-        [jreId]: { primaryMobile: null, operatorNumber: null }
-      }));
-    }
-  }, [jreMap]);
+ 
 
   // Preload JREs when orders load
-  useEffect(() => {
-    if (orders.length > 0) {
-      const jreIds = [...new Set(
-        orders
-          .map(o => o.jreId)
-          .filter(id => id && id !== 'No JRE')
-      )];
-      jreIds.forEach(fetchJREData);
-    }
-  }, [orders, fetchJREData]);
+  
 
   // Group orders with JRE numbers
   const ordersByOperatorAndJRE = useMemo(() => {
@@ -158,7 +121,7 @@ const Pickup = () => {
     return Object.values(grouped);
   }, [orders, calculateOrderMetrics, jreMap]);
 
-  // Fetch assigned orders
+  // Fetch Paymnet
   useEffect(() => {
     const fetchAssignedOrders = async () => {
       if (!sellerId) {
@@ -171,7 +134,7 @@ const Pickup = () => {
         const q = query(
           collection(db, 'orderList'),
           where('sellerId', '==', sellerId),
-          where('orderStatus', '==', 'Assigned')
+          where('orderStatus', '==', 'Delivered')
         );
         
         const snapshot = await getDocs(q);
@@ -357,7 +320,7 @@ Valid for ${OTP_EXPIRY_MINUTES} minutes.
     const ordersSnapshot = await getDocs(ordersQuery);
     
     if (ordersSnapshot.empty) {
-      setOtpError('No assigned orders found for this group.');
+      setOtpError('No Paymnet found for this group.');
       return;
     }
 
@@ -507,76 +470,11 @@ Valid for ${OTP_EXPIRY_MINUTES} minutes.
     );
   };
 
-  // Secure Dispatch OTP Modal
-  const SecureDispatchModal = () => {
-    if (!secureDispatchModal) return null;
-
-    return (
-      <div className="modal-overlay active">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h3>Verify Dispatch OTP</h3>
-          </div>
-          
-          <div className="modal-body">
-            <p className="otp-instruction">
-              Enter the 6-digit OTP sent to JRE: <strong>+91 {secureDispatchModal.jreMobile}</strong>
-            </p>
-            
-            <div className="otp-input-section">
-              <input
-                type="text"
-                value={dispatchOtp}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setDispatchOtp(val);
-                  setOtpError('');
-                }}
-                placeholder="000000"
-                maxLength={6}
-                className={`otp-input ${otpError ? 'error' : ''}`}
-                disabled={dispatchLoading}
-              />
-              {otpError && <div className="error-message">{otpError}</div>}
-            </div>
-
-            <div className="dispatch-info">
-              <p><strong>Dispatch Summary:</strong></p>
-              <p>Operator: {secureDispatchModal.groupData.operatorId}</p>
-              <p>Packets: {secureDispatchModal.groupData.orders.length}</p>
-              <p>Items: {secureDispatchModal.groupData.totalItems}</p>
-            </div>
-          </div>
-
-          <div className="modal-actions">
-            <button 
-              onClick={() => {
-                setSecureDispatchModal(null);
-                setDispatchOtp('');
-                setOtpError('');
-              }}
-              disabled={dispatchLoading}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={verifyDispatchOtp}
-              disabled={dispatchLoading || dispatchOtp.length !== 6}
-              className="btn btn-primary"
-            >
-              {dispatchLoading ? 'Verifying...' : 'Confirm Pickup'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
       <div className="orders-container">
-        <Header title="Assigned Orders" />
+        <Header title="Paymnet" />
         <div className="loading-state">Loading...</div>
       </div>
     );
@@ -585,7 +483,7 @@ Valid for ${OTP_EXPIRY_MINUTES} minutes.
   if (error) {
     return (
       <div className="orders-container">
-        <Header title="Assigned Orders" />
+        <Header title="Paymnet" />
         <div className="error-state">
           <p className="error">{error}</p>
           <button onClick={() => window.location.reload()} className="retry-btn">
@@ -598,7 +496,7 @@ Valid for ${OTP_EXPIRY_MINUTES} minutes.
 
   return (
     <>
-      <Header title="Assigned Orders" />
+      <Header title="Paymnet" />
       <div className="orders-container">
         <div className="orders-header">
           <p>{orders.length} assigned order{orders.length !== 1 ? 's' : ''} found</p>
@@ -606,7 +504,7 @@ Valid for ${OTP_EXPIRY_MINUTES} minutes.
 
         {orders.length === 0 ? (
           <div className="empty-state">
-            <p>No assigned orders found</p>
+            <p>No Paymnet found</p>
           </div>
         ) : (
           <div className="seller-orders-container">
@@ -617,9 +515,9 @@ Valid for ${OTP_EXPIRY_MINUTES} minutes.
         )}
       </div>
 
-      <SecureDispatchModal />
+     
     </>
   );
 };
 
-export default React.memo(Pickup);
+export default React.memo(Payment);

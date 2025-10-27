@@ -61,9 +61,11 @@ const ReadyStockServices = () => {
               counts.readyToDispatch += 1;
               break;
             case 'Assigned':
+              case 'PickedUp':
+            case 'InWarehouse':
               counts.Assigned += 1;
               break;
-            case 'Payment':
+            case 'Delivered':
               counts.payment += 1;
               break;
             default:

@@ -13,6 +13,7 @@ const Catalogue = () => {
   const { type } = useParams();
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
+  const Segment= (seller?.segment).toUpperCase();
   const navigate = useNavigate();
   
   // State Management
@@ -30,7 +31,7 @@ const Catalogue = () => {
   const sizeRowRefs = useRef({});
 
   // Constants
-  const categories = productData.categoriesBySegment["GOLD"];
+  const categories = productData.categoriesBySegment[Segment];
   const subcategories = productData.productSources;
   const productSizes = productData.productSizes;
 
@@ -325,8 +326,8 @@ const Catalogue = () => {
   const saveSimpleStockData = async () => {
     try {
       // Calculate specification weight for non-lot products
-      const grossWtValue = parseFloat(simpleStock.grossWt) || 0;
-      const netWtValue = parseFloat(simpleStock.netWt) || 0;
+      const grossWtValue = parseFloat(simpleStock.grossWt)/simpleStock.instockSet || 0;
+      const netWtValue = parseFloat(simpleStock.netWt) /simpleStock.instockSet || 0;
       const specificationWt = (grossWtValue - netWtValue).toFixed(3);
 
       console.log('Updating simple product with data:', {
@@ -340,8 +341,8 @@ const Catalogue = () => {
 
       const productRef = doc(db, 'products', editingProduct.id);
       await updateDoc(productRef, {
-        grossWt: simpleStock.grossWt,
-        netWt: simpleStock.netWt,
+        grossWt: simpleStock.grossWt /simpleStock.instockSet,
+        netWt: simpleStock.netWt/simpleStock.instockSet,
         instockSet: simpleStock.instockSet,
         instockGram: simpleStock.grossWt,
         specificationWt: specificationWt,
@@ -402,7 +403,7 @@ const Catalogue = () => {
   const handleMarkOutOfStock = async (productId) => {
     try {
       const productRef = doc(db, 'products', productId);
-      await updateDoc(productRef, { serviceType: 'out' });
+      await updateDoc(productRef, {instockGram:0,instockSet:0,lotDetails:[], serviceType: 'out' });
 
       setAllProducts(prev => prev.map(product =>
         product.id === productId ? { ...product, serviceType: 'out' } : product
@@ -420,7 +421,7 @@ const Catalogue = () => {
   const handleMarkOrderServe = async (productId) => {
     try {
       const productRef = doc(db, 'products', productId);
-      await updateDoc(productRef, { serviceType: 'order' });
+      await updateDoc(productRef, {instockGram:0,instockSet:0,lotDetails:[], serviceType: 'order' });
 
       setAllProducts(prev => prev.map(product =>
         product.id === productId ? { ...product, serviceType: 'order' } : product
@@ -457,7 +458,7 @@ const Catalogue = () => {
         querySnapshot.forEach((doc) => {
           productsList.push({ id: doc.id, ...doc.data() });
         });
-
+        console.log(productsList)
         setAllProducts(productsList);
         setLoading(false);
       } catch (error) {
