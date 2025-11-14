@@ -25,8 +25,10 @@ export const SellerProvider = ({ children }) => {
       try {
         // Optional: migrate from localStorage (if used before)
         const legacy = localStorage.getItem(SELLER_STORAGE_KEY);
+        console.log("legacy", legacy);
         if (legacy) {
           await saveData(SELLER_STORAGE_KEY, JSON.parse(legacy));
+          
           localStorage.removeItem(SELLER_STORAGE_KEY);
         }
 

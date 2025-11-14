@@ -104,7 +104,7 @@ const OrderServe = () => {
       subtitle: 'New incoming enquiries',
       count: orderCounts.requested,
       color: 'yellow',
-      path:'/buyerrequset',
+      path:'/buyerrequest',
     },
     {
       id: 2,

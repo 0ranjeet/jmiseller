@@ -48,8 +48,8 @@ const ReadyToDispatch = () => {
     return { totalGross, totalSets, totalnetWt };
   };
 
-  // --- 💰 Helper: Calculate financial total for a SINGLE order ---
-  const getOrderTotalAmount = (order) => {
+  // --- 🔍 Helper: Calculate fine weight for a SINGLE order ---
+  const getOrderFineWeight = (order) => {
     const num = (v) => parseFloat(v) || 0;
 
     const westage =
@@ -65,6 +65,12 @@ const ReadyToDispatch = () => {
     }
 
     const fineWeight = totalnetWt * (westage / 100);
+    return fineWeight;
+  };
+
+  // --- 💰 Helper: Calculate financial total for a SINGLE order ---
+  const getOrderTotalAmount = (order) => {
+    const fineWeight = getOrderFineWeight(order);
     const goldRate = 6345; // Consider making dynamic later
     const amount = fineWeight * goldRate;
     const gst = amount * 0.03;
@@ -73,7 +79,7 @@ const ReadyToDispatch = () => {
     return totalAmount; // raw number
   };
 
-  // --- 📊 Helper: Calculate financial summary for selected orders ---
+  // --- 📊 Helper: Calculate summary for selected orders ---
   const calculateSummary = () => {
     const selectedItems = orders.filter((order) =>
       selectedOrders.includes(order.firestoreId)
@@ -82,12 +88,16 @@ const ReadyToDispatch = () => {
     let totalSets = 0;
     let totalWeight = 0;
     let totalnetWt = 0;
+    let totalFineWt = 0;
 
     selectedItems.forEach((order) => {
       const { totalGross, totalSets: sets, totalnetWt: netWt } = calculateOrderTotals(order);
+      const fineWt = getOrderFineWeight(order);
+      
       totalWeight += totalGross;
       totalSets += sets;
       totalnetWt += netWt;
+      totalFineWt += fineWt;
     });
 
     const totalAmountRaw = selectedItems.reduce(
@@ -99,6 +109,7 @@ const ReadyToDispatch = () => {
       sets: totalSets,
       weight: totalWeight.toFixed(3),
       totalnetWt: totalnetWt.toFixed(3),
+      fineWt: totalFineWt.toFixed(3), // NEW: Total fine weight
       amount: (totalAmountRaw / 1.03).toFixed(2),
       gst: (totalAmountRaw * 0.03 / 1.03).toFixed(2),
       totalAmount: totalAmountRaw.toFixed(2),
@@ -414,12 +425,12 @@ const ReadyToDispatch = () => {
                     <span>{summary.totalnetWt}</span>
                   </div>
                   <div className="summary-row">
-                    <span>AMOUNT</span>
-                    <span>₹{summary.amount}</span>
+                    <span>FINE WEIGHT</span>
+                    <span>{summary.fineWt}</span>
                   </div>
                   <div className="summary-row">
-                    <span>GST</span>
-                    <span>₹{summary.gst}</span>
+                    <span>AMOUNT</span>
+                    <span>₹{summary.amount}</span>
                   </div>
                   <div className="summary-row total">
                     <span>TOTAL AMOUNT</span>

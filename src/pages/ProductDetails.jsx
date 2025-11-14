@@ -40,9 +40,6 @@ const ProductDetails = () => {
     );
   }
 
-  // ==========================
-  // 🧮 Price & Weight Calculations
-  // ==========================
 
   const num = (v) => parseFloat(v) || 0;
 

@@ -33,7 +33,7 @@ const ReadyStockServices = () => {
         setLoading(true);
         const q = query(collection(db, 'orderList'), where('sellerId', '==', sellerId), where('serviceType', '==', 'ready'));
         const snapshot = await getDocs(q);
-         console.log(snapshot);
+        console.log(snapshot);
         const counts = {
           requested: 0,
           assortment: 0,
@@ -61,11 +61,16 @@ const ReadyStockServices = () => {
               counts.readyToDispatch += 1;
               break;
             case 'Assigned':
-              case 'PickedUp':
+            case 'PickedUp':
             case 'InWarehouse':
+            case 'Dispatched':
+            case 'Delivered':
               counts.Assigned += 1;
               break;
-            case 'Delivered':
+            case 'buyerPaid':
+            case 'paymentDispatchedtoOperator':
+            case 'paymentDispatchedtoSeller':
+            case 'paymentDeliveredToSeller':
               counts.payment += 1;
               break;
             default:
@@ -101,7 +106,7 @@ const ReadyStockServices = () => {
       subtitle: 'New incoming enquiries',
       count: orderCounts.requested,
       color: 'yellow',
-      path: '/buyerrequset',
+      path: '/buyerrequest',
     },
     {
       id: 2,
@@ -189,7 +194,7 @@ const ReadyStockServices = () => {
         <div className="workflow-steps">
           {steps.map((step, index) => (
             <div key={step.id} className="step-card" onClick={() => {
-              navigate(step.path, { state: {  serviceType } })
+              navigate(step.path, { state: { serviceType } })
             }}>
               <div className={`step-line ${step.color}`} />
               <div className="readystep-content">

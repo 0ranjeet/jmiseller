@@ -578,6 +578,7 @@ const SegmentRegistration = () => {
     }
 
     saveSegmentRegistration();
+    nav('/dashboard');
   };
 
   if (isCheckingRegistration) {
@@ -816,7 +817,7 @@ const SegmentRegistration = () => {
           </div>
           <div className="checkbox-group agreement">
             <input type="checkbox" id="agree" required />
-            <label htmlFor="agree">I agree to all availing services with Terms & Conditions *</label>
+            <label htmlFor="agree">I agree to all available services with Terms & Conditions *</label>
           </div>
         </section>
 

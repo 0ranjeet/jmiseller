@@ -20,6 +20,7 @@ const BuyerRequest = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const serviceType = location.state?.serviceType;
+  console.log(serviceType);
   const [category, setCategory] = useState('916HUID');
   const [subCategory, setSubCategory] = useState('KATAKI');
   const [orders, setOrders] = useState([]);
@@ -29,7 +30,7 @@ const BuyerRequest = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
 
   const categories = ['916HUID', '840ORNA', '750HUID', '680'];
-  const subCategories = ['KATAKI', 'MACHINE MADE', 'CASTING', 'CNC', 'KARIGARI'];
+  const subCategories = ['KATAKI','RAJKOT', 'MACHINE MADE', 'CASTING', 'CNC', 'KARIGARI'];
 
   // Fetch orders
   useEffect(() => {

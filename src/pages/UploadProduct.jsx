@@ -5,7 +5,7 @@ import { db } from '../services/firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { useSeller } from '../contexts/SellerContext';
 import PageHeader from '../components/PageHeader';
-import productData from './productData.json';
+import productData from './SELLERPRODUCT.json';
 
 const UploadProduct = () => {
   const { seller } = useSeller();
@@ -22,10 +22,12 @@ const UploadProduct = () => {
   const toggleHandleLot = () => {
     setLot((prev) => {
       const newVal = !prev;
-      setFormData((prevForm) => ({
-        ...prevForm,
-        lot: newVal,   // keep formData updated
-      }));
+      // If switching to non-lot, collapse to 1 row
+      if (!newVal && lotSizes.length > 1) {
+        setLotSizes(lotSizes.slice(0, 1));  // Keep first row, discard others
+        showAlertMessage('Switched to single size; extra rows discarded.');
+      }
+      setFormData((prevForm) => ({ ...prevForm, lot: newVal }));
       return newVal;
     });
   };
@@ -127,6 +129,12 @@ const UploadProduct = () => {
   };
 
   const handleAddLotSize = () => {
+    if (!Lot || lotSizes.length >= getSizeOptions().length) return;  // Enforce for non-lot/multi-limit
+    const availableSizes = getSizeOptions().filter(size => !lotSizes.some(item => item.size === size));
+    if (availableSizes.length === 0) {
+      alert('All available sizes have been added.');
+      return;
+    }
     setLotSizes([...lotSizes, { size: '', set: '', grossWt: '', netWt: '', avgGrossWt: '', avgNetWt: '', avgSpecWt: '' }]);
   };
 
@@ -196,11 +204,14 @@ const UploadProduct = () => {
     // Update form data
     setFormData(prev => ({
       ...prev,
+      // Uniform for both: Use totals
       grossWt: totalGross.toFixed(3),
       netWt: totalNetWt.toFixed(3),
-      instockGram: totalGross.toFixed(3),
-      instockSet: totalSets.toString(),
-      lotSizes: updatedLotSizes
+      instockGram: activeTab === 'ready' ? totalGross.toFixed(3) : '',
+      instockSet: activeTab === 'ready' ? totalSets.toString() : '',
+      moqSet: Lot ? (prev.moqSet || totalSets.toString()) : prev.moqSet,  // Auto-fill MOQ from total if empty
+      lotSizes: updatedLotSizes,  // Save full details
+      sizes: updatedLotSizes.map(item => item.size).filter(Boolean),  // Derived unique sizes
     }));
 
     closeLotDrawer();
@@ -229,14 +240,51 @@ const UploadProduct = () => {
     styleType: '',
     specification: '',
     productSource: '',
-    sizes: [],
     status: 'pending'
   });
 
   // Use data from JSON file
-  const segments = productData.segments;
-  const categoriesBySegment = productData.categoriesBySegment;
-  const productSizes = productData.productSizes;
+  const segments = Object.keys(productData);
+  const categoriesBySegment = {};
+  const productSources = new Set();
+  const productNamesBySource = {};
+  const finishTypes = new Set();
+  const specifications = new Set();
+  Object.entries(productData).forEach(([segment, purities]) => {
+      categoriesBySegment[segment] = Object.keys(purities); // 916HUID, 750HUID, etc.
+
+      // Process each purity level
+      Object.values(purities).forEach(sources => {
+        Object.entries(sources).forEach(([source, products]) => {
+          productSources.add(source);
+
+          if (!productNamesBySource[source]) {
+            productNamesBySource[source] = [];
+          }
+
+          // Process each product
+          Object.entries(products).forEach(([productName, productData]) => {
+            if (!productNamesBySource[source].includes(productName)) {
+              productNamesBySource[source].push(productName);
+            }
+
+            // Process finish types
+            if (productData.finishTypes) {
+              Object.keys(productData.finishTypes).forEach(finishType => {
+                finishTypes.add(finishType);
+              });
+
+              // Process specifications from finish types
+              Object.values(productData.finishTypes).forEach(specs => {
+                specs.forEach(spec => {
+                  specifications.add(spec);
+                });
+              });
+            }
+          });
+        });
+      });
+    });
 
   const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
   const CLOUDINARY_UPLOAD_PRESET = "jmiseller";
@@ -383,8 +431,18 @@ const UploadProduct = () => {
           specificationGramRate: productDetails.specificationGramRate || '',
           netGramMc: productDetails.netGramMC || '',
           netWtPurity: productDetails.purity || '',
-          sizes: []
+          // lotSizes handled below
         }));
+
+        // Assume registered has weights; init single row for non-lot, or multi if data exists
+        const initRow = {
+          size: '',  // Still select in drawer
+          set: productDetails.set || '1',
+          grossWt: productDetails.grossWt || '',
+          netWt: productDetails.netWt || '',
+          ...calculateItemAverages({ set: productDetails.set || '1', grossWt: productDetails.grossWt || '0', netWt: productDetails.netWt || '0' })
+        };
+        setLotSizes(Lot ? [initRow, ...Array.from({length: 1}, () => ({...initRow, size: ''}))] : [initRow]);  // Multi for lot, single for non
       } else {
         setSelectedProduct(null);
         // Reset auto-filled fields if no match
@@ -395,12 +453,13 @@ const UploadProduct = () => {
           specificationMC: '',
           netGramMc: '',
           netWtPurity: '',
-          sizes: []
         }));
+        // Reset lotSizes to default
+        setLotSizes([{ size: '', set: '', grossWt: '', netWt: '', avgGrossWt: '', avgNetWt: '', avgSpecWt: '' }]);
       }
     }
   }, [formData.segment, formData.category, formData.productName, formData.styleType,
-  formData.specification, formData.productSource, registeredProducts]);
+  formData.specification, formData.productSource, registeredProducts, Lot]); // Re-init on toggle
 
   const handleImageUpload = async (files) => {
     setUploading(true);
@@ -483,15 +542,7 @@ const UploadProduct = () => {
     }
   };
 
-  // Handle size selection (single-select)
-  const toggleSizeSelection = (size) => {
-    setFormData(prev => ({
-      ...prev,
-      sizes: prev.sizes[0] === size ? [] : [size]
-    }));
-  };
-
-  // Toggle size dropdown visibility
+  // Toggle size dropdown visibility (kept for legacy, but not used in unified)
   const toggleSizeDropdown = () => {
     setIsSizeDropdownOpen(!isSizeDropdownOpen);
   };
@@ -529,13 +580,8 @@ const UploadProduct = () => {
       return;
     }
 
-    if (formData.sizes.length === 0 && !Lot) {
-      showAlertMessage('Please select at least one size.');
-      return;
-    }
-
-    if (Lot && lotSizes.length === 0) {
-      showAlertMessage('Please add at least one size to the lot.');
+    if (lotSizes.length === 0 || !lotSizes.every(item => item.size)) {  // Unified: Require sizes in rows
+      showAlertMessage(Lot ? 'Please add at least one size to the lot.' : 'Please select a size in lot details.');
       return;
     }
 
@@ -566,9 +612,9 @@ const UploadProduct = () => {
         instockSet: activeTab === 'ready' ? formData.instockSet : '',
         grossWt: formData.grossWt,
         netWt: formData.netWt,
-        specificationWt: formData.specification !== 'PLANE' ? formData.grossWt - formData.netWt : '',
-        sizes: Lot ? finalLotSizes.map(item => item.size) : formData.sizes,
-        lotDetails: Lot ? finalLotSizes : [],
+        specificationWt: formData.specification !== 'PLANE' ? totals.totalGrossWt - totals.totalNetWt : '',
+        sizes: finalLotSizes.map(item => item.size).filter(Boolean),  // Derived
+        lotDetails: finalLotSizes,
         lotTotals: totals,
         paymentMethod: formData.paymentMethod,
         status: 'pending',
@@ -601,7 +647,6 @@ const UploadProduct = () => {
         styleType: '',
         specification: '',
         productSource: '',
-        sizes: [],
         status: 'pending'
       });
       setIsSizeDropdownOpen(false);
@@ -616,17 +661,25 @@ const UploadProduct = () => {
     return `${formData.segment || ''}-${formData.category || ''}-${formData.productName || ''}-${formData.styleType || ''}-${formData.specification || ''}`;
   };
 
+  // Get size info based on current formData (traverses nested JSON)
+  const getSizeInfo = () => {
+    const segment = formData.segment;
+    const category = formData.category;
+    const source = formData.productSource;
+    const productName = formData.productName.toUpperCase();
+    if (!segment || !category || !source || !productName) return null;
+    return productData[segment]?.[category]?.[source]?.[productName] || null;
+  };
+
   // Get size options based on product name
   const getSizeOptions = () => {
-    const productName = formData.productName.toUpperCase();
-    const sizeInfo = productSizes[productName];
+    const sizeInfo = getSizeInfo();
     return sizeInfo?.options || [];
   };
 
   // Get size unit based on product name
   const getSizeUnit = () => {
-    const productName = formData.productName.toUpperCase();
-    const sizeInfo = productSizes[productName];
+    const sizeInfo = getSizeInfo();
     return sizeInfo?.sizing_unit || '';
   };
 
@@ -634,13 +687,6 @@ const UploadProduct = () => {
   const getCategoriesForSegment = () => {
     if (!formData.segment) return [];
     return categoriesBySegment[formData.segment] || [];
-  };
-
-  // Get display text for selected sizes
-  const getSelectedSizesText = () => {
-    if (formData.sizes.length === 0) return 'Select Sizes';
-    if (formData.sizes.length === 1) return formData.sizes[0];
-    return `${formData.sizes.length} sizes selected`;
   };
 
   const sizeAverages = calculateSizeAverages();
@@ -925,42 +971,36 @@ const UploadProduct = () => {
 
           {/* Product Details Section */}
           <div className="section">
-            <div className='productDetails'><div className="section-title">Product Details</div>
+            <div className='productDetails'>
+              <div className="section-title">Product Details</div>
               <div className="radio-group-horizontal">
-
                 <div className="radio-item">
                   <input
                     type="radio"
                     checked={Lot}
-                    onClick={() => {
-                      toggleHandleLot();
-                      if (!Lot) {
-                        openLotDrawer();
-                      }
-                    }}
+                    onClick={toggleHandleLot}
                   />
-                  <label className="radio-label">Lot</label>
+                  <label className="radio-label">{Lot ? 'Lot (Multi-Size)' : 'Single Size'}</label>
                 </div>
-              </div></div>
+              </div>
+            </div>
 
-            {/* MOQ Section */}
+            {/* MOQ: Always show, auto-filled from totals */}
             <div className="form-grid-2">
-              {Lot ? (
-                <div className="form-group">
-                  <label className="form-label">MOQ Set</label>
-                  <input
-                    type="number"
-                    value={formData.moqSet}
-                    onChange={(e) => handleInputChange('moqSet', e.target.value)}
-                    className="form-input"
-                    placeholder="Enter MOQ in sets"
-                  />
-                </div>
-              ) : ""}
+              <div className="form-group">
+                <label className="form-label">MOQ Set</label>
+                <input
+                  type="number"
+                  value={formData.moqSet}
+                  onChange={(e) => handleInputChange('moqSet', e.target.value)}
+                  className="form-input"
+                  placeholder="Enter MOQ in sets"
+                />
+              </div>
             </div>
 
             {/* Instock Section - Only for Ready Serve */}
-            {!Lot && activeTab === 'ready' && (
+            {activeTab === 'ready' && (
               <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">Instock Gram</label>
@@ -984,103 +1024,51 @@ const UploadProduct = () => {
                 </div>
               </div>
             )}
-            {Lot ? "" : (
-              <div className="form-grid-2">
-                <div className="form-group">
-                  <label className="form-label">Gross Wt. (g)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={formData.grossWt}
-                    onChange={(e) =>
-                      handleInputChange("grossWt", parseFloat(e.target.value) || 0)
-                    }
-                    className="form-input"
-                    placeholder="Enter gross weight"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Net Wt. (g)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={formData.netWt}
-                    onChange={(e) =>
-                      handleInputChange("netWt", parseFloat(e.target.value) || 0)
-                    }
-                    className="form-input"
-                    placeholder="Enter net weight"
-                  />
-                </div>
+
+            {/* Weights: Show read-only totals preview */}
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Total Gross Wt. (g)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  value={totals.totalGrossWt.toFixed(3)}
+                  readOnly
+                  className="form-input"
+                />
               </div>
-            )}
+              <div className="form-group">
+                <label className="form-label">Total Net Wt. (g)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  value={totals.totalNetWt.toFixed(3)}
+                  readOnly
+                  className="form-input"
+                />
+              </div>
+            </div>
             {formData.specification && formData.specification !== "PLANE" && (
               <div className="form-group">
                 <label className="form-label">Specification Weight (g)</label>
                 <input
                   type="number"
                   step="0.001"
-                  value={
-                    formData.grossWt && formData.netWt
-                      ? (formData.grossWt - formData.netWt).toFixed(3)
-                      : ""
-                  }
+                  value={((totals.totalGrossWt - totals.totalNetWt).toFixed(3))}
                   readOnly
                   className="form-input"
                 />
               </div>
             )}
 
-
-            {/* Size Selection - Multi-select Dropdown */}
-            {!Lot && formData.productName && productSizes[formData.productName.toUpperCase()] && (
-              <div >
-                <label>
-                  Sizes ({getSizeUnit()})
-                  {productSizes[formData.productName.toUpperCase()]?.note && (
-                    <span className="size-note"> ({productSizes[formData.productName.toUpperCase()].note})</span>
-                  )}
-                </label>
-                <div className="multi-select-dropdown">
-                  <div
-                    className="select-wrapper"
-                    onClick={toggleSizeDropdown}
-                  >
-                    <div className="select-display">
-                      {getSelectedSizesText()}
-                    </div>
-                    <ChevronDown className={`select-icon ${isSizeDropdownOpen ? 'rotated' : ''}`} />
-                  </div>
-
-                  {isSizeDropdownOpen && (
-                    <div className="multi-select-options">
-                      {getSizeOptions().map(size => (
-                        <div
-                          key={size}
-                          className={`multi-select-option ${formData.sizes.includes(size) ? 'selected' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSizeSelection(size);
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.sizes.includes(size)}
-                            onChange={() => { }}
-                            className="multi-select-checkbox"
-                          />
-                          <span className="multi-select-label">{size}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            {Lot && lotSizes.length > 0 && (
+            {/* Unified Lot Details: Always show preview; click opens drawer */}
+            {formData.productName && getSizeInfo() && (
               <div className="lot-summary" onClick={() => openLotDrawer()}>
                 <label>
-                  Lot Details
+                  Lot Details ({getSizeUnit()})
+                  {getSizeInfo()?.note && (
+                    <span className="size-note"> ({getSizeInfo().note})</span>
+                  )}
                 </label>
                 <div className="lot-preview">
                   <div className="lot-preview-table">
@@ -1109,7 +1097,7 @@ const UploadProduct = () => {
                       </tbody>
                       <tfoot>
                         <tr className="totals-row">
-                          <td>Total</td>
+                          <td>Total ({Lot ? 'Lot' : 'Single'})</td>
                           <td>{totals.totalSets}</td>
                           <td>{totals.totalGrossWt.toFixed(3)}</td>
                           <td>{totals.totalNetWt.toFixed(3)}</td>
@@ -1118,10 +1106,11 @@ const UploadProduct = () => {
                       </tfoot>
                     </table>
                   </div>
-                  <div className="click-to-edit">Click to edit lot details</div>
+                  <div className="click-to-edit">Click to {Lot ? 'edit lot' : 'edit size'} details</div>
                 </div>
               </div>
             )}
+
             <div
               style={{
                 marginTop: '1rem',
@@ -1293,7 +1282,7 @@ const UploadProduct = () => {
                         />
                       </div>
 
-                      {lotSizes.length > 1 && (
+                      {lotSizes.length > 1 && Lot && (
                         <button
                           type="button"
                           className="remove-size-btn"
@@ -1311,20 +1300,9 @@ const UploadProduct = () => {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      const availableSizes = getSizeOptions().filter(
-                        size => !lotSizes.some(item => item.size === size)
-                      );
-
-                      if (availableSizes.length === 0) {
-                        alert('All available sizes have been added.');
-                        return;
-                      }
-
-                      setLotSizes([...lotSizes, { size: '', set: '', grossWt: '', netWt: '', avgGrossWt: '', avgNetWt: '', avgSpecWt: '' }]);
-                    }}
+                    onClick={handleAddLotSize}
                     className="add-size-btn"
-                    disabled={lotSizes.length >= getSizeOptions().length}
+                    disabled={!Lot || lotSizes.length >= getSizeOptions().length}
                   >
                     + Add More Size
                   </button>

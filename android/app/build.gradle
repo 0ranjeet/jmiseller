@@ -17,18 +17,29 @@ android {
         }
     }
     applicationVariants.all { variant ->
-    variant.outputs.all { output ->
-        // Change this to your app’s name
-        def appName = "JMI Seller"
-
-        // Use versionName + buildType for dynamic filenames
-        def versionName = variant.versionName
-        def buildType = variant.buildType.name
-
-        // Example output: JmiSeller-v1.0-release.apk or JmiSeller-v1.0-debug.apk
-        outputFileName = "${appName}-v${versionName}.apk"
+        variant.outputs.all { output ->
+            def appName = "JMISeller"
+            def versionName = variant.versionName
+            def versionCode = variant.versionCode
+            def date = new Date()
+            def formattedDate = date.format('yyyyMMdd')
+            
+            if (output.getFilter(com.android.build.OutputFile.ABI)) {
+                // For APK splits
+                outputFileName = "${appName}-v${versionName}(${versionCode})_${formattedDate}_${output.getFilter(com.android.build.OutputFile.ABI)}.apk"
+            } else {
+                // For APK or AAB
+                def outputFile = output.outputFile
+                if (outputFile != null && outputFile.name.endsWith('.aab')) {
+                    // For AAB files
+                    outputFileName = "${appName}-v${versionName}(${versionCode})_${formattedDate}.aab"
+                } else if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                    // For APK files
+                    outputFileName = "${appName}-v${versionName}(${versionCode})_${formattedDate}.apk"
+                }
+            }
+        }
     }
-}
 
     buildTypes {
         release {

@@ -52,13 +52,17 @@ const Login = () => {
       const sellerProfileRef = doc(db, "profile", sellerId);
       const profileSnap = await getDoc(sellerProfileRef);
       const profileData = profileSnap.exists() ? profileSnap.data() : {};
-      console.log()
+      console.log(profileData)
        // ✅ Prepare seller data
       const sellerData = {
         sellerId,
         mobile,
         organizationName: sellerRegistrationData.organizationName || '',
         segment:profileData.segment,
+        registrationStatus:profileData.registrationStatus,
+        sellerRegistration:profileData.SellerRegistration,
+        segmentRegistration:profileData.SegmentRegistration,
+        productRegistration:profileData.ProductRegistration || false,
         lastUpdated: Date.now(),
       };
   

@@ -6,20 +6,20 @@ import './ProductRegistration.css';
 import { useNavigate } from 'react-router-dom';
 import { useSeller } from '../contexts/SellerContext';
 import PageHeader from '../components/PageHeader';
-import ProductData from './productData.json';
+import ProductData from './SELLERPRODUCT.json';
 
 const ProductRegistration = () => {
   const nav = useNavigate();
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
-  const Segment = (seller?.segment).toUpperCase();
-  console.log(Segment);
+  const Segment = (seller?.segment)?.toUpperCase();
+  
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showProductDetails, setShowProductDetails] = useState(false);
   const [currentProductForDetails, setCurrentProductForDetails] = useState(null);
-  const [currentStyleType, setCurrentStyleType] = useState('regular');
+  const [currentStyleType, setCurrentStyleType] = useState('Regular');
   const [productDetails, setProductDetails] = useState({
     purity: '',
     wastage: '',
@@ -77,24 +77,63 @@ const ProductRegistration = () => {
     }
   };
 
-  const segments = ProductData.segments;
-  console.log(segments);
-  const categoriesBySegment = ProductData.categoriesBySegment;
-  console.log(categoriesBySegment);
-  const subcategories = ProductData.productSources;
-  console.log(subcategories);
-  const productNames = Object.keys(ProductData.productSizes);
-  console.log(productNames);
-  const styleTypes = ['regular', 'highFancy', 'highFinish', 'lightWeight'];
-  const specifications = ['PLANE', 'MEENAWORK', 'STONEWORK', 'OTHERWORK'];
+  // Extract data from new JSON structure
+  const segments = useMemo(() => Object.keys(ProductData), []);
+  
+  const categoriesBySegment = useMemo(() => {
+    const result = {};
+    segments.forEach(segment => {
+      result[segment] = Object.keys(ProductData[segment] || {});
+    });
+    return result;
+  }, [segments]);
+
+  const getSubcategories = useMemo(() => {
+    if (!Segment || !selectedCategory) return [];
+    return Object.keys(ProductData[Segment]?.[selectedCategory] || {});
+  }, [Segment, selectedCategory]);
+
+  const getProductNames = useMemo(() => {
+    if (!Segment || !selectedCategory || !selectedSubcategory) return [];
+    return Object.keys(ProductData[Segment]?.[selectedCategory]?.[selectedSubcategory] || {});
+  }, [Segment, selectedCategory, selectedSubcategory]);
+
+  // Get available finish types for a specific product
+  const getAvailableFinishTypes = (productName) => {
+    if (!Segment || !selectedCategory || !selectedSubcategory || !productName) return [];
+    
+    const productData = ProductData[Segment]?.[selectedCategory]?.[selectedSubcategory]?.[productName];
+    if (!productData?.finishTypes) return [];
+    
+    return Object.keys(productData.finishTypes);
+  };
+
+  // Get available specifications for a specific product and finish type
+  const getAvailableSpecifications = (productName, finishType) => {
+    if (!Segment || !selectedCategory || !selectedSubcategory || !productName || !finishType) {
+      return ['PLANE', 'MEENAWORK', 'STONEWORK', 'OTHERWORK'];
+    }
+    
+    const productData = ProductData[Segment]?.[selectedCategory]?.[selectedSubcategory]?.[productName];
+    return productData?.finishTypes?.[finishType] || ['PLANE', 'MEENAWORK', 'STONEWORK', 'OTHERWORK'];
+  };
 
   const allProducts = useMemo(() => {
     const products = [];
     let id = 1;
+    
     segments.forEach(segment => {
-      categoriesBySegment[segment].forEach(category => {
+      const categories = Object.keys(ProductData[segment] || {});
+      categories.forEach(category => {
+        const subcategories = Object.keys(ProductData[segment][category] || {});
         subcategories.forEach(subcategory => {
+          const productNames = Object.keys(ProductData[segment][category][subcategory] || {});
           productNames.forEach(name => {
+            const productInfo = ProductData[segment][category][subcategory][name];
+            
+            // Get available finish types directly from JSON (no mapping)
+            const styleTypes = Object.keys(productInfo.finishTypes || {});
+            
             products.push({
               id: id++,
               name,
@@ -102,14 +141,15 @@ const ProductRegistration = () => {
               segment,
               categoryId: category,
               subcategoryId: subcategory,
-              styleTypes
+              styleTypes,
+              productInfo
             });
           });
         });
       });
     });
     return products;
-  }, []);
+  }, [segments]);
 
   useEffect(() => {
     const fetchProductSpecs = async () => {
@@ -150,9 +190,11 @@ const ProductRegistration = () => {
   const [productData, setProductData] = useState(() => {
     const initialProductData = {};
     allProducts.forEach(product => {
-      initialProductData[product.id] = {
-        selectedStyleType: null,
-        regular: {
+      const productEntry = { selectedStyleType: null };
+      
+      // Create entries for each style type dynamically from JSON
+      product.styleTypes.forEach(styleType => {
+        productEntry[styleType] = {
           selected: false,
           image: null,
           details: {
@@ -164,47 +206,10 @@ const ProductRegistration = () => {
             specificationMC: '',
             specificationGramRate: ''
           }
-        },
-        highFancy: {
-          selected: false,
-          image: null,
-          details: {
-            purity: '',
-            wastage: '',
-            setMC: '',
-            netGramMC: '',
-            specification: 'PLANE',
-            specificationMC: '',
-            specificationGramRate: ''
-          }
-        },
-        highFinish: {
-          selected: false,
-          image: null,
-          details: {
-            purity: '',
-            wastage: '',
-            setMC: '',
-            netGramMC: '',
-            specification: 'PLANE',
-            specificationMC: '',
-            specificationGramRate: ''
-          }
-        },
-        lightWeight: {
-          selected: false,
-          image: null,
-          details: {
-            purity: '',
-            wastage: '',
-            setMC: '',
-            netGramMC: '',
-            specification: 'PLANE',
-            specificationMC: '',
-            specificationGramRate: ''
-          }
-        }
-      };
+        };
+      });
+      
+      initialProductData[product.id] = productEntry;
     });
     return initialProductData;
   });
@@ -227,7 +232,6 @@ const ProductRegistration = () => {
         spec.specification === selectedSpecification
       );
       if (exactSpecMatch) {
-        console.log("Found exact spec match:", exactSpecMatch);
         return exactSpecMatch;
       }
     }
@@ -239,7 +243,6 @@ const ProductRegistration = () => {
       spec.productName === productName
     );
     if (productMatch) {
-      console.log("Found product match:", productMatch);
       return productMatch;
     }
 
@@ -248,7 +251,6 @@ const ProductRegistration = () => {
       spec.category === category &&
       spec.productSource === subcategory
     );
-    console.log("Found category match or null:", categorySpecs);
     return categorySpecs || null;
   };
 
@@ -293,19 +295,12 @@ const ProductRegistration = () => {
       const baseWastage = parseFloat(details.wastage) + (details?.specificationMC > 0 ? parseFloat(details.specificationMC) : 0);
       return baseWastage;
     }
-
   };
 
   const calculateTotalMakingCharges = (details) => {
-    if (details.specification === 'PLANE') {
-      const setMC = parseFloat(details.setMC) || 0;
-      const netGramMC = parseFloat(details.netGramMC) || 0;
-      return setMC + netGramMC;
-    } else {
-      const setMC = parseFloat(details.setMC) || 0;
-      const netGramMC = parseFloat(details.netGramMC) || 0;
-      return setMC + netGramMC;
-    }
+    const setMC = parseFloat(details.setMC) || 0;
+    const netGramMC = parseFloat(details.netGramMC) || 0;
+    return setMC + netGramMC;
   };
 
   const filteredProducts = useMemo(() => {
@@ -321,13 +316,8 @@ const ProductRegistration = () => {
   }, [Segment, selectedCategory, selectedSubcategory, allProducts]);
 
   const getStyleLabel = (style) => {
-    const labels = {
-      regular: 'Regular',
-      highFancy: 'High Fancy',
-      highFinish: 'High Finish',
-      lightWeight: 'Light Weight'
-    };
-    return labels[style];
+    // Return the style as-is from JSON (Regular, LightWeight, HighFancy, HighFinish)
+    return style;
   };
 
   const handleStyleSelect = (productId, styleType) => {
@@ -388,7 +378,8 @@ const ProductRegistration = () => {
     const file = event.target.files[0];
     if (!file) return;
 
-    const currentSelectedStyle = productData[productId].selectedStyleType || 'regular';
+    const product = allProducts.find(p => p.id === productId);
+    const currentSelectedStyle = productData[productId].selectedStyleType || product.styleTypes[0];
     const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
     const CLOUDINARY_UPLOAD_PRESET = "jmiseller";
     const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
@@ -408,42 +399,36 @@ const ProductRegistration = () => {
         const newProductData = { ...productData };
         newProductData[productId][currentSelectedStyle].image = data.secure_url;
 
-        if (currentSelectedStyle !== 'regular') {
-          if (!newProductData[productId][currentSelectedStyle].selected) {
-            newProductData[productId].selectedStyleType = currentSelectedStyle;
-            newProductData[productId][currentSelectedStyle].selected = true;
+        if (!newProductData[productId][currentSelectedStyle].selected) {
+          newProductData[productId].selectedStyleType = currentSelectedStyle;
+          newProductData[productId][currentSelectedStyle].selected = true;
 
-            const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
-            setSelectedProducts([...updatedSelectedProducts, {
-              productId: productId,
-              styleType: currentSelectedStyle,
-              productName: allProducts.find(p => p.id === productId)?.name
-            }]);
-          }
+          const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
+          setSelectedProducts([...updatedSelectedProducts, {
+            productId: productId,
+            styleType: currentSelectedStyle,
+            productName: allProducts.find(p => p.id === productId)?.name
+          }]);
         }
         setProductData(newProductData);
-      } else {
-        console.error('Cloudinary upload error:', data);
       }
     } catch (error) {
-      console.error('Error uploading image to Cloudinary:', error);
+      console.error('Error uploading image:', error);
       const reader = new FileReader();
       reader.onloadend = () => {
         const newProductData = { ...productData };
         newProductData[productId][currentSelectedStyle].image = reader.result;
 
-        if (currentSelectedStyle !== 'regular') {
-          if (!newProductData[productId][currentSelectedStyle].selected) {
-            newProductData[productId].selectedStyleType = currentSelectedStyle;
-            newProductData[productId][currentSelectedStyle].selected = true;
+        if (!newProductData[productId][currentSelectedStyle].selected) {
+          newProductData[productId].selectedStyleType = currentSelectedStyle;
+          newProductData[productId][currentSelectedStyle].selected = true;
 
-            const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
-            setSelectedProducts([...updatedSelectedProducts, {
-              productId: productId,
-              styleType: currentSelectedStyle,
-              productName: allProducts.find(p => p.id === productId)?.name
-            }]);
-          }
+          const updatedSelectedProducts = selectedProducts.filter(p => p.productId !== productId);
+          setSelectedProducts([...updatedSelectedProducts, {
+            productId: productId,
+            styleType: currentSelectedStyle,
+            productName: allProducts.find(p => p.id === productId)?.name
+          }]);
         }
         setProductData(newProductData);
       };
@@ -457,31 +442,10 @@ const ProductRegistration = () => {
       return;
     }
 
-    if (!productData[productId].selectedStyleType) {
-      handleStyleSelect(productId, 'regular');
+    const product = allProducts.find(p => p.id === productId);
+    if (!productData[productId].selectedStyleType && product.styleTypes.length > 0) {
+      handleStyleSelect(productId, product.styleTypes[0]);
     }
-  };
-
-  const getProductFormatKey = (registration) => {
-    const segment = registration.segment || 'NO_SEGMENT';
-    const category = registration.category || 'NO_CATEGORY';
-    const subcategory = registration.subcategory || 'NO_SUBCATEGORY';
-    const productSource = registration.productSource || subcategory || 'NO_SOURCE';
-
-    let productName = 'NO_NAME';
-    let finishType = 'NO_FINISH_TYPE';
-    let specification = 'NO_SPEC';
-
-    const productEntries = Object.entries(registration.products || {});
-    if (productEntries.length > 0) {
-      const [firstProductName, firstProductDetails] = productEntries[0];
-      productName = firstProductName || 'NO_NAME';
-      const styleType = firstProductDetails.selectedStyleType || 'regular';
-      finishType = getStyleLabel(styleType).replace(/\s+/g, '');
-      specification = firstProductDetails.specification || 'NO_SPEC';
-    }
-
-    return `${segment}_${category}_${subcategory}_${productSource}_${productName}_${finishType}_${specification}`;
   };
 
   const handleSendToQC = async () => {
@@ -504,19 +468,16 @@ const ProductRegistration = () => {
       const timestamp = Date.now();
       const docRef = doc(db, 'ProductRegistrations', sellerId);
 
-      // Check if document exists first
       const docSnap = await getDoc(docRef);
       let existingRegistrations = docSnap.exists() ? docSnap.data().registrations || [] : [];
 
       const newRegistrations = [];
 
-      // Process each selected product as a separate registration
       selectedProducts.forEach(({ productId, styleType, productName }) => {
         const product = allProducts.find(p => p.id === productId);
         const styleData = productData[productId][styleType];
 
         if (styleData.selected && styleData.details.purity) {
-          // Create a separate registration for each product
           const newRegistration = {
             registrationId: `${sellerId}_${productId}_${styleType}_${timestamp}`,
             status: 'pending_approval',
@@ -553,17 +514,14 @@ const ProductRegistration = () => {
         return;
       }
 
-      // Check for existing registrations and update/append accordingly
       const updatedRegistrations = [...existingRegistrations];
 
       newRegistrations.forEach(newReg => {
         const productName = Object.keys(newReg.products)[0];
         const productData = newReg.products[productName];
 
-        // Create a unique key for this product registration
         const registrationKey = `${Segment}_${selectedCategory}_${selectedSubcategory}_${productName}_${productData.selectedStyleType}_${productData.specification}`;
 
-        // Find if this exact product configuration already exists
         const existingIndex = updatedRegistrations.findIndex(existingReg => {
           const existingProductName = Object.keys(existingReg.products || {})[0];
           const existingProductData = existingReg.products[existingProductName];
@@ -575,23 +533,18 @@ const ProductRegistration = () => {
         });
 
         if (existingIndex !== -1) {
-          // Update existing registration
-          console.log("Updating existing registration:", updatedRegistrations[existingIndex].registrationId);
           updatedRegistrations[existingIndex] = {
             ...updatedRegistrations[existingIndex],
             ...newReg,
-            registrationId: updatedRegistrations[existingIndex].registrationId, // Keep original ID
+            registrationId: updatedRegistrations[existingIndex].registrationId,
             requestTimestamp: new Date(),
             status: 'pending_approval'
           };
         } else {
-          // Add new registration
-          console.log("Adding new registration:", newReg.registrationId);
           updatedRegistrations.push(newReg);
         }
       });
 
-      // Save the updated registrations array back to Firestore
       const saveData = {
         sellerId: sellerId,
         registrations: updatedRegistrations,
@@ -607,10 +560,10 @@ const ProductRegistration = () => {
       await setDoc(sellerProfileRef, {
         ProductRegistration: true,
       }, { merge: true });
-      setUploading(true)
+      
+      setUploading(true);
       nav("/QCApprovalPage", { state: { totalSelected: selectedProducts.length } });
 
-      // Reset form
       setSelectedProducts([]);
     } catch (error) {
       console.error('Error sending data for approval:', error);
@@ -696,18 +649,28 @@ const ProductRegistration = () => {
 
   const getCurrentImage = (productId) => {
     const selectedStyle = productData[productId].selectedStyleType;
-    if (selectedStyle) {
+    if (selectedStyle && productData[productId][selectedStyle]) {
       return productData[productId][selectedStyle].image;
     }
-    return productData[productId].regular.image;
+    // Return first available style type image as default
+    const product = allProducts.find(p => p.id === productId);
+    if (product && product.styleTypes.length > 0) {
+      return productData[productId][product.styleTypes[0]]?.image;
+    }
+    return null;
   };
 
   const getCurrentDetails = (productId) => {
     const selectedStyle = productData[productId].selectedStyleType;
-    if (selectedStyle) {
+    if (selectedStyle && productData[productId][selectedStyle]) {
       return productData[productId][selectedStyle].details;
     }
-    return productData[productId].regular.details;
+    // Return first available style type details as default
+    const product = allProducts.find(p => p.id === productId);
+    if (product && product.styleTypes.length > 0) {
+      return productData[productId][product.styleTypes[0]]?.details;
+    }
+    return null;
   };
 
   const renderProductDetailsPopup = () => {
@@ -720,6 +683,12 @@ const ProductRegistration = () => {
       selectedSubcategory,
       currentProduct.name,
       productDetails.specification
+    );
+
+    // Get available specifications for this product and finish type
+    const availableSpecifications = getAvailableSpecifications(
+      currentProduct.name,
+      currentStyleType
     );
 
     const segmentPurityLimits = purityLimits[Segment] || {};
@@ -833,7 +802,7 @@ const ProductRegistration = () => {
                   required
                 >
                   <option value="">Select Specification</option>
-                  {specifications.map(spec => (
+                  {availableSpecifications.map(spec => (
                     <option key={spec} value={spec}>{spec}</option>
                   ))}
                 </select>
@@ -843,7 +812,7 @@ const ProductRegistration = () => {
               {productDetails.specification !== 'PLANE' ? (
                 <>
                   <div className="form-group">
-                    <label className="form-label">Specification westage</label>
+                    <label className="form-label">Specification wastage</label>
                     <input
                       type="number"
                       step="0.1"
@@ -966,7 +935,7 @@ const ProductRegistration = () => {
             <div className="form-group">
               <label className="form-label">Category</label>
               <div className="horizontal-scroll-container">
-                {categoriesBySegment[Segment].map(cat => (
+                {categoriesBySegment[Segment]?.map(cat => (
                   <button
                     key={cat}
                     onClick={() => {
@@ -986,7 +955,7 @@ const ProductRegistration = () => {
             <div className="form-group">
               <label className="form-label">Subcategory</label>
               <div className="horizontal-scroll-container">
-                {subcategories.map(sub => (
+                {getSubcategories.map(sub => (
                   <button
                     key={sub}
                     onClick={() => setSelectedSubcategory(sub)}

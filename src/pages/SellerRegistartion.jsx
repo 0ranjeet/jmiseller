@@ -14,9 +14,12 @@ import Button from '../ui/components/Button';
 const SellerRegistration = () => {
   console.log('[DEBUG] Rendering SellerRegistration component');
   const nav = useNavigate();
+
   const { seller } = useSeller();
   const sellerId = seller?.sellerId;
   console.log('[DEBUG] Current Seller context:', { seller });
+ 
+ 
 
   const {
     currentStep,

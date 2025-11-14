@@ -29,7 +29,7 @@ const Assortment = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
 
   const categories = ['916HUID', '840ORNA', '750HUID', '680'];
-  const subCategories = ['KATAKI', 'MACHINE MADE', 'CASTING', 'CNC', 'KARIGARI'];
+  const subCategories = ['KATAKI','RAJKOT', 'MACHINE MADE', 'CASTING', 'CNC', 'KARIGARI'];
 
   // Fetch orders
   useEffect(() => {
