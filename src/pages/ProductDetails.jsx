@@ -82,11 +82,7 @@ const ProductDetails = () => {
     return null;
   };
 
-  const calculateSetForNonLot = (variant) => {
-    if (product.lot || !variant || !product.netWt) return null;
-    const setValue = parseFloat(product.netWt) * variant.quantity;
-    return ` Set ~${setValue.toFixed(3)}`;
-  };
+ 
 
   // ==========================
   // 🖱️ Event Handlers
@@ -134,9 +130,6 @@ const ProductDetails = () => {
           {variant.quantity > 1 ? ` x ${variant.quantity}` : " x 1"}
           {product.lot && calculateApproxNetWt(variant) && (
             <span className="approx-weight">({calculateApproxNetWt(variant)})</span>
-          )}
-          {!product.lot && calculateSetForNonLot(variant) && (
-            <span className="set-info">{calculateSetForNonLot(variant)}</span>
           )}
           {index < product.selectedVariants.length - 1 && ", "}
         </span>

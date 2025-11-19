@@ -251,40 +251,40 @@ const UploadProduct = () => {
   const finishTypes = new Set();
   const specifications = new Set();
   Object.entries(productData).forEach(([segment, purities]) => {
-      categoriesBySegment[segment] = Object.keys(purities); // 916HUID, 750HUID, etc.
+    categoriesBySegment[segment] = Object.keys(purities); // 916HUID, 750HUID, etc.
 
-      // Process each purity level
-      Object.values(purities).forEach(sources => {
-        Object.entries(sources).forEach(([source, products]) => {
-          productSources.add(source);
+    // Process each purity level
+    Object.values(purities).forEach(sources => {
+      Object.entries(sources).forEach(([source, products]) => {
+        productSources.add(source);
 
-          if (!productNamesBySource[source]) {
-            productNamesBySource[source] = [];
+        if (!productNamesBySource[source]) {
+          productNamesBySource[source] = [];
+        }
+
+        // Process each product
+        Object.entries(products).forEach(([productName, productData]) => {
+          if (!productNamesBySource[source].includes(productName)) {
+            productNamesBySource[source].push(productName);
           }
 
-          // Process each product
-          Object.entries(products).forEach(([productName, productData]) => {
-            if (!productNamesBySource[source].includes(productName)) {
-              productNamesBySource[source].push(productName);
-            }
+          // Process finish types
+          if (productData.finishTypes) {
+            Object.keys(productData.finishTypes).forEach(finishType => {
+              finishTypes.add(finishType);
+            });
 
-            // Process finish types
-            if (productData.finishTypes) {
-              Object.keys(productData.finishTypes).forEach(finishType => {
-                finishTypes.add(finishType);
+            // Process specifications from finish types
+            Object.values(productData.finishTypes).forEach(specs => {
+              specs.forEach(spec => {
+                specifications.add(spec);
               });
-
-              // Process specifications from finish types
-              Object.values(productData.finishTypes).forEach(specs => {
-                specs.forEach(spec => {
-                  specifications.add(spec);
-                });
-              });
-            }
-          });
+            });
+          }
         });
       });
     });
+  });
 
   const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
   const CLOUDINARY_UPLOAD_PRESET = "jmiseller";
@@ -442,7 +442,7 @@ const UploadProduct = () => {
           netWt: productDetails.netWt || '',
           ...calculateItemAverages({ set: productDetails.set || '1', grossWt: productDetails.grossWt || '0', netWt: productDetails.netWt || '0' })
         };
-        setLotSizes(Lot ? [initRow, ...Array.from({length: 1}, () => ({...initRow, size: ''}))] : [initRow]);  // Multi for lot, single for non
+        setLotSizes(Lot ? [initRow, ...Array.from({ length: 1 }, () => ({ ...initRow, size: '' }))] : [initRow]);  // Multi for lot, single for non
       } else {
         setSelectedProduct(null);
         // Reset auto-filled fields if no match
@@ -598,7 +598,7 @@ const UploadProduct = () => {
         styleType: formData.styleType,
         specification: formData.specification,
         productSource: formData.productSource,
-        Lot,
+        Lot:true,
         specificationMC: formData.specificationMC,
         specificationGramRate: formData.specificationGramRate,
         images: uploadedImages,
@@ -1000,7 +1000,7 @@ const UploadProduct = () => {
             </div>
 
             {/* Instock Section - Only for Ready Serve */}
-            {activeTab === 'ready' && (
+            {/* {activeTab === 'ready' && (
               <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">Instock Gram</label>
@@ -1023,7 +1023,7 @@ const UploadProduct = () => {
                   />
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Weights: Show read-only totals preview */}
             <div className="form-grid-2">
@@ -1238,15 +1238,22 @@ const UploadProduct = () => {
                           data-row-index={index}
                         >
                           <option value="">Select Size</option>
-                          {getSizeOptions().map(size => (
-                            <option
-                              key={size}
-                              value={size}
-                              disabled={lotSizes.some((item, i) => i !== index && item.size === size)}
-                            >
-                              {size}
-                            </option>
-                          ))}
+
+                          {getSizeOptions()
+                            // Filter out sizes that are used by other rows
+                            .filter(size => {
+                              const isTaken = lotSizes.some((item, i) => i !== index && item.size === size);
+                              return !isTaken; // Only keep the size if it is NOT taken
+                            })
+                            .map(size => (
+                              <option
+                                key={size}
+                                value={size}
+                              >
+                                {size}
+                              </option>
+                            ))}
+
                         </select>
                       </div>
 
